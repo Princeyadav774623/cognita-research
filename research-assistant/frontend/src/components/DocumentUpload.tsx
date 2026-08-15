@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { uploadDocument, listDocuments, deleteDocument, type RagDocument } from "../ragApi";
 import { useAuth } from "../AuthContext";
 
@@ -19,7 +19,7 @@ export function DocumentUpload({ onDocumentsChange }: Props) {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     if (!accessToken) return;
     listDocuments(accessToken)
       .then((docs) => {
@@ -27,9 +27,11 @@ export function DocumentUpload({ onDocumentsChange }: Props) {
         onDocumentsChange(docs.filter((d) => d.status === "ready").length);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to load documents"));
-  };
+  }, [accessToken, onDocumentsChange]);
 
-  useEffect(refresh, [accessToken]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const handleFileSelect = async (file: File) => {
     if (!accessToken) return;

@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -39,13 +39,24 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins_raw.split(",") if origin.strip()]
 
+    # Billing — Stripe. Both empty by default; when unset the billing
+    # endpoints stay in demo mode rather than failing at import time.
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id: str = ""
+
     # Groq model selection
     groq_model_fast: str = "llama-3.1-8b-instant"          # fast, for simple tasks
     groq_model_smart: str = "llama-3.3-70b-versatile"       # smart, for reasoning
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    # env_file is resolved relative to the process's working directory, which
+    # is backend/ for both `uvicorn api.main:app` and `pytest` as documented
+    # in SETUP.md.
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
 
 @lru_cache()

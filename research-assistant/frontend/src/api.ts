@@ -1,5 +1,12 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
-const WS_BASE = API_BASE.replace(/^http/, "ws");
+// Empty base = same-origin relative paths, which is what a real deployment
+// wants: the browser calls /api/... on the frontend's own origin and nginx
+// reverse-proxies to the backend (see nginx.conf), so the backend port never
+// has to be publicly reachable. Local `vite dev` sets VITE_API_URL to point
+// at http://localhost:8000 directly (see frontend/.env.example).
+export const API_BASE = import.meta.env.VITE_API_URL || "";
+const WS_BASE = API_BASE
+  ? API_BASE.replace(/^http/, "ws")
+  : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`;
 
 export interface Source {
   title: string;

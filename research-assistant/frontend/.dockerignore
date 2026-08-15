@@ -1,0 +1,14 @@
+# Host-built dependencies contain platform-native binaries (macOS/Windows)
+# that break inside the linux image — the build runs `npm ci` itself.
+node_modules
+dist
+
+# Secrets / local overrides: VITE_* values are supplied as build args instead.
+.env
+.env.*
+!.env.example
+
+.git
+.gitignore
+Dockerfile
+.dockerignore

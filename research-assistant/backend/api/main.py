@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import uuid
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,7 @@ from rate_limit_middleware import GlobalIPRateLimitMiddleware
 from auth import get_current_user_id, verify_token
 from graph.research_graph import run_research, stream_research
 from db import init_db, save_session, get_session, list_sessions, delete_session, delete_user_data
+from billing import consume_quota, refund_quota, init_billing_db, QuotaExceededError
 from rag.store import init_rag_db, delete_all_user_rag_data
 from api.rag_routes import router as rag_router
 from api.billing_routes import router as billing_router
@@ -28,10 +30,19 @@ settings = get_settings()
 
 WS_QUERY_TIMEOUT_SECONDS = 15
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    init_billing_db()
+    init_rag_db()
+    yield
+
+
 app = FastAPI(
     title="Multi-Agent Research Assistant API",
     description="AI-powered research with 5 specialized agents",
     version="1.0.0",
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -47,12 +58,6 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     """Catch-all so callers always get JSON, never a raw stack trace."""
     logger.error(f"[API] Unhandled error on {request.url.path}: {exc}")
     return JSONResponse(status_code=500, content={"detail": "Internal server error"})
-
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
-    init_rag_db()
 
 
 app.include_router(rag_router)
@@ -114,6 +119,18 @@ async def research(request: Request, body: ResearchRequest, user_id: str = Depen
     if len(query) > 500:
         raise HTTPException(status_code=400, detail="Query too long (max 500 chars)")
 
+    # Reserve one query against the user's monthly plan allowance before doing
+    # any expensive work. slowapi's 5/minute limit above is burst protection,
+    # not plan enforcement — the two are independent.
+    try:
+        consume_quota(user_id)
+    except QuotaExceededError as e:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Monthly quota exceeded ({e.status['queries_used']}/{e.status['quota_limit']}). "
+                   "Upgrade to Pro for more queries.",
+        )
+
     session_id = str(uuid.uuid4())
     logger.info(
         "New research request",
@@ -147,6 +164,8 @@ async def research(request: Request, body: ResearchRequest, user_id: str = Depen
         )
 
     except Exception as e:
+        # Don't bill the user for our own failure.
+        refund_quota(user_id)
         logger.error(
             "Research request failed",
             extra={"session_id": session_id, "user_id": user_id, "error": str(e)},
@@ -210,6 +229,10 @@ async def research_websocket(websocket: WebSocket):
     await websocket.accept()
     logger.info("[WebSocket] Client connected")
 
+    # Tracked so a mid-pipeline failure can hand the reserved query back.
+    user_id: str | None = None
+    quota_consumed = False
+
     try:
         # Receive the query from client, bounded so a silent connection
         # doesn't hold a socket open indefinitely.
@@ -250,6 +273,20 @@ async def research_websocket(websocket: WebSocket):
             await websocket.close()
             return
 
+        # Same plan enforcement as POST /api/research — without this the
+        # WebSocket is a free, unmetered path to the exact same pipeline.
+        try:
+            consume_quota(user_id)
+            quota_consumed = True
+        except QuotaExceededError as e:
+            await websocket.send_json({
+                "type": "error",
+                "message": f"Monthly quota exceeded ({e.status['queries_used']}/{e.status['quota_limit']}). "
+                           "Upgrade to Pro for more queries.",
+            })
+            await websocket.close(code=4402)
+            return
+
         session_id = str(uuid.uuid4())
 
         # Send start confirmation
@@ -284,6 +321,9 @@ async def research_websocket(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info("[WebSocket] Client disconnected")
     except Exception as e:
+        # Don't bill the user for our own failure.
+        if quota_consumed and user_id:
+            refund_quota(user_id)
         logger.error(f"[WebSocket] Error: {e}")
         try:
             await websocket.send_json({"type": "error", "message": "Research failed"})

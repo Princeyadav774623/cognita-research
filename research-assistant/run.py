@@ -10,10 +10,16 @@ import asyncio
 import sys
 import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+BACKEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+sys.path.insert(0, BACKEND_DIR)
 
 from dotenv import load_dotenv
-load_dotenv("backend/.env")
+
+# Resolve relative to this file, not the current working directory — this
+# script is documented to run as `cd backend && python ../run.py`, so a
+# cwd-relative "backend/.env" would look for backend/backend/.env and
+# silently load nothing (load_dotenv does not raise on a missing file).
+load_dotenv(os.path.join(BACKEND_DIR, ".env"))
 
 from graph.research_graph import run_research
 

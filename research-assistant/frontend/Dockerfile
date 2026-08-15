@@ -1,9 +1,21 @@
 # Build Stage
-FROM node:20-alpine AS builder
+# Node 22 LTS — vite 8 requires ^20.19.0 || >=22.12.0.
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
+
+# Vite inlines VITE_* vars into the bundle at build time, so they have to be
+# present during `npm run build` — passing them to the runtime container has
+# no effect. VITE_API_URL is intentionally allowed to be empty: that makes the
+# bundle use same-origin paths and go through nginx (see nginx.conf).
+ARG VITE_API_URL=""
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
+ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 COPY . .
 RUN npm run build

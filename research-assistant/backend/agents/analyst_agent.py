@@ -49,7 +49,7 @@ def analyst_agent(state: ResearchState) -> ResearchState:
     context = build_context(state["query"], state["source_documents"])
 
     llm = ChatGroq(
-        model=settings.groq_model_smart,   # DeepSeek R1 — best reasoning
+        model=settings.groq_model_smart,   # llama-3.3-70b-versatile — best reasoning
         api_key=settings.groq_api_key,
         temperature=0.2,                    # low temp = more factual
         max_tokens=2048,

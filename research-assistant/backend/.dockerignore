@@ -1,0 +1,19 @@
+# Secrets — supplied via docker-compose env_file / -e at runtime instead.
+.env
+.env.*
+!.env.example
+
+# Leftover local SQLite database from the pre-Postgres iteration.
+*.db
+*.sqlite3
+
+__pycache__
+*.pyc
+.pytest_cache
+venv
+.venv
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
