@@ -1,0 +1,25 @@
+# Environment / secrets
+.env
+backend/.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/
+
+# Database
+*.db
+*.sqlite3
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/build/
+
+# Editor / OS
+.DS_Store
+.vscode/
