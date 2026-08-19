@@ -93,17 +93,26 @@ yourdomain.com {
 
 ## 6. Before you announce it
 
-- [ ] **Supabase email.** The built-in SMTP is rate-limited to a handful of
-      messages per hour. Signups will silently fail past that. Configure a
-      custom SMTP provider (Resend, SendGrid) in Supabase → Authentication.
+- [ ] **Supabase email.** Confirmed against the project's own
+      `/auth/v1/settings`: `mailer_autoconfirm` is `false`, so every signup
+      needs a confirmation email, and the built-in sender is rate-limited to a
+      handful per hour — past that, signups fail with no error shown to the
+      user. Either configure custom SMTP (Resend, SendGrid) under
+      Authentication → Emails, or turn on "Confirm email" → off under
+      Authentication → Providers → Email if you do not want confirmation at
+      all. This is dashboard-only; it cannot be set from the repo.
 - [ ] **Groq capacity.** The account is on **8,000 tokens/minute**, shared
       across every user. That is the binding constraint on concurrency — two
       simultaneous research queries will contend. The free tier's 10
       queries/month cap limits exposure, but upgrade before promoting the site.
-- [ ] **Verify the compose build** on the server. The nginx and Dockerfile
-      changes in this repo were reviewed but never executed locally (Docker
-      wasn't available on the dev machine), so the first `docker compose build`
-      is also their first real test.
+- [ ] **Verify the compose build** on the server. Statically validated on the
+      dev machine: `nginx -t` passes on `frontend/nginx.conf` (with the compose
+      service name substituted, since `backend` only resolves inside the compose
+      network), `docker-compose.yml` parses and asserts correctly, and the
+      backend `CMD` carries `--proxy-headers`. What is *not* verified is an
+      actual image build and containers talking to each other — no container
+      runtime was available — so the first `docker compose build` is still the
+      first real test of the images and networking.
 - [ ] **Smoke test after deploy:** sign up, upload a document, ask a grounded
       question, run one research query, confirm the report renders.
 
