@@ -4,24 +4,32 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from config import get_settings
 from graph.state import ResearchState, VerifiedClaim
-from utils import invoke_with_retry
+from utils import invoke_with_retry, clean_llm_response
 import json
+import re
 import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
-# =============================================
-# FACT-CHECK AGENT (Pydantic Structured Output)
-# Extracts key claims and verifies each against sources
-# =============================================
-
 class ClaimsList(BaseModel):
     claims: List[str] = Field(
         description="Key factual claims from the research draft to be verified.",
         default_factory=list
     )
+
+
+class BatchedVerdict(BaseModel):
+    """One claim's verdict inside a batched verification response."""
+    claim_index: int = Field(description="0-based index of the claim being judged.")
+    verified: bool = Field(default=False)
+    confidence: float = Field(default=0.5, description="0.0-1.0.")
+    source: str = Field(default="Not found in sources")
+
+
+class BatchedVerification(BaseModel):
+    verdicts: List[BatchedVerdict] = Field(default_factory=list)
 
 
 class ClaimVerification(BaseModel):
@@ -61,15 +69,29 @@ def factcheck_agent(state: ResearchState) -> ResearchState:
     claims = extract_claims(llm, state["draft_answer"])
     logger.info(f"[FactCheckAgent] Extracted {len(claims)} claims to verify")
 
-    # Step 2: Verify each claim against sources
+    # Step 2: Verify the claims against sources.
+    #
+    # All claims go in ONE call. Verifying them one at a time re-sent the same
+    # ~1k-token evidence block once per claim, which on a tokens-per-minute
+    # limited account is what actually made this node dominate the pipeline
+    # (measured: 257s of a 361s run). Parallelising the old loop makes it
+    # worse, not better — concurrent calls hit the rate limit harder and
+    # spend the extra time in backoff.
     context = build_source_context(state.get("source_documents", []))
-    verified_claims = []
 
-    for claim in claims:
-        result = verify_claim(llm, claim, context)
-        verified_claims.append(result)
+    # Claims already settled on an earlier reflective pass don't need
+    # re-verifying against evidence that only grew.
+    previous = {c["claim"]: c for c in state.get("verified_claims", [])}
+    pending = [c for c in claims if c not in previous]
+    carried = [previous[c] for c in claims if c in previous]
+    if carried:
+        logger.info(f"[FactCheckAgent] Reusing {len(carried)} verdict(s) from a previous pass")
+
+    verified_claims = carried + (verify_claims_batch(llm, pending, context) if pending else [])
+
+    for result in verified_claims:
         status = "✓" if result["verified"] else "✗"
-        logger.info(f"[FactCheckAgent] {status} ({result['confidence']:.0%}) {claim[:60]}...")
+        logger.info(f"[FactCheckAgent] {status} ({result['confidence']:.0%}) {result['claim'][:60]}...")
 
     # Step 3: Calculate overall confidence
     if verified_claims:
@@ -96,9 +118,9 @@ def extract_claims(llm: ChatGroq, draft: str) -> list[str]:
             HumanMessage(content=draft),
         ]
         result = invoke_with_retry(structured_llm, messages)
-        if isinstance(result, ClaimsList):
+        if isinstance(result, ClaimsList) and result.claims:
             return result.claims
-        elif isinstance(result, dict) and "claims" in result:
+        elif isinstance(result, dict) and result.get("claims"):
             return result["claims"]
         elif isinstance(result, list):
             return result
@@ -114,7 +136,7 @@ Return ONLY a JSON array of strings: ["Claim 1", "Claim 2"]"""
             HumanMessage(content=draft),
         ]
         response = invoke_with_retry(llm, messages)
-        raw = response.content.strip()
+        raw = clean_llm_response(str(getattr(response, "content", response)))
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):
@@ -128,6 +150,78 @@ Return ONLY a JSON array of strings: ["Claim 1", "Claim 2"]"""
         logger.warning(f"[FactCheckAgent] Could not extract claims: {e}")
 
     return []
+
+
+def verify_claims_batch(llm: ChatGroq, claims: list[str], context: str) -> list[VerifiedClaim]:
+    """Verify every claim in a single call, sending the evidence once.
+
+    Falls back to the per-claim path only if the batched call fails outright,
+    so a malformed batch response degrades into slower-but-correct rather than
+    losing verdicts entirely.
+    """
+    if not claims:
+        return []
+
+    numbered = "\n".join(f"{i}. {c}" for i, c in enumerate(claims))
+    human_content = (
+        f"Source documents:\n{context[:6000]}\n\n"
+        f"Claims to verify (judge each independently, by index):\n{numbered}"
+    )
+    system = (
+        VERIFY_CLAIM_PROMPT
+        + f"\nReturn one verdict per claim, {len(claims)} in total, each carrying its claim_index."
+    )
+
+    def _assemble(raw_verdicts) -> list[VerifiedClaim]:
+        by_index = {}
+        for v in raw_verdicts:
+            idx = int(v.get("claim_index", -1)) if isinstance(v, dict) else int(v.claim_index)
+            if 0 <= idx < len(claims):
+                by_index[idx] = v
+        out = []
+        for i, claim in enumerate(claims):
+            v = by_index.get(i)
+            if v is None:
+                out.append({"claim": claim, "verified": False, "confidence": 0.5,
+                            "source": "Not returned by verifier"})
+                continue
+            get = (lambda k, d: v.get(k, d)) if isinstance(v, dict) else (lambda k, d: getattr(v, k, d))
+            out.append({
+                "claim": claim,
+                "verified": bool(get("verified", False)),
+                "confidence": float(get("confidence", 0.5)),
+                "source": str(get("source", "Unknown")),
+            })
+        return out
+
+    try:
+        structured_llm = llm.with_structured_output(BatchedVerification)
+        result = invoke_with_retry(structured_llm, [
+            SystemMessage(content=system), HumanMessage(content=human_content)])
+        if isinstance(result, BatchedVerification) and result.verdicts:
+            return _assemble(result.verdicts)
+        if isinstance(result, dict) and result.get("verdicts"):
+            return _assemble(result["verdicts"])
+    except Exception as e:
+        logger.debug(f"[FactCheckAgent] Batched structured output fallback: {e}")
+
+    try:
+        json_system = system + (
+            '\nRespond with JSON only: {"verdicts": [{"claim_index": 0, "verified": true, '
+            '"confidence": 0.0-1.0, "source": "..."}]}'
+        )
+        response = invoke_with_retry(llm, [
+            SystemMessage(content=json_system), HumanMessage(content=human_content)])
+        raw = clean_llm_response(str(getattr(response, "content", response)))
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if match:
+            data = json.loads(match.group(0))
+            if data.get("verdicts"):
+                return _assemble(data["verdicts"])
+    except Exception as e:
+        logger.warning(f"[FactCheckAgent] Batched verification failed, falling back per-claim: {e}")
+
+    return [verify_claim(llm, c, context) for c in claims]
 
 
 def verify_claim(llm: ChatGroq, claim: str, context: str) -> VerifiedClaim:
@@ -165,7 +259,7 @@ def verify_claim(llm: ChatGroq, claim: str, context: str) -> VerifiedClaim:
             HumanMessage(content=human_content),
         ]
         response = invoke_with_retry(llm, messages)
-        raw = response.content.strip()
+        raw = clean_llm_response(str(getattr(response, "content", response)))
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

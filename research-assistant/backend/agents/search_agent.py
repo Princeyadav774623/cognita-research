@@ -3,7 +3,7 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from config import get_settings
 from graph.state import ResearchState, SearchResult
-from utils import invoke_with_retry, normalize_url
+from utils import invoke_with_retry, normalize_url, clean_llm_response
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,13 +24,17 @@ def search_agent(state: ResearchState) -> ResearchState:
     all_results: list[SearchResult] = list(state.get("search_results", []))
 
     last_error = None
+    # Triage decides how wide to cast the net: a definitional question does not
+    # need the same breadth as a comparative analysis, and every extra source
+    # is more text for the reader, analyst and fact-checker to chew through.
+    per_query = 3 if state.get("complexity") == "simple" else 5
     try:
         for q in queries_to_search:
             try:
                 response = tavily.search(
                     query=q,
                     search_depth="advanced",
-                    max_results=5,
+                    max_results=per_query,
                     include_answer=False,
                     include_raw_content=False,
                 )
@@ -112,7 +116,7 @@ def rephrase_query(query: str) -> str:
             HumanMessage(content=query),
         ]
         result = invoke_with_retry(llm, messages)
-        return result.content.strip()
+        return clean_llm_response(result.content)
     except Exception as e:
         logger.warning(f"[SearchAgent] Query rephrasing fallback: {e}")
         return query

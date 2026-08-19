@@ -138,7 +138,7 @@ async def research(request: Request, body: ResearchRequest, user_id: str = Depen
     )
 
     try:
-        final_state = await run_research(query, session_id)
+        final_state = await run_research(query, session_id, user_id=user_id)
         save_session(session_id, user_id, query, final_state)
 
         logger.info(
@@ -299,7 +299,17 @@ async def research_websocket(websocket: WebSocket):
         # Stream each agent's progress, accumulating the full state so we
         # can persist the completed session once streaming finishes.
         accumulated_state: dict = {}
-        async for event in stream_research(query, session_id):
+        async for event in stream_research(query, session_id, user_id=user_id):
+            # Token events carry generated text, not a state update — forward
+            # them straight through so the client can render as it arrives.
+            if event.get("type") == "token":
+                await websocket.send_json({
+                    "type": "token",
+                    "node": event["node"],
+                    "text": event["text"],
+                })
+                continue
+
             accumulated_state.update(event.get("state", {}))
             await websocket.send_json({
                 "type": "progress",

@@ -1,4 +1,6 @@
 import logging
+import ssl
+import certifi
 
 import jwt
 from fastapi import Header, HTTPException
@@ -18,7 +20,8 @@ def _get_jwks_client() -> PyJWKClient:
         if not settings.supabase_url:
             raise RuntimeError("SUPABASE_URL is required for auth verification")
         jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-        _jwks_client = PyJWKClient(jwks_url, cache_keys=True)
+        ssl_ctx = ssl.create_default_context(cafile=certifi.where())
+        _jwks_client = PyJWKClient(jwks_url, cache_keys=True, ssl_context=ssl_ctx)
     return _jwks_client
 
 

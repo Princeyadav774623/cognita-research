@@ -238,10 +238,13 @@ class TestFactCheckAgent:
         from agents.factcheck_agent import factcheck_agent
 
         mock_llm = MagicMock()
-        # First call: extract_claims, subsequent calls: verify_claim (one per claim)
+        # Two calls total now, not one-per-claim: extract_claims, then a single
+        # batched verification carrying every verdict keyed by claim_index.
         mock_llm.invoke.side_effect = [
-            MagicMock(content='["AI is transforming research"]'),
-            MagicMock(content='{"verified": true, "confidence": 0.9, "source": "example.com"}'),
+            MagicMock(content='["AI is transforming research", "Models are larger"]'),
+            MagicMock(content='{"verdicts": ['
+                              '{"claim_index": 0, "verified": true, "confidence": 0.9, "source": "example.com"},'
+                              '{"claim_index": 1, "verified": false, "confidence": 0.1, "source": "none"}]}'),
         ]
         mock_groq_class.return_value = mock_llm
 
@@ -251,10 +254,39 @@ class TestFactCheckAgent:
         )
         result = factcheck_agent(state)
 
-        assert len(result["verified_claims"]) == 1
-        assert result["verified_claims"][0]["verified"] is True
-        assert result["overall_confidence"] == 0.9
+        assert len(result["verified_claims"]) == 2
+        by_claim = {c["claim"]: c for c in result["verified_claims"]}
+        assert by_claim["AI is transforming research"]["verified"] is True
+        assert by_claim["Models are larger"]["verified"] is False
+        assert result["overall_confidence"] == 0.5   # (0.9 + 0.1) / 2
         assert result["current_step"] == "factcheck_done"
+        # The whole point of the change: evidence is sent once, not per claim.
+        assert mock_llm.invoke.call_count == 2
+
+    @patch("agents.factcheck_agent.ChatGroq")
+    def test_reuses_verdicts_from_previous_pass(self, mock_groq_class):
+        """The reflective loop must not re-verify claims it already settled."""
+        from agents.factcheck_agent import factcheck_agent
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.side_effect = [
+            MagicMock(content='["Already checked"]'),   # extract_claims
+        ]
+        mock_groq_class.return_value = mock_llm
+
+        state = make_state(
+            draft_answer="Already checked.",
+            source_documents=[{"title": "T", "url": "https://e.com", "text": "c"}],
+        )
+        state["verified_claims"] = [
+            {"claim": "Already checked", "verified": True, "confidence": 0.8, "source": "e.com"}
+        ]
+        result = factcheck_agent(state)
+
+        assert len(result["verified_claims"]) == 1
+        assert result["verified_claims"][0]["confidence"] == 0.8
+        # extract_claims only — no verification call, because nothing was pending.
+        assert mock_llm.invoke.call_count == 1
 
     @patch("agents.factcheck_agent.ChatGroq")
     def test_handles_malformed_claim_json(self, mock_groq_class):

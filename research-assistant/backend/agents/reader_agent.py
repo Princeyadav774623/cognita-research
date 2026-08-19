@@ -43,27 +43,33 @@ def reader_agent(state: ResearchState) -> ResearchState:
         raw_url = result.get("url", "")
         url = normalize_url(raw_url)
         title = result.get("title", "Untitled")
+        fallback_snippet = result.get("content", "")
 
+        text = ""
         try:
             if url.endswith(".pdf"):
                 text = extract_pdf(url)
             else:
                 text = extract_webpage(url)
-
-            text = sanitize_external_text(text)
-            if text and len(text.strip()) > 100:
-                documents.append({
-                    "url": url,
-                    "title": title,
-                    "text": text[:MAX_CHARS],
-                })
-                already_read_urls.add(url)
-                logger.info(f"[ReaderAgent] ✓ Read ({len(text)} chars): {title[:50]}")
-            else:
-                logger.warning(f"[ReaderAgent] ✗ Empty content: {url}")
         except Exception as e:
             logger.warning(f"[ReaderAgent] Failed to read {url}: {e}")
-            continue
+
+        # Fallback to search result content if scraping failed or returned too little
+        if not text or len(text.strip()) < 100:
+            if fallback_snippet and len(fallback_snippet.strip()) >= 40:
+                text = fallback_snippet
+
+        text = sanitize_external_text(text)
+        if text and len(text.strip()) >= 40:
+            documents.append({
+                "url": url,
+                "title": title,
+                "text": text[:MAX_CHARS],
+            })
+            already_read_urls.add(url)
+            logger.info(f"[ReaderAgent] ✓ Read ({len(text)} chars): {title[:50]}")
+        else:
+            logger.warning(f"[ReaderAgent] ✗ Empty content: {url}")
 
     logger.info(f"[ReaderAgent] Total accumulated documents: {len(documents)}")
     return {
@@ -108,6 +114,7 @@ async def fetch_single_source_async(client: httpx.AsyncClient, result: dict) -> 
     raw_url = result.get("url", "")
     url = normalize_url(raw_url)
     title = result.get("title", "Untitled")
+    fallback_snippet = result.get("content", "")
     try:
         if url.endswith(".pdf"):
             resp = await client.get(url)
@@ -127,6 +134,15 @@ async def fetch_single_source_async(client: httpx.AsyncClient, result: dict) -> 
             }
     except Exception as e:
         logger.warning(f"[ReaderAgent] Async fetch error for {url}: {e}")
+
+    # Fallback to search result content if direct fetch failed
+    if fallback_snippet and len(fallback_snippet.strip()) >= 40:
+        return {
+            "url": url,
+            "title": title,
+            "text": sanitize_external_text(fallback_snippet)[:MAX_CHARS],
+        }
+
     return None
 
 

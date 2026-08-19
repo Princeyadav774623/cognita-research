@@ -12,6 +12,10 @@ class SourceDocument(TypedDict):
     url: str
     title: str
     text: str
+    # "web" for scraped pages, "corpus" for the user's own uploaded documents.
+    # Readers that predate this field simply omit it; TypedDict is not
+    # enforced at runtime, and every consumer uses .get("origin").
+    origin: Optional[str]
 
 
 class VerifiedClaim(TypedDict):
@@ -28,6 +32,14 @@ class ResearchState(TypedDict):
     # Input
     query: str
     session_id: str
+    # Owner of this run. Needed so the corpus agent can search *this* user's
+    # uploaded documents — retrieval is tenant-scoped, and a graph with no
+    # user_id simply skips the corpus rather than leaking across tenants.
+    user_id: Optional[str]
+
+    # Triage Agent output — "chat" | "simple" | "deep". Drives how many
+    # search/reflection passes the run is allowed.
+    complexity: Optional[str]
 
     # Planner Agent output
     sub_queries: List[str]

@@ -2,10 +2,12 @@ from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from config import get_settings
 from graph.state import ResearchState
-from utils import invoke_with_retry
+from utils import invoke_with_retry, clean_llm_response
 import logging
 
 logger = logging.getLogger(__name__)
+
+from agents.triage_agent import USER_VISIBLE_TAG  # single definition of the tag
 settings = get_settings()
 
 
@@ -66,8 +68,10 @@ Please generate the final polished report.
     ]
 
     try:
-        response = invoke_with_retry(llm, messages)
-        report = response.content.strip()
+        # Tagged so the graph streams these tokens to the client — the report
+        # is the deliverable, and watching it appear beats watching a spinner.
+        response = invoke_with_retry(llm.with_config({"tags": [USER_VISIBLE_TAG]}), messages)
+        report = clean_llm_response(response.content)
 
         # Add metadata footer
         report += f"\n\n---\n*Confidence Score: {confidence:.0%} ({confidence_label}) | Sources analyzed: {len(state.get('source_documents', []))}*"

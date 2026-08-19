@@ -75,17 +75,21 @@ def delete_document(document_id: str, user_id: str) -> bool:
         return True
 
 
-def retrieve_relevant_chunks(user_id: str, query: str, top_k: int = TOP_K) -> list[dict]:
+def retrieve_relevant_chunks(user_id: str, query: str, top_k: int = TOP_K, limit: int | None = None) -> list[dict]:
     """Embed the query and find the most semantically similar chunks across
     this user's ready documents only, via pgvector cosine distance."""
+    effective_k = limit if limit is not None else top_k
     with get_tenant_session(user_id) as db:
         query_vector = embed_query(query)
+        # pgvector's cosine_distance is 1 - cosine_similarity, so similarity
+        # is recovered directly from it rather than estimated.
+        distance = RagChunk.embedding.cosine_distance(query_vector)
         rows = (
-            db.query(RagChunk, RagDocument.filename)
+            db.query(RagChunk, RagDocument.filename, distance.label("distance"))
             .join(RagDocument, RagChunk.document_id == RagDocument.id)
             .filter(RagDocument.status == "ready", RagDocument.user_id == user_id)
-            .order_by(RagChunk.embedding.cosine_distance(query_vector))
-            .limit(top_k)
+            .order_by(distance)
+            .limit(effective_k)
             .all()
         )
         return [
@@ -93,8 +97,9 @@ def retrieve_relevant_chunks(user_id: str, query: str, top_k: int = TOP_K) -> li
                 "content": chunk.content,
                 "filename": filename,
                 "chunk_index": chunk.chunk_index,
+                "similarity": max(0.0, min(1.0, 1.0 - float(dist))),
             }
-            for chunk, filename in rows
+            for chunk, filename, dist in rows
         ]
 
 
