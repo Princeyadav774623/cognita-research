@@ -5,7 +5,13 @@ services:
       dockerfile: Dockerfile
     container_name: research_backend
     ports:
-      - "8000:8000"
+      # Bound to loopback, not 0.0.0.0. The browser reaches the API through
+      # the frontend's nginx proxy, so the backend never needs to be publicly
+      # reachable — and since it runs with --proxy-headers (see Dockerfile),
+      # leaving it publicly exposed would let a caller bypass nginx and spoof
+      # X-Forwarded-For to evade the IP rate limits. Still available on the
+      # host at localhost:8000 for debugging and /docs.
+      - "127.0.0.1:8000:8000"
     # backend/.env is the single source of truth for backend secrets (same
     # file the non-Docker `uvicorn api.main:app` run uses, since config.py
     # loads ".env" relative to backend/). Values below override it for
