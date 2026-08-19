@@ -16,6 +16,13 @@ class SourceDocument(TypedDict):
     # Readers that predate this field simply omit it; TypedDict is not
     # enforced at runtime, and every consumer uses .get("origin").
     origin: Optional[str]
+    # True when direct extraction (PDF/HTML) failed or returned too little,
+    # and the text is actually just the search engine's snippet instead of the
+    # full page. A run can silently substitute two sentences for a paper and
+    # report a normal-looking source count — this makes that visible rather
+    # than invisible. Missing/None means "not tracked" (older callers), not
+    # "confirmed full text".
+    via_fallback: Optional[bool]
 
 
 class VerifiedClaim(TypedDict):

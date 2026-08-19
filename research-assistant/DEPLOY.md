@@ -100,7 +100,30 @@ yourdomain.com {
       user. Either configure custom SMTP (Resend, SendGrid) under
       Authentication → Emails, or turn on "Confirm email" → off under
       Authentication → Providers → Email if you do not want confirmation at
-      all. This is dashboard-only; it cannot be set from the repo.
+      all. This is dashboard-only; it cannot be set from the repo. **Google
+      sign-in (below) sidesteps this entirely** — Google has already verified
+      the address, so no confirmation email is ever sent for those users.
+- [ ] **Google sign-in.** The frontend is fully wired (`Continue with Google`,
+      humanized errors, the works) but the button only appears once the
+      provider is actually enabled — confirmed against this project's
+      `/auth/v1/settings` that it is currently **off**
+      (`external.google: false`). Two dashboards, ~10 minutes:
+
+      1. **Google Cloud Console** → [console.cloud.google.com](https://console.cloud.google.com)
+         → APIs & Services → Credentials → **Create Credentials → OAuth client ID**.
+         - Application type: **Web application**
+         - Authorized redirect URI — must be exactly:
+           `https://ompwetifzchffuwlkgad.supabase.co/auth/v1/callback`
+         - Save, then copy the **Client ID** and **Client Secret** it generates.
+         - First time only: you'll be prompted to configure the **OAuth
+           consent screen** first (app name, support email, and your domain
+           once you have one).
+      2. **Supabase Dashboard** →
+         [Authentication → Providers → Google](https://supabase.com/dashboard/project/ompwetifzchffuwlkgad/auth/providers)
+         → toggle it on → paste the Client ID and Client Secret → Save.
+
+      Nothing else to do — the frontend checks this setting itself and shows
+      the button automatically once it's on. No redeploy needed.
 - [ ] **Groq capacity.** The account is on **8,000 tokens/minute**, shared
       across every user. That is the binding constraint on concurrency — two
       simultaneous research queries will contend. The free tier's 10
@@ -130,6 +153,10 @@ Honest accounting of what is not production-grade yet:
 | Payments | Backend (checkout + signed webhook) is built, but no Stripe keys are set and **the frontend never calls it** — "Upgrade to Pro" has no handler. Users cannot pay. |
 | Evaluation | Golden set in `backend/evals/` — run `python -m evals.run --answers` before shipping retrieval changes. |
 | Monitoring | No error tracking. Add Sentry before you have real users. |
+| Auth | Email/password + password reset + Google OAuth are all fully wired. Google needs the ~10-minute dashboard setup above before its button appears. |
+| Cold starts | Fixed — the embedding model now warms during server startup instead of on whichever user's request happens to be first (was 2.2s, now ~0.002s post-startup). |
+| Silent quality loss | Fixed — a source that couldn't be scraped (403, paywall) and fell back to a search-engine snippet is now disclosed in the report footer ("Full text extracted: X/Y web sources") instead of looking identical to a fully-read source. |
+| LLM-as-a-judge latency | Still on the critical path in RAG chat — adds ~0.87s (measured) to every response. Moving it to run async after the answer returns is scoped but not built; it needs either a polling endpoint or a follow-up WebSocket message to deliver the updated score, which is a small API contract change, not just a backend tweak. |
 
 The highest-value next step is moving research onto a job queue so a deploy
 stops killing in-flight work.

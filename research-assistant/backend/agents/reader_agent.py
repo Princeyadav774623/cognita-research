@@ -55,9 +55,11 @@ def reader_agent(state: ResearchState) -> ResearchState:
             logger.warning(f"[ReaderAgent] Failed to read {url}: {e}")
 
         # Fallback to search result content if scraping failed or returned too little
+        used_fallback = False
         if not text or len(text.strip()) < 100:
             if fallback_snippet and len(fallback_snippet.strip()) >= 40:
                 text = fallback_snippet
+                used_fallback = True
 
         text = sanitize_external_text(text)
         if text and len(text.strip()) >= 40:
@@ -65,9 +67,11 @@ def reader_agent(state: ResearchState) -> ResearchState:
                 "url": url,
                 "title": title,
                 "text": text[:MAX_CHARS],
+                "via_fallback": used_fallback,
             })
             already_read_urls.add(url)
-            logger.info(f"[ReaderAgent] ✓ Read ({len(text)} chars): {title[:50]}")
+            tag = " (snippet fallback)" if used_fallback else ""
+            logger.info(f"[ReaderAgent] ✓ Read ({len(text)} chars){tag}: {title[:50]}")
         else:
             logger.warning(f"[ReaderAgent] ✗ Empty content: {url}")
 
@@ -102,6 +106,12 @@ async def reader_agent_async(state: ResearchState) -> ResearchState:
     new_documents = [doc for doc in fetched_docs if isinstance(doc, dict) and doc.get("text")]
     combined_docs = existing_docs + new_documents
 
+    fallback_count = sum(1 for d in new_documents if d.get("via_fallback"))
+    if fallback_count:
+        logger.warning(
+            f"[ReaderAgent] {fallback_count}/{len(new_documents)} new source(s) are search "
+            "snippets, not full text — extraction was blocked or failed for these"
+        )
     logger.info(f"[ReaderAgent] Successfully read {len(new_documents)} new documents (Total: {len(combined_docs)})")
     return {
         **state,
@@ -131,6 +141,7 @@ async def fetch_single_source_async(client: httpx.AsyncClient, result: dict) -> 
                 "url": url,
                 "title": title,
                 "text": text[:MAX_CHARS],
+                "via_fallback": False,
             }
     except Exception as e:
         logger.warning(f"[ReaderAgent] Async fetch error for {url}: {e}")
@@ -141,6 +152,7 @@ async def fetch_single_source_async(client: httpx.AsyncClient, result: dict) -> 
             "url": url,
             "title": title,
             "text": sanitize_external_text(fallback_snippet)[:MAX_CHARS],
+            "via_fallback": True,
         }
 
     return None

@@ -102,6 +102,8 @@ class TestReaderAgent:
         assert len(result["source_documents"]) == 1
         assert result["source_documents"][0]["title"] == "Test Article"
         assert result["current_step"] == "read_done"
+        # A real extraction, not a snippet — must be recorded as such.
+        assert result["source_documents"][0]["via_fallback"] is False
 
     @patch("agents.reader_agent.requests.get")
     def test_skips_failed_urls(self, mock_get):
@@ -118,6 +120,27 @@ class TestReaderAgent:
 
         assert result["source_documents"] == []
         assert result["current_step"] == "read_done"
+
+    @patch("agents.reader_agent.requests.get")
+    def test_marks_snippet_fallback_when_extraction_fails(self, mock_get):
+        """A blocked page (403, paywall) must not look identical to a fully
+        read one — that's the silent quality regression this field exists to
+        catch."""
+        from agents.reader_agent import reader_agent
+
+        mock_get.side_effect = Exception("403 Forbidden")
+
+        snippet = "A search-engine snippet long enough to pass the floor. " * 2
+        state = make_state(
+            search_results=[
+                {"url": "https://blocked.com", "title": "Blocked", "content": snippet, "score": 0.5}
+            ]
+        )
+        result = reader_agent(state)
+
+        assert len(result["source_documents"]) == 1
+        assert result["source_documents"][0]["via_fallback"] is True
+        assert result["source_documents"][0]["text"].strip() == snippet.strip()
 
 
 # =============================================
@@ -150,6 +173,52 @@ class TestReportAgent:
         assert get_confidence_label(0.7) == "Moderate Confidence"
         assert get_confidence_label(0.5) == "Low Confidence"
         assert get_confidence_label(0.2) == "Uncertain"
+
+    @patch("agents.report_agent.ChatGroq")
+    def test_footer_discloses_snippet_only_sources(self, mock_groq_class):
+        """A source that couldn't be scraped silently degrades to a two-sentence
+        search snippet. The footer must say so rather than reporting a plain
+        source count indistinguishable from a fully-read paper."""
+        from agents.report_agent import report_agent
+
+        mock_llm = MagicMock()
+        mock_llm.with_config.return_value.invoke.return_value = MagicMock(
+            content="# Research Report\n\nBody."
+        )
+        mock_groq_class.return_value = mock_llm
+
+        state = make_state(
+            draft_answer="Some finding.",
+            source_documents=[
+                {"title": "Full paper", "url": "https://a.com", "text": "t", "via_fallback": False},
+                {"title": "Blocked page", "url": "https://b.com", "text": "t", "via_fallback": True},
+                {"title": "Untracked (corpus)", "url": "upload://c", "text": "t"},
+            ],
+        )
+        result = report_agent(state)
+
+        assert "Full text extracted: 1/2 web sources" in result["final_report"]
+
+    @patch("agents.report_agent.ChatGroq")
+    def test_footer_omits_fallback_note_when_nothing_tracked(self, mock_groq_class):
+        """No noise on runs where fallback tracking never applies (e.g. a
+        corpus-only research pass with no scraped web sources)."""
+        from agents.report_agent import report_agent
+
+        mock_llm = MagicMock()
+        mock_llm.with_config.return_value.invoke.return_value = MagicMock(
+            content="# Research Report\n\nBody."
+        )
+        mock_groq_class.return_value = mock_llm
+
+        state = make_state(
+            draft_answer="Some finding.",
+            source_documents=[{"title": "Corpus doc", "url": "upload://c", "text": "t"}],
+        )
+        result = report_agent(state)
+
+        assert "Full text extracted" not in result["final_report"]
+        assert "Sources analyzed: 1" in result["final_report"]
 
 
 # =============================================

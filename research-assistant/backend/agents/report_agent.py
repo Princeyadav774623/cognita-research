@@ -73,8 +73,22 @@ Please generate the final polished report.
         response = invoke_with_retry(llm.with_config({"tags": [USER_VISIBLE_TAG]}), messages)
         report = clean_llm_response(response.content)
 
-        # Add metadata footer
-        report += f"\n\n---\n*Confidence Score: {confidence:.0%} ({confidence_label}) | Sources analyzed: {len(state.get('source_documents', []))}*"
+        # Add metadata footer. The fallback count matters: a source that
+        # couldn't be scraped (403, paywall, JS-rendered page) silently
+        # degrades to the search engine's two-sentence snippet, and without
+        # this line that read as a normal source no different from a fully
+        # read paper — a real quality regression the report never disclosed.
+        source_documents = state.get("source_documents", [])
+        tracked = [d for d in source_documents if d.get("via_fallback") is not None]
+        fallback_note = ""
+        if tracked:
+            full_text_count = sum(1 for d in tracked if not d.get("via_fallback"))
+            fallback_note = f" | Full text extracted: {full_text_count}/{len(tracked)} web sources"
+
+        report += (
+            f"\n\n---\n*Confidence Score: {confidence:.0%} ({confidence_label}) "
+            f"| Sources analyzed: {len(source_documents)}{fallback_note}*"
+        )
 
         logger.info("[ReportAgent] Final report generated successfully")
 
