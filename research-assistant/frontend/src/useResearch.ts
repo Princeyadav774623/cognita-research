@@ -11,6 +11,8 @@ type Phase = "idle" | "running" | "done" | "error";
 export function useResearch() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [steps, setSteps] = useState<StepStatus[]>([]);
+  // Report text as it streams in, before the saved session is fetched.
+  const [streamedReport, setStreamedReport] = useState("");
   const [result, setResult] = useState<SessionRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
   const closeRef = useRef<(() => void) | null>(null);
@@ -20,12 +22,16 @@ export function useResearch() {
     setSteps([]);
     setResult(null);
     setError(null);
+    setStreamedReport("");
 
     let sessionId = "";
 
     const onEvent = (event: ProgressEvent) => {
       if (event.type === "start" && event.session_id) {
         sessionId = event.session_id;
+      }
+      if (event.type === "token" && event.text) {
+        setStreamedReport((prev) => prev + event.text);
       }
       if (event.type === "progress") {
         setSteps((prev) => [
@@ -64,7 +70,8 @@ export function useResearch() {
     setSteps([]);
     setResult(null);
     setError(null);
+    setStreamedReport("");
   }, []);
 
-  return { phase, steps, result, error, start, reset };
+  return { phase, steps, result, error, streamedReport, start, reset };
 }

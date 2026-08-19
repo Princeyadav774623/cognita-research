@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchHistory, deleteSession, type SessionRecord } from "../api";
 import { useAuth } from "../AuthContext";
+import { Icon } from "./Icon";
 
 interface Props {
   refreshKey: number;
@@ -22,27 +23,75 @@ export function HistoryPanel({ refreshKey, onSelect }: Props) {
   const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
     e.stopPropagation();
     if (!accessToken) return;
-    await deleteSession(accessToken, sessionId);
-    setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+    try {
+      await deleteSession(accessToken, sessionId);
+      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+    } catch {
+      // Handle error
+    }
   };
 
-  if (error) return <p className="history-panel__error">{error}</p>;
-  if (sessions.length === 0) return <p className="history-panel__empty">No past research yet.</p>;
-
   return (
-    <ul className="history-panel">
-      {sessions.map((session) => (
-        <li key={session.session_id} className="history-panel__item" onClick={() => onSelect(session)}>
-          <div className="history-panel__query">{session.query}</div>
-          <div className="history-panel__meta">
-            <span>{new Date(session.created_at).toLocaleString()}</span>
-            <span>{Math.round(session.confidence * 100)}%</span>
-            <button className="history-panel__delete" onClick={(e) => handleDelete(e, session.session_id)}>
-              Delete
+    <div className="history-panel">
+      <div className="history-panel__header">
+        <h3 className="history-panel__title">Research Library</h3>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+          {sessions.length} Saved
+        </span>
+      </div>
+
+      {error && <div className="auth-card__error" style={{ fontSize: "0.78rem" }}>{error}</div>}
+
+      {sessions.length === 0 && !error && (
+        <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", padding: "1rem 0", textAlign: "center" }}>
+          No previous research queries found.
+        </div>
+      )}
+
+      {sessions.length > 0 && (
+        <div className="history-list">
+          {sessions.map((session) => (
+            <button
+              type="button"
+              key={session.session_id}
+              className="history-item"
+              onClick={() => onSelect(session)}
+            >
+              <div className="history-item__query">{session.query}</div>
+              <div className="history-item__meta">
+                <span className="history-item__date">
+                  {session.created_at
+                    ? new Date(session.created_at).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Recent"}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      color: session.confidence >= 0.7 ? "var(--success)" : "var(--warning)",
+                    }}
+                  >
+                    {Math.round(session.confidence * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    className="history-item__delete"
+                    onClick={(e) => handleDelete(e, session.session_id)}
+                    title="Delete session"
+                  >
+                    <Icon name="trash" size={13} />
+                  </button>
+                </div>
+              </div>
             </button>
-          </div>
-        </li>
-      ))}
-    </ul>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

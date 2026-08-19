@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Icon } from "./Icon";
 
 const EXAMPLES = [
   "What is LangGraph and how is it used for multi-agent systems?",
-  "What are the main benefits of using FastAPI over Flask?",
   "How does retrieval-augmented generation reduce LLM hallucination?",
+  "What are the main benefits of using FastAPI over Flask?",
+  "What are the best strategies to build wealth and become successful?",
 ];
 
 interface Props {
@@ -21,26 +23,34 @@ export function QueryInput({ disabled, onSubmit }: Props) {
   };
 
   return (
-    <div className="query-input">
-      <div className="query-input__row">
+    <div>
+      <div className="query-box">
         <input
+          className="query-box__input"
           type="text"
-          placeholder="Ask a research question…"
+          placeholder="Ask a complex research question..."
           value={value}
           maxLength={500}
           disabled={disabled}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
         />
-        <button onClick={submit} disabled={disabled || !value.trim()}>
-          {disabled ? "Researching…" : "Research"}
+        <button
+          type="button"
+          className="query-box__btn"
+          onClick={submit}
+          disabled={disabled || !value.trim()}
+        >
+          {disabled ? "Synthesizing..." : <><Icon name="spark" size={15} /> Run Research</>}
         </button>
       </div>
-      <div className="query-input__examples">
+
+      <div className="suggestion-chips">
         {EXAMPLES.map((ex) => (
           <button
+            type="button"
             key={ex}
-            className="example-chip"
+            className="suggestion-chip"
             disabled={disabled}
             onClick={() => {
               setValue(ex);

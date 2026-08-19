@@ -1,12 +1,19 @@
 import ReactMarkdown from "react-markdown";
 import { useState } from "react";
 import type { SessionRecord } from "../api";
+import { Icon } from "./Icon";
 
-function confidenceLabel(score: number): { label: string; className: string } {
-  if (score >= 0.8) return { label: "High Confidence", className: "confidence--high" };
-  if (score >= 0.6) return { label: "Moderate Confidence", className: "confidence--moderate" };
-  if (score >= 0.4) return { label: "Low Confidence", className: "confidence--low" };
-  return { label: "Uncertain", className: "confidence--uncertain" };
+function confidenceBadgeClass(score: number): string {
+  if (score >= 0.8) return "meta-badge--confidence-high";
+  if (score >= 0.5) return "meta-badge--confidence-mod";
+  return "meta-badge--confidence-low";
+}
+
+function confidenceLabel(score: number): string {
+  if (score >= 0.8) return "High Grounding";
+  if (score >= 0.6) return "Moderate Grounding";
+  if (score >= 0.4) return "Low Grounding";
+  return "Uncertain";
 }
 
 interface Props {
@@ -14,15 +21,16 @@ interface Props {
 }
 
 export function ReportView({ result }: Props) {
-  const { label, className } = confidenceLabel(result.confidence);
   const [copied, setCopied] = useState(false);
+  const badgeClass = confidenceBadgeClass(result.confidence);
+  const label = confidenceLabel(result.confidence);
 
   const handleDownloadMarkdown = () => {
     const blob = new Blob([result.final_report], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `research-report-${result.session_id.slice(0, 8)}.md`;
+    a.download = `cognita-research-report-${result.session_id.slice(0, 8)}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -38,70 +46,78 @@ export function ReportView({ result }: Props) {
   };
 
   return (
-    <div className="report-view">
-      <div className="report-view__header">
-        <div>
-          <h2>{result.query}</h2>
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.4rem", alignItems: "center" }}>
-            <span className={`confidence-badge ${className}`}>
-              {label} · {Math.round(result.confidence * 100)}%
+    <article className="report-paper">
+      <header className="report-paper__header">
+        <h2 className="report-paper__query-title">{result.query}</h2>
+
+        <div className="report-paper__meta-row">
+          <div className="report-paper__badges">
+            <span className={`meta-badge ${badgeClass}`}>
+              <span>●</span> {label} · {Math.round(result.confidence * 100)}%
             </span>
-            <span style={{ fontSize: "0.85rem", color: "#888" }}>
-              {result.sources.length} sources analyzed
+            <span className="meta-badge meta-badge--sources">
+              <Icon name="sources" size={13} /> {result.sources.length} Sources Analyzed
             </span>
+            {result.created_at && (
+              <span className="meta-badge" style={{ color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+                <Icon name="clock" size={13} /> {new Date(result.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+              </span>
+            )}
+          </div>
+
+          <div className="report-paper__actions">
+            <button type="button" className="paper-action-btn" onClick={handleCopyReport}>
+              <Icon name={copied ? "check" : "copy"} size={14} /> {copied ? "Copied" : "Copy Paper"}
+            </button>
+            <button type="button" className="paper-action-btn" onClick={handleDownloadMarkdown}>
+              <Icon name="download" size={14} /> Export Markdown
+            </button>
           </div>
         </div>
+      </header>
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          <button
-            onClick={handleCopyReport}
-            style={{
-              padding: "0.4rem 0.8rem",
-              borderRadius: "6px",
-              border: "1px solid #444",
-              background: "#222",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "0.85rem"
-            }}
-          >
-            {copied ? "✓ Copied!" : "📋 Copy"}
-          </button>
-          <button
-            onClick={handleDownloadMarkdown}
-            style={{
-              padding: "0.4rem 0.8rem",
-              borderRadius: "6px",
-              border: "1px solid #3b82f6",
-              background: "#1d4ed8",
-              color: "#fff",
-              cursor: "pointer",
-              fontSize: "0.85rem"
-            }}
-          >
-            📥 Export .MD
-          </button>
-        </div>
-      </div>
-
-      {result.verified_claims.length > 0 && (
-        <div className="claims">
-          <div style={{ fontSize: "0.85rem", fontWeight: 600, marginBottom: "0.4rem", color: "#aaa" }}>
-            VERIFIABLE CLAIM AUDIT TRAIL:
+      {result.verified_claims && result.verified_claims.length > 0 && (
+        <section className="claims-card">
+          <div className="claims-card__title">Verified Claims & Grounding Audit</div>
+          <div className="claims-list">
+            {result.verified_claims.map((claim, i) => (
+              <div key={i} className="claim-item">
+                <span className={`claim-item__icon ${claim.verified ? "claim-item__icon--verified" : "claim-item__icon--unverified"}`}>
+                  {claim.verified ? "✓" : "✗"}
+                </span>
+                <span className="claim-item__text">{claim.claim}</span>
+                <span className="claim-item__source">
+                  ({Math.round(claim.confidence * 100)}% grounded)
+                </span>
+              </div>
+            ))}
           </div>
-          {result.verified_claims.map((claim, i) => (
-            <div key={i} className={`claim ${claim.verified ? "claim--verified" : "claim--unverified"}`}>
-              <span className="claim__icon">{claim.verified ? "✓" : "✗"}</span>
-              <span className="claim__text">{claim.claim}</span>
-              <span className="claim__confidence">{Math.round(claim.confidence * 100)}%</span>
-            </div>
-          ))}
-        </div>
+        </section>
       )}
 
-      <div className="report-view__body">
+      <div className="report-prose">
         <ReactMarkdown>{result.final_report}</ReactMarkdown>
       </div>
-    </div>
+
+      {result.sources && result.sources.length > 0 && (
+        <section className="sources-card">
+          <div className="sources-card__title">Primary Research References ({result.sources.length})</div>
+          <div className="sources-grid">
+            {result.sources.map((source, i) => (
+              <a
+                key={i}
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="source-pill"
+              >
+                <div className="source-pill__title">{source.title || "Reference Link"}</div>
+                <div className="source-pill__url">{source.url}</div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+    </article>
   );
 }

@@ -36,7 +36,9 @@ export interface SessionRecord extends ResearchResult {
 }
 
 export interface ProgressEvent {
-  type: "start" | "progress" | "complete" | "error";
+  type: "start" | "progress" | "complete" | "error" | "token";
+  /** Present on "token" events — a fragment of the report as it is written. */
+  text?: string;
   node?: string;
   step?: string;
   data?: { message?: string; [key: string]: unknown };
