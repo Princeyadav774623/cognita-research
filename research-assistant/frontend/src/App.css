@@ -2291,3 +2291,180 @@
     animation: none;
   }
 }
+
+/* ==========================================================================
+   AUTH — sign in, sign up, reset, OAuth
+   ========================================================================== */
+
+.auth-card__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -0.5rem;
+}
+
+.auth-card h1 {
+  font-family: var(--font-sans);
+  font-size: 1.6rem;
+  font-weight: 680;
+  letter-spacing: -0.028em;
+  margin: 0.35rem 0 0.4rem;
+}
+
+.auth-card__subtitle {
+  font-family: var(--font-serif);
+  font-size: 0.98rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Google */
+.auth-google {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.72rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 560;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.auth-google:hover:not(:disabled) {
+  background: var(--bg-card-hover);
+  border-color: var(--border-strong);
+}
+
+.auth-google:disabled { opacity: 0.6; }
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1.15rem 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* Fields */
+.auth-field {
+  text-align: left;
+  margin-bottom: 0.95rem;
+}
+
+.auth-field label,
+.auth-field__label-row label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.auth-field__label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.auth-field__wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.auth-field__wrap input { padding-right: 4rem; }
+
+/* The reveal toggle matters more than it looks: without it, a mistyped
+   password on a phone is invisible and reads as "wrong credentials". */
+.auth-field__peek {
+  position: absolute;
+  right: 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.25rem 0.45rem;
+  border-radius: var(--radius-sm);
+}
+
+.auth-field__peek:hover { color: var(--text-primary); }
+
+.auth-strength {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.auth-strength__track {
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--bg-surface-raised);
+  overflow: hidden;
+}
+
+.auth-strength__fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.auth-strength__fill--0 { width: 8%;   background: var(--danger); }
+.auth-strength__fill--1 { width: 33%;  background: var(--danger); }
+.auth-strength__fill--2 { width: 66%;  background: var(--warning); }
+.auth-strength__fill--3 { width: 100%; background: var(--success); }
+
+.auth-link {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-warm);
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.auth-link:hover { text-decoration: underline; }
+
+.auth-card__btn { margin-top: 0.35rem; }
+
+.auth-card__foot {
+  margin-top: 1.15rem;
+  font-size: 0.87rem;
+  color: var(--text-secondary);
+}
+
+.auth-card__fine {
+  margin-top: 1rem;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.auth-card__info {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--success);
+  background: var(--success-subtle);
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  text-align: left;
+}

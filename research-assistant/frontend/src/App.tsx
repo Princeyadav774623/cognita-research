@@ -18,7 +18,7 @@ import "./App.css";
 type Tab = "research" | "rag";
 
 function App() {
-  const { session, loading, accessToken } = useAuth();
+  const { session, loading, accessToken, recovering } = useAuth();
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("cognita_theme") as "dark" | "light") || "dark";
   });
@@ -45,7 +45,10 @@ function App() {
     );
   }
 
-  if (!session || !accessToken) {
+  // Checked before the session gate: a recovery link leaves Supabase with a
+  // real signed-in session, so gating on `session` alone would drop the
+  // visitor straight into the app instead of "choose a new password".
+  if (recovering || !session || !accessToken) {
     return <AuthScreen theme={theme} onToggleTheme={toggleTheme} />;
   }
 
