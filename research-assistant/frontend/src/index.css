@@ -1,33 +1,160 @@
+/* ==========================================================================
+   COGNITA DESIGN SYSTEM TOKENS & APPLE LIQUID GLASS
+   ========================================================================== */
+
 :root {
-  --bg: #0b0f14;
-  --surface: #131920;
-  --surface-raised: #1a222c;
-  --border: #232d3a;
-  --text: #e8edf2;
-  --text-dim: #8b98a8;
-  --accent: #4f8cff;
-  --accent-dim: #2a3f66;
-  --ok: #3ecf8e;
-  --warn: #e0b84a;
-  --danger: #e05a5a;
+  /* Same relationship inverted: a lift off the near-black ground, kept
+     shallow so the cards do not turn into flat grey slabs. */
+  --bg-card: #1c1b19;
+  --bg-card-hover: #242220;
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 26px -16px rgba(0, 0, 0, 0.7);
+  --card-edge: rgba(255, 255, 255, 0.07);
+  --ink-solid: #f5f3ee;
+  /* Typography */
+  --font-serif: "Newsreader", Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
+
+  /* Default Theme: Cognita Liquid Dark (Warm Obsidian & Iridescent Glass) */
+  --bg-app: #121211;
+  --bg-surface: rgba(29, 28, 26, 0.82);
+  --bg-surface-solid: #1d1c1a;
+  --bg-surface-raised: rgba(38, 37, 35, 0.75);
+  --bg-surface-subtle: rgba(25, 25, 24, 0.65);
+  --bg-surface-hover: rgba(50, 49, 46, 0.85);
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.15);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --glass-border: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
+
+  --text-primary: #faf9f5;
+  --text-secondary: #c2c0b8;
+  --text-muted: #8a8884;
+  --text-inverse: #121211;
+
+  /* Warm Accent */
+  --accent: #d97706;
+  --accent-warm: #d46238;
+  --accent-hover: #e0734c;
+  --accent-subtle: rgba(212, 98, 56, 0.15);
+  --accent-border: rgba(212, 98, 56, 0.4);
+
+  --success: #38a169;
+  --success-subtle: rgba(56, 161, 105, 0.15);
+  --warning: #d97706;
+  --warning-subtle: rgba(217, 119, 6, 0.15);
+  --danger: #e53e3e;
+  --danger-subtle: rgba(229, 62, 62, 0.15);
+
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --glass-glow: 0 0 30px rgba(212, 98, 56, 0.12);
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --radius-pill: 9999px;
+
+  --backdrop-blur: blur(28px) saturate(190%);
+
   color-scheme: dark;
 }
 
-* {
+/* Light Theme: Apple Liquid Cream & Warm Espresso */
+[data-theme="light"] {
+  --bg-app: #f0eee6;
+  /* Editorial cards sit a step ABOVE the ground — near-white on cream, with a
+     soft shadow doing the separating. The previous darker beige (#e7e0d3)
+     read muddy against the page and dulled the accent colour inside it. */
+  --bg-card: #fbfaf7;
+  --bg-card-hover: #ffffff;
+  --card-shadow: 0 1px 2px rgba(60, 50, 38, 0.04), 0 10px 26px -16px rgba(60, 50, 38, 0.22);
+  --card-edge: rgba(60, 50, 38, 0.09);
+  --ink-solid: #141413;
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-surface-solid: #ffffff;
+  --bg-surface-raised: rgba(243, 239, 232, 0.85);
+  --bg-surface-subtle: rgba(248, 246, 240, 0.75);
+  --bg-surface-hover: rgba(235, 230, 220, 0.9);
+
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --border-medium: rgba(0, 0, 0, 0.14);
+  --border-strong: rgba(0, 0, 0, 0.28);
+  --glass-border: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(0, 0, 0, 0.06));
+
+  --text-primary: #141413;
+  --text-secondary: #4d4c48;
+  --text-muted: #7a7874;
+  --text-inverse: #faf9f5;
+
+  --accent: #c15c3d;
+  --accent-warm: #c15c3d;
+  --accent-hover: #b05033;
+  --accent-subtle: rgba(193, 92, 61, 0.12);
+  --accent-border: rgba(193, 92, 61, 0.35);
+
+  --shadow-sm: 0 2px 6px rgba(20, 20, 19, 0.06);
+  --shadow-md: 0 8px 20px rgba(20, 20, 19, 0.08);
+  --shadow-lg: 0 20px 48px rgba(20, 20, 19, 0.12);
+  --glass-glow: 0 0 35px rgba(193, 92, 61, 0.08);
+
+  --backdrop-blur: blur(28px) saturate(180%);
+
+  color-scheme: light;
+}
+
+/* Base Reset */
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 0;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  scroll-behavior: smooth;
+}
+
+/* Apple Liquid Glass Utility */
+.liquid-glass {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-medium);
+  box-shadow: var(--shadow-md), var(--glass-glow);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin: 0;
+  letter-spacing: -0.015em;
+}
+
+p {
+  margin: 0 0 1rem;
 }
 
 button {
-  font-family: inherit;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 button:disabled {
@@ -35,6 +162,51 @@ button:disabled {
   opacity: 0.5;
 }
 
+input, textarea, select {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent-warm);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
 a {
-  color: var(--accent);
+  color: var(--accent-warm);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
 }

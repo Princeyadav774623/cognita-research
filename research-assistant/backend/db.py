@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from urllib.parse import urlsplit, urlunsplit
 from sqlalchemy import create_engine, Column, String, Float, DateTime, JSON, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime, timezone
@@ -33,6 +34,26 @@ if not settings.app_database_url:
     )
 app_engine = create_engine(settings.app_database_url)
 AppSessionLocal = sessionmaker(bind=app_engine, autoflush=False, autocommit=False)
+
+
+def _safe_url(url: str) -> str:
+    """Strip the password out of a connection string before it is logged.
+
+    DATABASE_URL carries the Postgres password inline. Logging it verbatim puts
+    a live credential into stdout, log files, and whatever aggregator collects
+    them in production — where it long outlives any password rotation.
+    """
+    try:
+        parsed = urlsplit(url)
+        if parsed.password:
+            host = parsed.hostname or ""
+            if parsed.port:
+                host = f"{host}:{parsed.port}"
+            netloc = f"{parsed.username}:***@{host}" if parsed.username else f"***@{host}"
+            return urlunsplit((parsed.scheme, netloc, parsed.path, "", ""))
+    except Exception:
+        pass
+    return url
 
 
 @contextmanager
@@ -74,7 +95,7 @@ class ResearchSessionRecord(Base):
 def init_db():
     Base.metadata.create_all(bind=engine)
     _migrate_add_user_id()
-    logger.info(f"[DB] Initialized at {DB_URL}")
+    logger.info(f"[DB] Initialized at {_safe_url(DB_URL)}")
 
 
 def _migrate_add_user_id():

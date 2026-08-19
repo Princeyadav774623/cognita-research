@@ -1,0 +1,6 @@
+{
+  "answer_accuracy": 1.0,
+  "refusal_rate": 1.0,
+  "retrieval_recall": 1.0,
+  "unanswerable_retrieved_something": 1.0
+}

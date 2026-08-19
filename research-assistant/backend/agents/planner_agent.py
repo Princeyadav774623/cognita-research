@@ -1,10 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import List
+import json
+import re
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from config import get_settings
 from graph.state import ResearchState
-from utils import invoke_with_retry
+from utils import invoke_with_retry, clean_llm_response
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,39 +44,54 @@ def planner_agent(state: ResearchState) -> ResearchState:
         temperature=0.2,
     )
 
+    sub_queries = []
+    strategy = "Multi-angle search plan"
+
+    # Attempt 1: Structured LLM output
     try:
-        # Use structured output for deterministic Pydantic validation
         structured_llm = llm.with_structured_output(ResearchPlan)
         messages = [
             SystemMessage(content=PLANNER_SYSTEM_PROMPT),
             HumanMessage(content=f"Decompose this research question into a comprehensive search plan: {query}"),
         ]
         plan = invoke_with_retry(structured_llm, messages)
-        
-        # plan can be ResearchPlan instance or dict depending on parsing
         if isinstance(plan, dict):
-            sub_queries = plan.get("sub_queries", [query])
-            strategy = plan.get("strategy", "Direct search plan")
+            sub_queries = plan.get("sub_queries", [])
+            strategy = plan.get("strategy", strategy)
         elif isinstance(plan, ResearchPlan):
             sub_queries = plan.sub_queries
             strategy = plan.strategy
-        else:
-            sub_queries = [query]
-            strategy = "Direct search plan"
-
-        logger.info(f"[PlannerAgent] Generated {len(sub_queries)} sub-queries: {sub_queries}")
-
-        return {
-            **state,
-            "sub_queries": sub_queries,
-            "research_plan": [strategy],
-            "current_step": "plan_done",
-        }
     except Exception as e:
-        logger.warning(f"[PlannerAgent] Structured planning failed, falling back to direct query: {e}")
-        return {
-            **state,
-            "sub_queries": [query],
-            "research_plan": ["Fallback direct search plan"],
-            "current_step": "plan_done",
-        }
+        logger.debug(f"[PlannerAgent] Structured output fallback: {e}")
+
+    # Attempt 2: Direct JSON prompt parsing
+    if not sub_queries:
+        try:
+            messages = [
+                SystemMessage(content=PLANNER_SYSTEM_PROMPT),
+                HumanMessage(content=f"""Decompose this research question into 3-5 distinct search queries: {query}
+Return ONLY valid JSON format:
+{{"sub_queries": ["query 1", "query 2", "query 3"], "strategy": "explanation"}}"""),
+            ]
+            resp = invoke_with_retry(llm, messages)
+            cleaned = clean_llm_response(resp.content)
+            match = re.search(r"\{.*\}", cleaned, re.DOTALL)
+            if match:
+                data = json.loads(match.group(0))
+                sub_queries = data.get("sub_queries", [])
+                strategy = data.get("strategy", strategy)
+        except Exception as e2:
+            logger.warning(f"[PlannerAgent] JSON planning fallback failed: {e2}")
+
+    if not sub_queries:
+        sub_queries = [query]
+        strategy = "Direct query search"
+
+    logger.info(f"[PlannerAgent] Generated {len(sub_queries)} sub-queries: {sub_queries}")
+
+    return {
+        **state,
+        "sub_queries": sub_queries,
+        "research_plan": [strategy],
+        "current_step": "plan_done",
+    }

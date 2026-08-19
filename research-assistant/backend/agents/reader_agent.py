@@ -43,27 +43,37 @@ def reader_agent(state: ResearchState) -> ResearchState:
         raw_url = result.get("url", "")
         url = normalize_url(raw_url)
         title = result.get("title", "Untitled")
+        fallback_snippet = result.get("content", "")
 
+        text = ""
         try:
             if url.endswith(".pdf"):
                 text = extract_pdf(url)
             else:
                 text = extract_webpage(url)
-
-            text = sanitize_external_text(text)
-            if text and len(text.strip()) > 100:
-                documents.append({
-                    "url": url,
-                    "title": title,
-                    "text": text[:MAX_CHARS],
-                })
-                already_read_urls.add(url)
-                logger.info(f"[ReaderAgent] ✓ Read ({len(text)} chars): {title[:50]}")
-            else:
-                logger.warning(f"[ReaderAgent] ✗ Empty content: {url}")
         except Exception as e:
             logger.warning(f"[ReaderAgent] Failed to read {url}: {e}")
-            continue
+
+        # Fallback to search result content if scraping failed or returned too little
+        used_fallback = False
+        if not text or len(text.strip()) < 100:
+            if fallback_snippet and len(fallback_snippet.strip()) >= 40:
+                text = fallback_snippet
+                used_fallback = True
+
+        text = sanitize_external_text(text)
+        if text and len(text.strip()) >= 40:
+            documents.append({
+                "url": url,
+                "title": title,
+                "text": text[:MAX_CHARS],
+                "via_fallback": used_fallback,
+            })
+            already_read_urls.add(url)
+            tag = " (snippet fallback)" if used_fallback else ""
+            logger.info(f"[ReaderAgent] ✓ Read ({len(text)} chars){tag}: {title[:50]}")
+        else:
+            logger.warning(f"[ReaderAgent] ✗ Empty content: {url}")
 
     logger.info(f"[ReaderAgent] Total accumulated documents: {len(documents)}")
     return {
@@ -96,6 +106,12 @@ async def reader_agent_async(state: ResearchState) -> ResearchState:
     new_documents = [doc for doc in fetched_docs if isinstance(doc, dict) and doc.get("text")]
     combined_docs = existing_docs + new_documents
 
+    fallback_count = sum(1 for d in new_documents if d.get("via_fallback"))
+    if fallback_count:
+        logger.warning(
+            f"[ReaderAgent] {fallback_count}/{len(new_documents)} new source(s) are search "
+            "snippets, not full text — extraction was blocked or failed for these"
+        )
     logger.info(f"[ReaderAgent] Successfully read {len(new_documents)} new documents (Total: {len(combined_docs)})")
     return {
         **state,
@@ -108,6 +124,7 @@ async def fetch_single_source_async(client: httpx.AsyncClient, result: dict) -> 
     raw_url = result.get("url", "")
     url = normalize_url(raw_url)
     title = result.get("title", "Untitled")
+    fallback_snippet = result.get("content", "")
     try:
         if url.endswith(".pdf"):
             resp = await client.get(url)
@@ -124,9 +141,20 @@ async def fetch_single_source_async(client: httpx.AsyncClient, result: dict) -> 
                 "url": url,
                 "title": title,
                 "text": text[:MAX_CHARS],
+                "via_fallback": False,
             }
     except Exception as e:
         logger.warning(f"[ReaderAgent] Async fetch error for {url}: {e}")
+
+    # Fallback to search result content if direct fetch failed
+    if fallback_snippet and len(fallback_snippet.strip()) >= 40:
+        return {
+            "url": url,
+            "title": title,
+            "text": sanitize_external_text(fallback_snippet)[:MAX_CHARS],
+            "via_fallback": True,
+        }
+
     return None
 
 

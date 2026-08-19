@@ -41,15 +41,46 @@ def sanitize_external_text(text: str) -> str:
     return cleaned
 
 
+def clean_llm_response(text: str) -> str:
+    """Strip out reasoning/thinking tags like <think>...</think> if present."""
+    if not text:
+        return ""
+    if "<think>" in text and "</think>" in text:
+        text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    elif "<think>" in text:
+        text = re.sub(r"<think>.*", "", text, flags=re.DOTALL)
+    return text.strip()
+
+
 def invoke_with_retry(llm, messages):
-    """Call llm.invoke() with up to 3 attempts and exponential backoff."""
-    retryer = Retrying(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=1, max=8),
-        retry=retry_if_exception_type(Exception),
-        reraise=True,
-    )
-    for attempt in retryer:
-        with attempt:
-            return llm.invoke(messages)
+    """Call llm.invoke() with retry and automatic fallback across available Groq models if rate-limited."""
+    try:
+        retryer = Retrying(
+            stop=stop_after_attempt(2),
+            wait=wait_exponential(multiplier=0.5, min=0.5, max=2),
+            retry=retry_if_exception_type(Exception),
+            reraise=True,
+        )
+        for attempt in retryer:
+            with attempt:
+                return llm.invoke(messages)
+    except Exception as exc:
+        err_msg = str(exc)
+        if "429" in err_msg or "rate_limit" in err_msg or "model_not_found" in err_msg or "404" in err_msg:
+            fallback_models = ["openai/gpt-oss-120b", "qwen/qwen3.6-27b", "openai/gpt-oss-20b", "allam-2-7b"]
+            from langchain_groq import ChatGroq
+            for fb_model in fallback_models:
+                try:
+                    if hasattr(llm, "model_name") and llm.model_name == fb_model:
+                        continue
+                    fb_llm = ChatGroq(
+                        model=fb_model,
+                        api_key=getattr(llm, "groq_api_key", None),
+                        temperature=getattr(llm, "temperature", 0.3),
+                        max_tokens=getattr(llm, "max_tokens", 1024),
+                    )
+                    return fb_llm.invoke(messages)
+                except Exception:
+                    continue
+        raise exc
 

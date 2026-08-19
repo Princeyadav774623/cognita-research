@@ -175,3 +175,340 @@ class TestChatAgent:
 
         assert "upload one first" in result["answer"]
         assert result["sources"] == []
+
+
+# =============================================
+# Upload endpoint guards
+# =============================================
+
+class TestUploadEndpoint:
+    """The upload route must reject bad input before it reaches ingestion.
+
+    Size in particular is enforced by reading the body in bounded chunks and
+    bailing mid-stream, so an oversized upload is never buffered in full.
+    """
+
+    @staticmethod
+    def _client():
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from api.rag_routes import router
+        from auth import get_current_user_id
+        from rate_limit import limiter
+
+        app = FastAPI()
+        app.state.limiter = limiter
+        app.include_router(router)
+        app.dependency_overrides[get_current_user_id] = lambda: "user-1"
+        return TestClient(app)
+
+    def test_rejects_unsupported_extension_before_ingesting(self):
+        with patch("api.rag_routes.ingest_document") as mock_ingest:
+            res = self._client().post(
+                "/api/rag/upload", files={"file": ("virus.exe", b"MZ\x00", "application/octet-stream")}
+            )
+            assert res.status_code == 400
+            assert "Unsupported file type" in res.json()["detail"]
+            mock_ingest.assert_not_called()
+
+    def test_rejects_oversized_file_without_ingesting(self):
+        from rag.ingest import MAX_FILE_SIZE_BYTES
+
+        oversized = b"x" * (MAX_FILE_SIZE_BYTES + 1024)
+        with patch("api.rag_routes.ingest_document") as mock_ingest:
+            res = self._client().post(
+                "/api/rag/upload", files={"file": ("big.txt", oversized, "text/plain")}
+            )
+            assert res.status_code == 400
+            assert "too large" in res.json()["detail"].lower()
+            mock_ingest.assert_not_called()
+
+    def test_rejects_empty_file(self):
+        with patch("api.rag_routes.ingest_document") as mock_ingest:
+            res = self._client().post(
+                "/api/rag/upload", files={"file": ("empty.txt", b"", "text/plain")}
+            )
+            assert res.status_code == 400
+            mock_ingest.assert_not_called()
+
+    def test_accepts_file_at_the_size_limit(self):
+        from rag.ingest import MAX_FILE_SIZE_BYTES
+
+        at_limit = b"x" * MAX_FILE_SIZE_BYTES
+        with patch("api.rag_routes.ingest_document") as mock_ingest:
+            mock_ingest.return_value = {"status": "ready", "id": "doc-1", "filename": "ok.txt"}
+            res = self._client().post(
+                "/api/rag/upload", files={"file": ("ok.txt", at_limit, "text/plain")}
+            )
+            assert res.status_code == 200
+            # the full body was passed through intact, not truncated by chunking
+            assert len(mock_ingest.call_args[0][2]) == MAX_FILE_SIZE_BYTES
+
+    def test_surfaces_ingest_failure_as_422(self):
+        with patch("api.rag_routes.ingest_document") as mock_ingest:
+            mock_ingest.return_value = {"status": "error", "error": "No extractable text found"}
+            res = self._client().post(
+                "/api/rag/upload", files={"file": ("scan.pdf", b"%PDF-1.4 junk", "application/pdf")}
+            )
+            assert res.status_code == 422
+            assert "No extractable text" in res.json()["detail"]
+
+
+# =============================================
+# Agentic retrieval loop
+# =============================================
+
+class TestAgenticRetrieval:
+    """The loop must be able to reconsider: resolve follow-up phrasing, judge
+    whether what it found actually answers the question, and rewrite its own
+    query once before giving up."""
+
+    @staticmethod
+    def _chunk(sim, content="text", idx=0):
+        return {"content": content, "filename": "d.txt", "chunk_index": idx, "similarity": sim}
+
+    @patch("rag.chat_agent._fast_llm")
+    @patch("rag.chat_agent.retrieve_relevant_chunks")
+    def test_strong_match_short_circuits_without_grading(self, mock_retrieve, mock_llm):
+        from rag.chat_agent import agentic_retrieve, STRONG_MATCH_SIMILARITY
+
+        mock_retrieve.return_value = [self._chunk(STRONG_MATCH_SIMILARITY + 0.05)]
+        chunks, _, trace = agentic_retrieve("u", "q", [], top_k=4, similarity_threshold=0.55)
+
+        assert len(chunks) == 1
+        assert trace[-1]["verdict"].startswith("strong match")
+        # A confident cosine hit must not cost an LLM call.
+        mock_llm.return_value.with_structured_output.assert_not_called()
+        assert mock_retrieve.call_count == 1
+
+    @patch("rag.chat_agent._grade_retrieval")
+    @patch("rag.chat_agent._one_line")
+    @patch("rag.chat_agent._fast_llm")
+    @patch("rag.chat_agent.retrieve_relevant_chunks")
+    def test_rewrites_and_retries_when_first_attempt_is_insufficient(
+        self, mock_retrieve, _mock_llm, mock_one_line, mock_grade
+    ):
+        from rag.chat_agent import agentic_retrieve
+
+        mock_retrieve.side_effect = [[self._chunk(0.60)], [self._chunk(0.62)]]
+        mock_grade.side_effect = [(False, "missing the specifics"), (True, "")]
+        mock_one_line.return_value = "a better query"
+
+        chunks, _, trace = agentic_retrieve("u", "q", [], top_k=4, similarity_threshold=0.55)
+
+        assert mock_retrieve.call_count == 2
+        assert any(t["step"] == "rewrite" and t["query"] == "a better query" for t in trace)
+        assert len(chunks) == 1
+
+    @patch("rag.chat_agent._grade_retrieval")
+    @patch("rag.chat_agent._one_line")
+    @patch("rag.chat_agent._fast_llm")
+    @patch("rag.chat_agent.retrieve_relevant_chunks")
+    def test_reports_best_effort_rather_than_giving_up_when_chunks_exist(
+        self, mock_retrieve, _mock_llm, mock_one_line, mock_grade
+    ):
+        """Telemetry must not claim it gave up while an answer is produced from
+        the chunks it did find — the trace has to match what actually happened."""
+        from rag.chat_agent import agentic_retrieve
+
+        mock_retrieve.side_effect = [[self._chunk(0.60)], [self._chunk(0.61)]]
+        mock_grade.return_value = (False, "still thin")
+        mock_one_line.return_value = "another phrasing"
+
+        chunks, _, trace = agentic_retrieve("u", "q", [], top_k=4, similarity_threshold=0.55)
+
+        assert chunks, "best-effort chunks should still be returned"
+        assert trace[-1]["step"] == "best_effort"
+        assert not any(t["step"] == "give_up" for t in trace)
+
+    @patch("rag.chat_agent._grade_retrieval")
+    @patch("rag.chat_agent._one_line")
+    @patch("rag.chat_agent._fast_llm")
+    @patch("rag.chat_agent.retrieve_relevant_chunks")
+    def test_gives_up_only_when_nothing_was_found(
+        self, mock_retrieve, _mock_llm, mock_one_line, mock_grade
+    ):
+        from rag.chat_agent import agentic_retrieve
+
+        mock_retrieve.return_value = []
+        mock_grade.return_value = (False, "nothing retrieved")
+        mock_one_line.return_value = "reworded"
+
+        chunks, _, trace = agentic_retrieve("u", "q", [], top_k=4, similarity_threshold=0.55)
+
+        assert chunks == []
+        assert trace[-1]["step"] == "give_up"
+
+    @patch("rag.chat_agent._grade_retrieval")
+    @patch("rag.chat_agent._one_line")
+    @patch("rag.chat_agent._fast_llm")
+    @patch("rag.chat_agent.retrieve_relevant_chunks")
+    def test_contextualises_follow_up_against_history(
+        self, mock_retrieve, _mock_llm, mock_one_line, mock_grade
+    ):
+        """A pronoun-laden follow-up has to become a standalone query before it
+        is embedded, or the vector search is looking for 'it'."""
+        from rag.chat_agent import agentic_retrieve
+
+        mock_retrieve.return_value = [self._chunk(0.62)]
+        mock_grade.return_value = (True, "")
+        mock_one_line.return_value = "How long does a rollback take?"
+
+        history = [MagicMock(role="user", content="What days do releases ship?"),
+                   MagicMock(role="assistant", content="Tuesdays and Thursdays.")]
+        _, _, trace = agentic_retrieve("u", "how long to undo one?", history, 4, 0.55)
+
+        assert trace[0]["step"] == "contextualize"
+        assert trace[0]["query"] == "How long does a rollback take?"
+        # the rewritten query, not the pronoun version, is what gets embedded
+        assert mock_retrieve.call_args[0][1] == "How long does a rollback take?"
+
+
+# =============================================
+# Corpus agent — the user's documents as a research source
+# =============================================
+
+class TestCorpusAgent:
+    """The research graph must be able to cite the user's own uploads, and must
+    never reach into the corpus without a tenant to scope the search to."""
+
+    @staticmethod
+    def _state(**kw):
+        base = {"query": "q", "session_id": "s", "user_id": "user-1",
+                "sub_queries": ["q"], "source_documents": []}
+        base.update(kw)
+        return base
+
+    @patch("agents.corpus_agent.retrieve_relevant_chunks")
+    def test_skips_entirely_without_a_user_id(self, mock_retrieve):
+        from agents.corpus_agent import corpus_agent
+        result = corpus_agent(self._state(user_id=None))
+        assert result["source_documents"] == []
+        # Never query the corpus with no tenant — that is the isolation boundary.
+        mock_retrieve.assert_not_called()
+
+    @patch("agents.corpus_agent.retrieve_relevant_chunks")
+    def test_adds_matching_documents_as_sources(self, mock_retrieve):
+        from agents.corpus_agent import corpus_agent
+        mock_retrieve.return_value = [
+            {"content": "second passage", "filename": "notes.pdf", "chunk_index": 4, "similarity": 0.81},
+            {"content": "first passage", "filename": "notes.pdf", "chunk_index": 1, "similarity": 0.72},
+        ]
+        result = corpus_agent(self._state())
+
+        docs = result["source_documents"]
+        assert len(docs) == 1, "passages from one file collapse into one document"
+        assert docs[0]["origin"] == "corpus"
+        assert docs[0]["url"] == "upload://notes.pdf"
+        # Passages are stitched back into reading order, not retrieval order.
+        assert docs[0]["text"].index("first passage") < docs[0]["text"].index("second passage")
+
+    @patch("agents.corpus_agent.retrieve_relevant_chunks")
+    def test_drops_weak_matches(self, mock_retrieve):
+        from agents.corpus_agent import corpus_agent
+        from agents.corpus_agent import MIN_SIMILARITY
+        mock_retrieve.return_value = [
+            {"content": "barely related", "filename": "x.txt", "chunk_index": 0,
+             "similarity": MIN_SIMILARITY - 0.05},
+        ]
+        result = corpus_agent(self._state())
+        assert result["source_documents"] == []
+
+    @patch("agents.corpus_agent.retrieve_relevant_chunks")
+    def test_preserves_web_documents_already_gathered(self, mock_retrieve):
+        from agents.corpus_agent import corpus_agent
+        mock_retrieve.return_value = [
+            {"content": "mine", "filename": "d.txt", "chunk_index": 0, "similarity": 0.9},
+        ]
+        web = {"url": "https://a.com", "title": "A", "text": "web text", "origin": "web"}
+        result = corpus_agent(self._state(source_documents=[web]))
+
+        origins = [d.get("origin") for d in result["source_documents"]]
+        assert origins == ["web", "corpus"], "corpus must append, not replace"
+
+    @patch("agents.corpus_agent.retrieve_relevant_chunks")
+    def test_survives_a_retrieval_failure(self, mock_retrieve):
+        from agents.corpus_agent import corpus_agent
+        mock_retrieve.side_effect = RuntimeError("pgvector unavailable")
+        result = corpus_agent(self._state())
+        # A corpus outage must not take the whole research run down with it.
+        assert result["current_step"] == "corpus_done"
+        assert result["source_documents"] == []
+
+
+class TestAnalystCorpusPriority:
+    """A document the user uploaded must reach the analyst even when web search
+    returned far more material than fits in the context window."""
+
+    @staticmethod
+    def _doc(title, origin, text):
+        return {"title": title, "url": f"{origin}://{title}", "text": text, "origin": origin}
+
+    def test_corpus_chunks_survive_a_flood_of_web_documents(self):
+        from agents.analyst_agent import build_context, TOP_K_CHUNKS
+
+        # Far more web material than can fit, with the corpus doc appended last
+        # exactly as the graph appends it.
+        web = [self._doc(f"page{i}", "web", "web filler " * 300) for i in range(40)]
+        corpus = [self._doc("mine.txt", "corpus", "SENTINEL the private benchmark figure is 3.1 percent")]
+
+        context = build_context("what was the benchmark figure?", web + corpus)
+
+        assert "SENTINEL" in context, "the user's own document was crowded out of the context"
+
+    def test_corpus_leads_the_context(self):
+        from agents.analyst_agent import build_context
+
+        web = [self._doc(f"page{i}", "web", "web filler " * 300) for i in range(20)]
+        corpus = [self._doc("mine.txt", "corpus", "SENTINEL private content")]
+
+        context = build_context("q", web + corpus)
+        assert context.index("SENTINEL") < context.index("page0"), \
+            "corpus material should be read before web material"
+
+    def test_web_only_research_is_unaffected(self):
+        from agents.analyst_agent import build_context, TOP_K_CHUNKS
+
+        web = [self._doc(f"page{i}", "web", f"content{i} " * 200) for i in range(30)]
+        context = build_context("q", web)
+        assert context.count("--- Source") == TOP_K_CHUNKS
+
+
+class TestEvalGrader:
+    """The eval harness itself needs to be correct, or it manufactures failures
+    and gets ignored."""
+
+    def test_matches_through_typographic_whitespace(self):
+        from evals.run import normalize
+        # What the model actually emits: U+202F narrow no-break space.
+        assert "8 minutes" in normalize("The window is **8 minutes** long.")
+
+    def test_matches_through_non_breaking_hyphen(self):
+        from evals.run import normalize
+        assert "ops-handbook" in normalize("(source: ops‑handbook.txt)")
+
+    def test_still_rejects_a_genuinely_wrong_answer(self):
+        from evals.run import normalize
+        assert "8 minutes" not in normalize("The window is 12 minutes long.")
+
+
+class TestCredentialRedaction:
+    """DATABASE_URL carries a live Postgres password. It must never reach a log
+    line, where it outlives any rotation."""
+
+    def test_password_is_stripped_from_logged_url(self):
+        from db import _safe_url
+        out = _safe_url("postgresql://postgres.abc:s3cr3t+p%40ss@db.example.com:6543/postgres")
+        assert "s3cr3t" not in out
+        assert "***" in out
+        # host, port, user and database still identify the connection
+        assert "db.example.com:6543" in out and "postgres.abc" in out
+
+    def test_url_without_a_password_is_untouched(self):
+        from db import _safe_url
+        url = "postgresql://localhost:5432/postgres"
+        assert _safe_url(url) == url
+
+    def test_malformed_url_does_not_raise(self):
+        from db import _safe_url
+        assert _safe_url("not a url") == "not a url"

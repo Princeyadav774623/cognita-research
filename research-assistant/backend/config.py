@@ -45,9 +45,14 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_id: str = ""
 
-    # Groq model selection
-    groq_model_fast: str = "llama-3.1-8b-instant"          # fast, for simple tasks
-    groq_model_smart: str = "llama-3.3-70b-versatile"       # smart, for reasoning
+    # Groq model selection.
+    # These must stay different. Pointing both at the 120B model means the
+    # planner, query-rephrase and gap-analysis nodes — which only emit small
+    # structured JSON — burn the same scarce tokens-per-minute budget as the
+    # analyst and report nodes that actually need the reasoning. On a
+    # rate-limited account that budget is the binding constraint on latency.
+    groq_model_fast: str = "openai/gpt-oss-20b"    # structural JSON tasks
+    groq_model_smart: str = "openai/gpt-oss-120b"  # synthesis and verification
 
     # env_file is resolved relative to the process's working directory, which
     # is backend/ for both `uvicorn api.main:app` and `pytest` as documented

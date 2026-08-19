@@ -102,6 +102,8 @@ class TestReaderAgent:
         assert len(result["source_documents"]) == 1
         assert result["source_documents"][0]["title"] == "Test Article"
         assert result["current_step"] == "read_done"
+        # A real extraction, not a snippet — must be recorded as such.
+        assert result["source_documents"][0]["via_fallback"] is False
 
     @patch("agents.reader_agent.requests.get")
     def test_skips_failed_urls(self, mock_get):
@@ -118,6 +120,27 @@ class TestReaderAgent:
 
         assert result["source_documents"] == []
         assert result["current_step"] == "read_done"
+
+    @patch("agents.reader_agent.requests.get")
+    def test_marks_snippet_fallback_when_extraction_fails(self, mock_get):
+        """A blocked page (403, paywall) must not look identical to a fully
+        read one — that's the silent quality regression this field exists to
+        catch."""
+        from agents.reader_agent import reader_agent
+
+        mock_get.side_effect = Exception("403 Forbidden")
+
+        snippet = "A search-engine snippet long enough to pass the floor. " * 2
+        state = make_state(
+            search_results=[
+                {"url": "https://blocked.com", "title": "Blocked", "content": snippet, "score": 0.5}
+            ]
+        )
+        result = reader_agent(state)
+
+        assert len(result["source_documents"]) == 1
+        assert result["source_documents"][0]["via_fallback"] is True
+        assert result["source_documents"][0]["text"].strip() == snippet.strip()
 
 
 # =============================================
@@ -150,6 +173,52 @@ class TestReportAgent:
         assert get_confidence_label(0.7) == "Moderate Confidence"
         assert get_confidence_label(0.5) == "Low Confidence"
         assert get_confidence_label(0.2) == "Uncertain"
+
+    @patch("agents.report_agent.ChatGroq")
+    def test_footer_discloses_snippet_only_sources(self, mock_groq_class):
+        """A source that couldn't be scraped silently degrades to a two-sentence
+        search snippet. The footer must say so rather than reporting a plain
+        source count indistinguishable from a fully-read paper."""
+        from agents.report_agent import report_agent
+
+        mock_llm = MagicMock()
+        mock_llm.with_config.return_value.invoke.return_value = MagicMock(
+            content="# Research Report\n\nBody."
+        )
+        mock_groq_class.return_value = mock_llm
+
+        state = make_state(
+            draft_answer="Some finding.",
+            source_documents=[
+                {"title": "Full paper", "url": "https://a.com", "text": "t", "via_fallback": False},
+                {"title": "Blocked page", "url": "https://b.com", "text": "t", "via_fallback": True},
+                {"title": "Untracked (corpus)", "url": "upload://c", "text": "t"},
+            ],
+        )
+        result = report_agent(state)
+
+        assert "Full text extracted: 1/2 web sources" in result["final_report"]
+
+    @patch("agents.report_agent.ChatGroq")
+    def test_footer_omits_fallback_note_when_nothing_tracked(self, mock_groq_class):
+        """No noise on runs where fallback tracking never applies (e.g. a
+        corpus-only research pass with no scraped web sources)."""
+        from agents.report_agent import report_agent
+
+        mock_llm = MagicMock()
+        mock_llm.with_config.return_value.invoke.return_value = MagicMock(
+            content="# Research Report\n\nBody."
+        )
+        mock_groq_class.return_value = mock_llm
+
+        state = make_state(
+            draft_answer="Some finding.",
+            source_documents=[{"title": "Corpus doc", "url": "upload://c", "text": "t"}],
+        )
+        result = report_agent(state)
+
+        assert "Full text extracted" not in result["final_report"]
+        assert "Sources analyzed: 1" in result["final_report"]
 
 
 # =============================================
@@ -238,10 +307,13 @@ class TestFactCheckAgent:
         from agents.factcheck_agent import factcheck_agent
 
         mock_llm = MagicMock()
-        # First call: extract_claims, subsequent calls: verify_claim (one per claim)
+        # Two calls total now, not one-per-claim: extract_claims, then a single
+        # batched verification carrying every verdict keyed by claim_index.
         mock_llm.invoke.side_effect = [
-            MagicMock(content='["AI is transforming research"]'),
-            MagicMock(content='{"verified": true, "confidence": 0.9, "source": "example.com"}'),
+            MagicMock(content='["AI is transforming research", "Models are larger"]'),
+            MagicMock(content='{"verdicts": ['
+                              '{"claim_index": 0, "verified": true, "confidence": 0.9, "source": "example.com"},'
+                              '{"claim_index": 1, "verified": false, "confidence": 0.1, "source": "none"}]}'),
         ]
         mock_groq_class.return_value = mock_llm
 
@@ -251,10 +323,39 @@ class TestFactCheckAgent:
         )
         result = factcheck_agent(state)
 
-        assert len(result["verified_claims"]) == 1
-        assert result["verified_claims"][0]["verified"] is True
-        assert result["overall_confidence"] == 0.9
+        assert len(result["verified_claims"]) == 2
+        by_claim = {c["claim"]: c for c in result["verified_claims"]}
+        assert by_claim["AI is transforming research"]["verified"] is True
+        assert by_claim["Models are larger"]["verified"] is False
+        assert result["overall_confidence"] == 0.5   # (0.9 + 0.1) / 2
         assert result["current_step"] == "factcheck_done"
+        # The whole point of the change: evidence is sent once, not per claim.
+        assert mock_llm.invoke.call_count == 2
+
+    @patch("agents.factcheck_agent.ChatGroq")
+    def test_reuses_verdicts_from_previous_pass(self, mock_groq_class):
+        """The reflective loop must not re-verify claims it already settled."""
+        from agents.factcheck_agent import factcheck_agent
+
+        mock_llm = MagicMock()
+        mock_llm.invoke.side_effect = [
+            MagicMock(content='["Already checked"]'),   # extract_claims
+        ]
+        mock_groq_class.return_value = mock_llm
+
+        state = make_state(
+            draft_answer="Already checked.",
+            source_documents=[{"title": "T", "url": "https://e.com", "text": "c"}],
+        )
+        state["verified_claims"] = [
+            {"claim": "Already checked", "verified": True, "confidence": 0.8, "source": "e.com"}
+        ]
+        result = factcheck_agent(state)
+
+        assert len(result["verified_claims"]) == 1
+        assert result["verified_claims"][0]["confidence"] == 0.8
+        # extract_claims only — no verification call, because nothing was pending.
+        assert mock_llm.invoke.call_count == 1
 
     @patch("agents.factcheck_agent.ChatGroq")
     def test_handles_malformed_claim_json(self, mock_groq_class):

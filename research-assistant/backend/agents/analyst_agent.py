@@ -4,7 +4,7 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.documents import Document
 from config import get_settings
 from graph.state import ResearchState
-from utils import invoke_with_retry
+from utils import invoke_with_retry, clean_llm_response
 import logging
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ Please provide a comprehensive, well-structured answer based on these sources.
 
     try:
         response = invoke_with_retry(llm, messages)
-        draft = response.content.strip()
+        draft = clean_llm_response(response.content)
         logger.info("[AnalystAgent] Draft answer generated successfully")
 
         return {
@@ -99,34 +99,66 @@ def chunk_documents(documents: list) -> list[Document]:
             if piece:
                 chunks.append(Document(
                     page_content=piece,
-                    metadata={"title": doc["title"], "url": doc["url"]},
+                    metadata={
+                        "title": doc["title"],
+                        "url": doc["url"],
+                        "origin": doc.get("origin", "web"),
+                    },
                 ))
     return chunks
+
+
+# Slots held for the user's own uploaded documents. Without a floor they lose
+# every time: web search returns dozens of pages, corpus documents are appended
+# last, and the unreranked path simply takes the first TOP_K_CHUNKS — so a
+# document the user deliberately uploaded would never reach the analyst.
+RESERVED_CORPUS_CHUNKS = 4
 
 
 def build_context(query: str, documents: list) -> str:
     """Rank all source chunks by relevance to the query with Cohere rerank
     and keep only the top-K, so the analyst sees the most relevant material
-    instead of the first N characters of each source."""
-    chunks = chunk_documents(documents)
+    instead of the first N characters of each source.
 
-    if not chunks:
+    Chunks from the user's own corpus are ranked separately and guaranteed a
+    share of the context: they were chosen deliberately, so they should not
+    have to out-compete forty scraped pages for a place."""
+    all_chunks = chunk_documents(documents)
+
+    if not all_chunks:
         return "No content available."
 
+    corpus_chunks = [c for c in all_chunks if c.metadata.get("origin") == "corpus"]
+    web_chunks = [c for c in all_chunks if c.metadata.get("origin") != "corpus"]
+
+    kept_corpus = corpus_chunks[:RESERVED_CORPUS_CHUNKS]
+    web_budget = max(TOP_K_CHUNKS - len(kept_corpus), 1)
+
+    chunks = web_chunks
+    TOP_K = web_budget
     ranked_chunks = chunks
-    if len(chunks) > TOP_K_CHUNKS and settings.cohere_api_key:
+    if len(chunks) > TOP_K and settings.cohere_api_key:
         try:
             reranker = CohereRerank(
                 cohere_api_key=settings.cohere_api_key,
                 model="rerank-english-v3.0",
-                top_n=TOP_K_CHUNKS,
+                top_n=TOP_K,
             )
             ranked_chunks = reranker.compress_documents(documents=chunks, query=query)
         except Exception as e:
-            logger.warning(f"[AnalystAgent] Cohere rerank failed, using first {TOP_K_CHUNKS} chunks: {e}")
-            ranked_chunks = chunks[:TOP_K_CHUNKS]
+            logger.warning(f"[AnalystAgent] Cohere rerank failed, using first {TOP_K} chunks: {e}")
+            ranked_chunks = chunks[:TOP_K]
     else:
-        ranked_chunks = chunks[:TOP_K_CHUNKS]
+        ranked_chunks = chunks[:TOP_K]
+
+    # The user's documents lead the context, so they are the first thing the
+    # analyst reads rather than a footnote after forty web pages.
+    ranked_chunks = kept_corpus + list(ranked_chunks)
+    if kept_corpus:
+        logger.info(
+            f"[AnalystAgent] Context: {len(kept_corpus)} chunk(s) from the user's documents "
+            f"+ {len(ranked_chunks) - len(kept_corpus)} from the web"
+        )
 
     parts = []
     for i, chunk in enumerate(ranked_chunks, 1):

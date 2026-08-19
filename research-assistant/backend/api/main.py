@@ -21,6 +21,7 @@ from graph.research_graph import run_research, stream_research
 from db import init_db, save_session, get_session, list_sessions, delete_session, delete_user_data
 from billing import consume_quota, refund_quota, init_billing_db, QuotaExceededError
 from rag.store import init_rag_db, delete_all_user_rag_data
+from rag.embeddings import embed_query
 from api.rag_routes import router as rag_router
 from api.billing_routes import router as billing_router
 
@@ -35,6 +36,17 @@ async def lifespan(app: FastAPI):
     init_db()
     init_billing_db()
     init_rag_db()
+    # fastembed loads its ONNX weights lazily on first use — measured 2.2s
+    # cold vs 2ms warm. Left alone, whichever user happens to send the first
+    # RAG chat message after a deploy pays that latency. Warming it here means
+    # it's paid once, at startup, by nobody in particular. A failure here
+    # (e.g. the model can't be fetched) is logged but doesn't block the rest
+    # of the app — Deep Research and auth don't depend on it.
+    try:
+        embed_query("warmup")
+        logger.info("[Startup] Embedding model warmed")
+    except Exception as e:
+        logger.error(f"[Startup] Failed to warm embedding model: {e}")
     yield
 
 
@@ -138,7 +150,7 @@ async def research(request: Request, body: ResearchRequest, user_id: str = Depen
     )
 
     try:
-        final_state = await run_research(query, session_id)
+        final_state = await run_research(query, session_id, user_id=user_id)
         save_session(session_id, user_id, query, final_state)
 
         logger.info(
@@ -299,7 +311,17 @@ async def research_websocket(websocket: WebSocket):
         # Stream each agent's progress, accumulating the full state so we
         # can persist the completed session once streaming finishes.
         accumulated_state: dict = {}
-        async for event in stream_research(query, session_id):
+        async for event in stream_research(query, session_id, user_id=user_id):
+            # Token events carry generated text, not a state update — forward
+            # them straight through so the client can render as it arrives.
+            if event.get("type") == "token":
+                await websocket.send_json({
+                    "type": "token",
+                    "node": event["node"],
+                    "text": event["text"],
+                })
+                continue
+
             accumulated_state.update(event.get("state", {}))
             await websocket.send_json({
                 "type": "progress",
