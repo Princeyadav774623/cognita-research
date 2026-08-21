@@ -244,6 +244,10 @@ async def research_websocket(websocket: WebSocket):
     # Tracked so a mid-pipeline failure can hand the reserved query back.
     user_id: str | None = None
     quota_consumed = False
+    # Set once the report is saved and retrievable from history. After that
+    # point the user has had what they paid for, so a failure while sending
+    # the completion frame or closing the socket must not trigger a refund.
+    research_completed = False
 
     try:
         # Receive the query from client, bounded so a silent connection
@@ -331,6 +335,7 @@ async def research_websocket(websocket: WebSocket):
             })
 
         save_session(session_id, user_id, query, accumulated_state)
+        research_completed = True
 
         # Send completion signal, then close from the server side so the
         # client isn't racing us to close the same connection.
@@ -341,10 +346,17 @@ async def research_websocket(websocket: WebSocket):
         await websocket.close(code=1000)
 
     except WebSocketDisconnect:
+        # A disconnect before the report was saved means the user has nothing
+        # to show for the query they were charged — the same situation as the
+        # failure path below, so it gets the same refund. Dropped connections
+        # are routine, not exceptional: any host that idles instances out or
+        # restarts them mid-pipeline produces this.
+        if quota_consumed and user_id and not research_completed:
+            refund_quota(user_id)
         logger.info("[WebSocket] Client disconnected")
     except Exception as e:
         # Don't bill the user for our own failure.
-        if quota_consumed and user_id:
+        if quota_consumed and user_id and not research_completed:
             refund_quota(user_id)
         logger.error(f"[WebSocket] Error: {e}")
         try:

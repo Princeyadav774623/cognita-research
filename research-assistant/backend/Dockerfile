@@ -23,6 +23,23 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source
 COPY . .
 
+# Bake the embedding weights into the image.
+#
+# fastembed fetches ~130MB of ONNX weights from HuggingFace the first time a
+# model is instantiated. Left to runtime, that download runs inside every new
+# container — and on a host with an ephemeral filesystem (Render's free tier,
+# for one) "every new container" means every cold start, since nothing
+# survives a spin-down. Warming it here moves the download into the image
+# build so startup is a local file read instead of a network round trip.
+#
+# The cache path is pinned rather than left at its default: fastembed falls
+# back to tempfile.gettempdir(), and a host that mounts tmpfs over /tmp would
+# shadow the baked-in files and silently re-download them. /app is always the
+# image's own filesystem. api.main warms the same model on startup, so this
+# stays a fast no-op there.
+ENV FASTEMBED_CACHE_PATH=/app/.fastembed_cache
+RUN python -c "from rag.embeddings import embed_query; embed_query('warmup')"
+
 # Expose port
 EXPOSE 8000
 
