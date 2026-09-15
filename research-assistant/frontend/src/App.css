@@ -3214,3 +3214,39 @@ textarea.query-box__input {
 }
 
 @media print { .mode-switch { display: none !important; } }
+
+/* The two tools as the way into the app, on the home page. */
+.tools-section {
+  margin: var(--space-7) 0 var(--space-8);
+}
+
+.mode-switch--entry {
+  margin: 0;
+}
+
+.mode-switch--entry .mode-card {
+  padding: var(--space-5);
+  background: var(--bg-card);
+  border-color: var(--card-edge);
+  box-shadow: var(--card-shadow);
+}
+
+.mode-switch--entry .mode-card:hover {
+  border-color: var(--accent-border);
+}
+
+.mode-switch--entry .mode-card__icon {
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  color: var(--accent-warm);
+}
+
+/* Points right: these open something rather than toggling it. */
+.mode-card__go {
+  margin-left: auto;
+  color: var(--text-muted);
+  transform: rotate(-90deg);
+  flex-shrink: 0;
+}
+
+.mode-switch--entry .mode-card:hover .mode-card__go { color: var(--accent-warm); }

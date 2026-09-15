@@ -25,6 +25,7 @@ interface Props {
   openFaq: number | null;
   onToggleFaq: (index: number | null) => void;
   onUpgrade: () => void;
+  /** Kept so the pricing card's "current plan" button can return home. */
   onBackToApp: () => void;
   freeQueriesPerMonth: number;
   faqs: { q: string; a: string }[];
@@ -48,10 +49,6 @@ export function MarketingPage({
 
   return (
     <>
-      <button type="button" className="marketing-back" onClick={onBackToApp}>
-        <Icon name="chevron" size={15} style={{ transform: "rotate(90deg)" }} /> Back to research
-      </button>
-
         <section className="bleed showcase" data-reveal>
           <div className="showcase__eyebrow">The pipeline</div>
           <h2 className="showcase__title">Every claim traced back to its source.</h2>

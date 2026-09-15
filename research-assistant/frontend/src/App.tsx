@@ -5,7 +5,7 @@ import { AgentStatusStream } from "./components/AgentStatusStream";
 import { ReportView } from "./components/ReportView";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { AuthScreen } from "./components/AuthScreen";
-import { MarketingPage, MARKETING_ROUTES, type MarketingRoute } from "./components/MarketingPage";
+import { MarketingPage } from "./components/MarketingPage";
 import { Markdown } from "./components/Markdown";
 import { RagSection } from "./RagSection";
 import { Icon } from "./components/Icon";
@@ -89,12 +89,21 @@ const FAQS = [
   },
 ];
 
-/** The hash is the route. Keeping the existing #architecture-style anchors
- *  means every link that used to scroll within one long page still works as a
- *  deep link, without pulling in a router for four static sections. */
-function marketingRouteFromHash(): MarketingRoute | null {
-  const hash = window.location.hash.replace(/^#/, "");
-  return (MARKETING_ROUTES as readonly string[]).includes(hash) ? (hash as MarketingRoute) : null;
+/** The hash is the route.
+ *
+ * Home is the site: hero, the two tools, architecture, benchmarks, pricing and
+ * the FAQ. Picking a tool opens it as its own page so there is nothing else on
+ * screen while you work, and "Back to home" returns to the full site.
+ *
+ * Deep links into a marketing section (#pricing) still resolve to home and
+ * scroll there, so every link that ever worked still does.
+ */
+type Route = "home" | "research" | "files";
+
+const TOOL_ROUTES: Record<string, Route> = { research: "research", files: "files" };
+
+function routeFromHash(): Route {
+  return TOOL_ROUTES[window.location.hash.replace(/^#/, "")] ?? "home";
 }
 
 function AuthenticatedApp({
@@ -115,22 +124,38 @@ function AuthenticatedApp({
   const [historyKey, setHistoryKey] = useState(0);
   const [viewingHistorical, setViewingHistorical] = useState<SessionRecord | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [marketingRoute, setMarketingRoute] = useState<MarketingRoute | null>(marketingRouteFromHash);
+  const [route, setRoute] = useState<Route>(routeFromHash);
 
   useEffect(() => {
     const onHashChange = () => {
-      setMarketingRoute(marketingRouteFromHash());
-      window.scrollTo({ top: 0, behavior: "instant" });
+      const next = routeFromHash();
+      setRoute(next);
+      if (next !== "home") {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        return;
+      }
+      // A marketing anchor lands on home; scroll to the section once it has
+      // rendered, since it does not exist until home mounts.
+      const anchor = window.location.hash.replace(/^#/, "");
+      if (anchor) {
+        requestAnimationFrame(() =>
+          document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" })
+        );
+      }
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const backToApp = useCallback(() => {
-    // Clearing the hash without pushing a new entry, so Back returns to
-    // wherever the reader came from rather than toggling the route.
+  const openTool = useCallback((tool: "research" | "files") => {
+    window.location.hash = tool;
+  }, []);
+
+  const backToHome = useCallback(() => {
+    // replaceState rather than a new entry, so the browser's Back button goes
+    // where the reader came from instead of toggling between the two.
     history.replaceState(null, "", window.location.pathname + window.location.search);
-    setMarketingRoute(null);
+    setRoute("home");
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
@@ -139,7 +164,7 @@ function AuthenticatedApp({
   const [stopNotice, setStopNotice] = useState<string | null>(null);
 
   // Re-observes when the marketing route mounts its own sections.
-  useReveal(marketingRoute);
+  useReveal(route);
 
   // Live plan state, so the pricing card shows what this account actually
   // has left rather than a static marketing number.
@@ -271,59 +296,64 @@ function AuthenticatedApp({
 
       </header>
 
-      {marketingRoute && (
-        <MarketingPage
-          theme={theme}
-          quota={quota}
-          upgrading={upgrading}
-          billingNote={billingNote}
-          openFaq={openFaq}
-          onToggleFaq={setOpenFaq}
-          onUpgrade={handleUpgrade}
-          onBackToApp={backToApp}
-          freeQueriesPerMonth={FREE_QUERIES_PER_MONTH}
-          faqs={FAQS}
-        />
+      {route === "home" && (
+        <>
+          <section className="hero">
+            <h1 className="hero__headline">
+              Research that shows <em>its working</em>.
+            </h1>
+            <p className="hero__description">
+              Five agents search, read, and check every claim against its source.
+            </p>
+
+            {/* No data-reveal: this is above the fold, so gating it on a
+                scroll observer leaves the page's main visual blank at rest. */}
+            <figure className="hero__plate" data-revealed="true">
+              <img
+                src={theme === "dark" ? "/visual-network-dark.png" : "/visual-network.png"}
+                alt="Ink diagram of connected research nodes tracing overlapping orbital paths"
+                loading="eager"
+                width={1376}
+                height={768}
+              />
+            </figure>
+          </section>
+
+          {/* The two tools, as the way into the app. */}
+          <section className="tools-section" id="tools">
+            <ModeSwitcher mode={tab} onChange={(m) => { setTab(m); openTool(m === "rag" ? "files" : "research"); }} asEntry />
+          </section>
+
+          <MarketingPage
+            theme={theme}
+            quota={quota}
+            upgrading={upgrading}
+            billingNote={billingNote}
+            openFaq={openFaq}
+            onToggleFaq={setOpenFaq}
+            onUpgrade={handleUpgrade}
+            onBackToApp={backToHome}
+            freeQueriesPerMonth={FREE_QUERIES_PER_MONTH}
+            faqs={FAQS}
+          />
+        </>
       )}
 
-      {/* Hero Header Section - Only on Research Tab */}
-      {!marketingRoute && tab === "research" && phase === "idle" && !displayedResult && (
-        <section className="hero">
-          <div className="hero__eyebrow">
-            <Icon name="spark" size={13} /> Autonomous Epistemic Intelligence
-          </div>
-          <h1 className="hero__headline">
-            Frontier multi-agent research, powered by <em>collaborative reasoning</em>.
-          </h1>
-          <p className="hero__description">
-            Five specialized agents—Planner, Web Search, Document Reader, Synthesis Analyst, and Strict Fact-Checker—collaborate in a recursive loop to produce verified, citation-backed research papers.
-          </p>
+      {/* Each tool is its own page: nothing else on screen while you work. */}
+      {route !== "home" && <section id="workspace" style={{ minHeight: "650px", marginBottom: "4rem" }}>
+        <button type="button" className="marketing-back" onClick={backToHome}>
+          <Icon name="chevron" size={15} style={{ transform: "rotate(90deg)" }} /> Back to home
+        </button>
 
-          <figure className="hero__plate" data-reveal data-reveal-delay="120">
-            <img
-              src={theme === "dark" ? "/visual-network-dark.png" : "/visual-network.png"}
-              alt="Fine ink diagram of connected research nodes tracing overlapping orbital paths"
-              loading="eager"
-              width={1376}
-              height={768}
-            />
-          </figure>
-        </section>
-      )}
-
-      {/* Main Interactive Research Workspace */}
-      {!marketingRoute && <section id="workspace" style={{ minHeight: "650px", marginBottom: "4rem" }}>
         <div className="app__main-grid">
           <main className="app__content-column">
-            {tab === "research" && (
+            {route === "research" && (
               <QueryInput disabled={phase === "running"} onSubmit={handleSubmit} />
             )}
 
-            <ModeSwitcher mode={tab} onChange={setTab} />
+            {route === "files" && <RagSection />}
 
-            {tab === "rag" && <RagSection />}
-
-            {tab === "research" && (
+            {route === "research" && (
               <>
 
               {phase === "running" && (
