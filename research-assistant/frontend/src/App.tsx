@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { QueryInput } from "./components/QueryInput";
+import { ModeSwitcher } from "./components/ModeSwitcher";
 import { AgentStatusStream } from "./components/AgentStatusStream";
 import { ReportView } from "./components/ReportView";
 import { HistoryPanel } from "./components/HistoryPanel";
@@ -268,30 +269,6 @@ function AuthenticatedApp({
           </div>
         </div>
 
-        <nav className="app__tabs">
-          <button
-            type="button"
-            className={`app__tab ${tab === "research" ? "app__tab--active" : ""}`}
-            onClick={() => {
-              setTab("research");
-              window.scrollTo({ top: 0, behavior: "instant" });
-            }}
-          >
-            {tab === "research" && <span className="app__tab-dot" />}
-            Deep Research
-          </button>
-          <button
-            type="button"
-            className={`app__tab ${tab === "rag" ? "app__tab--active" : ""}`}
-            onClick={() => {
-              setTab("rag");
-              window.scrollTo({ top: 0, behavior: "instant" });
-            }}
-          >
-            {tab === "rag" && <span className="app__tab-dot" />}
-            Chat with Files
-          </button>
-        </nav>
       </header>
 
       {marketingRoute && (
@@ -336,10 +313,18 @@ function AuthenticatedApp({
 
       {/* Main Interactive Research Workspace */}
       {!marketingRoute && <section id="workspace" style={{ minHeight: "650px", marginBottom: "4rem" }}>
-        {tab === "research" && (
-          <div className="app__main-grid">
-            <main className="app__content-column">
+        <div className="app__main-grid">
+          <main className="app__content-column">
+            {tab === "research" && (
               <QueryInput disabled={phase === "running"} onSubmit={handleSubmit} />
+            )}
+
+            <ModeSwitcher mode={tab} onChange={setTab} />
+
+            {tab === "rag" && <RagSection />}
+
+            {tab === "research" && (
+              <>
 
               {phase === "running" && (
                 <button type="button" className="new-search-btn new-search-btn--stop" onClick={handleStop}>
@@ -401,21 +386,20 @@ function AuthenticatedApp({
                 </div>
               )}
               {displayedResult && phase !== "running" && <ReportView result={displayedResult} />}
-            </main>
+              </>
+            )}
+          </main>
 
-            <aside className="app__sidebar-column">
-              <HistoryPanel
-                refreshKey={historyKey}
-                onSelect={(record) => {
-                  reset();
-                  setViewingHistorical(record);
-                }}
-              />
-            </aside>
-          </div>
-        )}
-
-        {tab === "rag" && <RagSection />}
+          <aside className="app__sidebar-column">
+            <HistoryPanel
+              refreshKey={historyKey}
+              onSelect={(record) => {
+                reset();
+                setViewingHistorical(record);
+              }}
+            />
+          </aside>
+        </div>
       </section>}
 
       {/* Full-bleed showcase band — an Apple-style change of scale between
