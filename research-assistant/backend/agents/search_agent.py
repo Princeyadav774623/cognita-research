@@ -2,7 +2,7 @@ from tavily import TavilyClient
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage
 from config import get_settings
-from graph.state import ResearchState, SearchResult
+from graph.state import ResearchState, SearchResult, SourceImage
 from utils import invoke_with_retry, normalize_url, clean_llm_response
 import logging
 
@@ -23,6 +23,12 @@ def search_agent(state: ResearchState) -> ResearchState:
     seen_urls = {normalize_url(r["url"]) for r in state.get("search_results", [])}
     all_results: list[SearchResult] = list(state.get("search_results", []))
 
+    # Figures published by the sources themselves. A diagram from the paper
+    # being cited carries information the prose cannot, and unlike a generated
+    # illustration it is evidence rather than decoration.
+    all_images: list[SourceImage] = list(state.get("images", []))
+    seen_images = {img["url"] for img in all_images}
+
     last_error = None
     # Triage decides how wide to cast the net: a definitional question does not
     # need the same breadth as a comparative analysis, and every extra source
@@ -37,7 +43,21 @@ def search_agent(state: ResearchState) -> ResearchState:
                     max_results=per_query,
                     include_answer=False,
                     include_raw_content=False,
+                    include_images=True,
+                    include_image_descriptions=True,
                 )
+                for img in response.get("images", []) or []:
+                    # Tavily returns either a bare URL string or an object with
+                    # a description, depending on the flag and plan.
+                    url = img.get("url", "") if isinstance(img, dict) else str(img)
+                    if not url or url in seen_images:
+                        continue
+                    seen_images.add(url)
+                    all_images.append({
+                        "url": url,
+                        "description": img.get("description", "") if isinstance(img, dict) else "",
+                        "origin_url": "",
+                    })
                 for r in response.get("results", []):
                     raw_url = r.get("url", "")
                     clean_url = normalize_url(raw_url)
@@ -80,6 +100,7 @@ def search_agent(state: ResearchState) -> ResearchState:
             return {
                 **state,
                 "search_results": all_results,
+                "images": all_images,
                 "current_step": "search_done",
                 "retry_count": state.get("retry_count", 0) + 1,
                 "error": str(last_error) if not all_results and last_error else state.get("error"),
@@ -89,6 +110,7 @@ def search_agent(state: ResearchState) -> ResearchState:
         return {
             **state,
             "search_results": all_results,
+            "images": all_images,
             "current_step": "search_done",
             "error": str(last_error) if not all_results and last_error else state.get("error"),
         }
@@ -98,6 +120,7 @@ def search_agent(state: ResearchState) -> ResearchState:
         return {
             **state,
             "search_results": all_results,
+            "images": all_images,
             "current_step": "search_done",
             "error": str(e),
         }

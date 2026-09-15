@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins_raw: str = "http://localhost:3000"
 
+    # Number of proxies in front of this app (nginx, Render, Fly = usually 1).
+    # 0 means direct connections and X-Forwarded-For is ignored as untrusted.
+    trusted_proxy_count: int = 0
+
+    # Where rate-limit counters live. Empty = in-process memory, which is
+    # correct for one instance and wrong for two: each process keeps its own
+    # tally, so N instances multiply every published limit by N. Set to a
+    # redis:// URL before scaling past one.
+    rate_limit_storage_uri: str = ""
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins_raw.split(",") if origin.strip()]
@@ -53,6 +63,16 @@ class Settings(BaseSettings):
     # rate-limited account that budget is the binding constraint on latency.
     groq_model_fast: str = "openai/gpt-oss-20b"    # structural JSON tasks
     groq_model_smart: str = "openai/gpt-oss-120b"  # synthesis and verification
+
+    # Per-million-token rates used to turn measured token counts into a cost
+    # estimate. The token counts themselves are exact; these are not — they are
+    # settings rather than constants precisely so they can be corrected against
+    # current Groq pricing without a code change. Verify before quoting the
+    # resulting figure to anyone.
+    price_smart_input_per_mtok: float = 0.15
+    price_smart_output_per_mtok: float = 0.75
+    price_fast_input_per_mtok: float = 0.10
+    price_fast_output_per_mtok: float = 0.50
 
     # env_file is resolved relative to the process's working directory, which
     # is backend/ for both `uvicorn api.main:app` and `pytest` as documented

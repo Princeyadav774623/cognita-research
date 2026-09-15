@@ -51,25 +51,28 @@ export function HistoryPanel({ refreshKey, onSelect }: Props) {
       {sessions.length > 0 && (
         <div className="history-list">
           {sessions.map((session) => (
-            <button
-              type="button"
-              key={session.session_id}
-              className="history-item"
-              onClick={() => onSelect(session)}
-            >
-              <div className="history-item__query">{session.query}</div>
-              <div className="history-item__meta">
-                <span className="history-item__date">
-                  {session.created_at
-                    ? new Date(session.created_at).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : "Recent"}
-                </span>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            // The delete control used to sit inside this button. Nesting a
+            // button in a button is invalid HTML — React logs it, the browser
+            // silently un-nests it, and keyboard users cannot reach the inner
+            // control at all. The row is now a div holding two siblings.
+            <div key={session.session_id} className="history-item">
+              <button
+                type="button"
+                className="history-item__open"
+                onClick={() => onSelect(session)}
+              >
+                <div className="history-item__query">{session.query}</div>
+                <div className="history-item__meta">
+                  <span className="history-item__date">
+                    {session.created_at
+                      ? new Date(session.created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Recent"}
+                  </span>
                   <span
                     style={{
                       fontFamily: "var(--font-mono)",
@@ -78,17 +81,18 @@ export function HistoryPanel({ refreshKey, onSelect }: Props) {
                   >
                     {Math.round(session.confidence * 100)}%
                   </span>
-                  <button
-                    type="button"
-                    className="history-item__delete"
-                    onClick={(e) => handleDelete(e, session.session_id)}
-                    title="Delete session"
-                  >
-                    <Icon name="trash" size={13} />
-                  </button>
                 </div>
-              </div>
-            </button>
+              </button>
+              <button
+                type="button"
+                className="history-item__delete"
+                onClick={(e) => handleDelete(e, session.session_id)}
+                aria-label={`Delete research session: ${session.query.slice(0, 60)}`}
+                title="Delete session"
+              >
+                <Icon name="trash" size={13} />
+              </button>
+            </div>
           ))}
         </div>
       )}

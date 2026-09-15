@@ -44,6 +44,30 @@ Postgres-only (pgvector is needed for RAG, and SQLite is explicitly rejected
 at startup). `APP_DATABASE_URL` should point at a low-privilege role without
 BYPASSRLS so Row-Level Security applies to runtime queries.
 
+**The two roles are not interchangeable.** Row-Level Security policies are
+created automatically at startup (`backend/rls.py`), but a table's owner
+bypasses them — which is deliberate, because the owner runs migrations and the
+Stripe webhook path that has to read across tenants. So if both URLs name the
+same role, the policies are installed and inert, and startup logs a warning
+saying exactly that. Create the runtime role once:
+
+```sql
+CREATE ROLE cognita_app LOGIN PASSWORD 'choose-a-password';
+GRANT CONNECT ON DATABASE cognita TO cognita_app;
+GRANT USAGE ON SCHEMA public TO cognita_app;
+```
+
+Table privileges are granted by `rls.py` on every startup, so there is nothing
+to re-run when a table is added. Point `APP_DATABASE_URL` at this role:
+
+```
+DATABASE_URL=postgresql://owner@localhost:5432/cognita
+APP_DATABASE_URL=postgresql://cognita_app:choose-a-password@localhost:5432/cognita
+```
+
+To confirm isolation is live, look for `[RLS] Tenant isolation active on 6
+tables` in the startup log — not `Policies are installed but INERT`.
+
 For the frontend:
 
 ```bash
@@ -93,6 +117,27 @@ curl -X POST http://localhost:8000/api/research \
   -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   -d '{"query": "What is artificial intelligence?"}'
 ```
+
+## Measuring whether "verified" means "true"
+
+The pipeline reports a confidence score per claim. Whether that score tracks
+reality is a question only human labels can answer — a model grading its own
+verdicts reproduces its own blind spots.
+
+```bash
+cd backend
+python -m evals.factcheck_accuracy --export claims.jsonl --user <your-user-id>
+# fill in human_verdict on each row: true | false | unclear
+python -m evals.factcheck_accuracy --score claims.jsonl
+```
+
+It reports precision (of the claims shown as verified, how many were true),
+recall, calibration by confidence bucket, and whether the
+independent-corroboration flag actually predicts truth — if it does not, the
+extra search per claim is buying nothing.
+
+Precision is the number that matters commercially: a confident wrong answer is
+the failure a research tool cannot afford.
 
 ## Step 8: Run Tests
 

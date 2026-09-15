@@ -1,13 +1,13 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Request, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, Request, UploadFile, File, HTTPException, Depends
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from rate_limit import limiter
 from auth import get_current_user_id
-from rag.retrieval import ingest_document, list_documents, delete_document
+from rag.retrieval import create_document_record, process_document, list_documents, delete_document
 from rag.chat_agent import (
     chat,
     get_conversation_history,
@@ -32,7 +32,10 @@ class ChatRequest(BaseModel):
 @router.post("/upload")
 @limiter.limit("10/minute")
 async def upload_document(
-    request: Request, file: UploadFile = File(...), user_id: str = Depends(get_current_user_id)
+    request: Request,
+    background: BackgroundTasks,
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
 ):
     ext = file.filename.rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else ""
     if ext not in ALLOWED_EXTENSIONS:
@@ -51,9 +54,15 @@ async def upload_document(
     if not content:
         raise HTTPException(status_code=400, detail="File is empty")
 
-    document = await run_in_threadpool(ingest_document, user_id, file.filename, bytes(content))
-    if document["status"] == "error":
-        raise HTTPException(status_code=422, detail=document["error"])
+    # Return as soon as the upload is registered; parsing and embedding happen
+    # after the response, so a long PDF cannot time the request out. The client
+    # polls the document list until status leaves "processing".
+    #
+    # In-process, so a restart mid-job leaves a row stuck in "processing" —
+    # acceptable while ingestion is per-user and cheap to retry; a durable queue
+    # is the answer once it isn't.
+    document = await run_in_threadpool(create_document_record, user_id, file.filename)
+    background.add_task(process_document, user_id, document["id"], file.filename, bytes(content))
     return document
 
 

@@ -203,7 +203,7 @@ class TestUploadEndpoint:
         return TestClient(app)
 
     def test_rejects_unsupported_extension_before_ingesting(self):
-        with patch("api.rag_routes.ingest_document") as mock_ingest:
+        with patch("api.rag_routes.create_document_record") as mock_ingest:
             res = self._client().post(
                 "/api/rag/upload", files={"file": ("virus.exe", b"MZ\x00", "application/octet-stream")}
             )
@@ -215,7 +215,7 @@ class TestUploadEndpoint:
         from rag.ingest import MAX_FILE_SIZE_BYTES
 
         oversized = b"x" * (MAX_FILE_SIZE_BYTES + 1024)
-        with patch("api.rag_routes.ingest_document") as mock_ingest:
+        with patch("api.rag_routes.create_document_record") as mock_ingest:
             res = self._client().post(
                 "/api/rag/upload", files={"file": ("big.txt", oversized, "text/plain")}
             )
@@ -224,7 +224,7 @@ class TestUploadEndpoint:
             mock_ingest.assert_not_called()
 
     def test_rejects_empty_file(self):
-        with patch("api.rag_routes.ingest_document") as mock_ingest:
+        with patch("api.rag_routes.create_document_record") as mock_ingest:
             res = self._client().post(
                 "/api/rag/upload", files={"file": ("empty.txt", b"", "text/plain")}
             )
@@ -235,23 +235,48 @@ class TestUploadEndpoint:
         from rag.ingest import MAX_FILE_SIZE_BYTES
 
         at_limit = b"x" * MAX_FILE_SIZE_BYTES
-        with patch("api.rag_routes.ingest_document") as mock_ingest:
-            mock_ingest.return_value = {"status": "ready", "id": "doc-1", "filename": "ok.txt"}
+        with patch("api.rag_routes.create_document_record") as mock_create, \
+             patch("api.rag_routes.process_document") as mock_process:
+            mock_create.return_value = {"status": "processing", "id": "doc-1", "filename": "ok.txt"}
             res = self._client().post(
                 "/api/rag/upload", files={"file": ("ok.txt", at_limit, "text/plain")}
             )
             assert res.status_code == 200
-            # the full body was passed through intact, not truncated by chunking
-            assert len(mock_ingest.call_args[0][2]) == MAX_FILE_SIZE_BYTES
+            # The full body reaches the background worker intact, not truncated
+            # by the chunked read that enforces the size limit.
+            assert len(mock_process.call_args[0][3]) == MAX_FILE_SIZE_BYTES
 
-    def test_surfaces_ingest_failure_as_422(self):
-        with patch("api.rag_routes.ingest_document") as mock_ingest:
-            mock_ingest.return_value = {"status": "error", "error": "No extractable text found"}
+    def test_returns_immediately_and_indexes_in_the_background(self):
+        """Parsing no longer happens inside the request: a long PDF used to hold
+        the connection open and could outlive a proxy timeout. The response now
+        carries a processing record and the client polls for the outcome."""
+        with patch("api.rag_routes.create_document_record") as mock_create, \
+             patch("api.rag_routes.process_document") as mock_process:
+            mock_create.return_value = {"status": "processing", "id": "doc-9", "filename": "scan.pdf"}
             res = self._client().post(
                 "/api/rag/upload", files={"file": ("scan.pdf", b"%PDF-1.4 junk", "application/pdf")}
             )
-            assert res.status_code == 422
-            assert "No extractable text" in res.json()["detail"]
+
+        assert res.status_code == 200
+        assert res.json()["status"] == "processing"
+        # Extraction ran after the response was sent, not before it.
+        mock_process.assert_called_once()
+        assert mock_process.call_args[0][1] == "doc-9"
+
+    def test_extraction_failure_lands_on_the_record_not_the_response(self):
+        """With ingestion moved off the request there is no caller left to raise
+        to; the document's status is how the user finds out."""
+        from rag.retrieval import process_document
+
+        doc = MagicMock(status="processing", error=None)
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.first.return_value = doc
+
+        with patch("rag.retrieval.get_tenant_session", side_effect=_fake_tenant_session(mock_db)):
+            process_document("user-1", "doc-9", "scan.pdf", b"%PDF-1.4 junk")
+
+        assert doc.status == "error"
+        assert doc.error
 
 
 # =============================================

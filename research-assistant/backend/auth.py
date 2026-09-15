@@ -27,6 +27,15 @@ def _get_jwks_client() -> PyJWKClient:
 
 def verify_token(token: str) -> dict:
     """Verify a Supabase-issued JWT and return its claims. Raises jwt exceptions on failure."""
+    # Local-only guest access. Gated on ENV because the check is a deliberate
+    # bypass: any token starting with "dev-" resolves to a fixed user id, so
+    # outside development it would be an unauthenticated route into that
+    # user's data and an unmetered path to the research pipeline.
+    if settings.env == "development" and (
+        token in ("dev-guest-token", "guest-token") or token.startswith("dev-")
+    ):
+        return {"sub": "dev-guest-user-001", "email": "guest@cognita.local", "aud": "authenticated"}
+
     signing_key = _get_jwks_client().get_signing_key_from_jwt(token)
     return jwt.decode(
         token,

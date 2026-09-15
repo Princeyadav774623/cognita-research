@@ -9,15 +9,39 @@ logger = logging.getLogger(__name__)
 TOP_K = 6
 
 
-def ingest_document(user_id: str, filename: str, content: bytes) -> dict:
-    """Extract, chunk, embed, and store a document. Returns its record."""
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "unknown"
+def create_document_record(user_id: str, filename: str) -> dict:
+    """Register the upload and return immediately, before any parsing.
 
+    Extraction, chunking and embedding used to happen inside the request, so a
+    long PDF held the connection open and could outlive a proxy timeout. The
+    status field already modelled processing -> ready; nothing was ever driving
+    it. Now it is real.
+    """
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "unknown"
     with get_tenant_session(user_id) as db:
         document = RagDocument(user_id=user_id, filename=filename, file_type=ext, status="processing")
         db.add(document)
         db.commit()
         db.refresh(document)
+        return _document_to_dict(document)
+
+
+def process_document(user_id: str, document_id: str, filename: str, content: bytes) -> None:
+    """Do the slow half: extract, chunk, embed, store. Runs after the response.
+
+    Any failure is recorded on the row rather than raised, because there is no
+    longer a caller waiting to receive it — the document's status is how the
+    user finds out.
+    """
+    with get_tenant_session(user_id) as db:
+        document = (
+            db.query(RagDocument)
+            .filter(RagDocument.id == document_id, RagDocument.user_id == user_id)
+            .first()
+        )
+        if not document:
+            logger.warning(f"[RAG] Document {document_id} vanished before processing")
+            return
 
         try:
             text = extract_text(filename, content)
@@ -46,8 +70,15 @@ def ingest_document(user_id: str, filename: str, content: bytes) -> dict:
             db.commit()
             logger.error(f"[RAG] Unexpected error ingesting '{filename}': {e}")
 
-        db.refresh(document)
-        return _document_to_dict(document)
+
+def ingest_document(user_id: str, filename: str, content: bytes) -> dict:
+    """Synchronous ingest, kept for scripts and tests that want the finished
+    record back in one call."""
+    record = create_document_record(user_id, filename)
+    process_document(user_id, record["id"], filename, content)
+    with get_tenant_session(user_id) as db:
+        doc = db.query(RagDocument).filter(RagDocument.id == record["id"]).first()
+        return _document_to_dict(doc) if doc else record
 
 
 def list_documents(user_id: str) -> list[dict]:

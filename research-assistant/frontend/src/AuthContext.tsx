@@ -15,7 +15,25 @@ interface AuthContextValue {
    */
   recovering: boolean;
   completeRecovery: () => void;
+  loginAsGuest: () => void;
+  logout: () => Promise<void>;
 }
+
+const MOCK_GUEST_SESSION: Session = {
+  access_token: "dev-guest-token",
+  token_type: "bearer",
+  expires_in: 3600 * 24 * 30,
+  expires_at: Math.floor(Date.now() / 1000) + 86400 * 30,
+  refresh_token: "dev-guest-refresh-token",
+  user: {
+    id: "dev-guest-user-001",
+    app_metadata: {},
+    user_metadata: { name: "Guest Researcher" },
+    aud: "authenticated",
+    created_at: new Date().toISOString(),
+    email: "guest@cognita.local",
+  },
+};
 
 const AuthContext = createContext<AuthContextValue>({
   session: null,
@@ -23,6 +41,8 @@ const AuthContext = createContext<AuthContextValue>({
   accessToken: null,
   recovering: false,
   completeRecovery: () => {},
+  loginAsGuest: () => {},
+  logout: async () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -31,18 +51,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [recovering, setRecovering] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
+    // 1. Check if guest session is active
+    if (localStorage.getItem("cognita_guest_mode") === "true") {
+      setSession(MOCK_GUEST_SESSION);
       setLoading(false);
-    });
+      return;
+    }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
-      setSession(newSession);
-      if (event === "PASSWORD_RECOVERY") setRecovering(true);
-    });
+    // 2. Timeout fallback so app never hangs indefinitely on DNS/network errors
+    const fallbackTimer = setTimeout(() => {
+      setLoading(false);
+    }, 2000);
 
-    return () => listener.subscription.unsubscribe();
+    // 3. Try to get Supabase session
+    try {
+      supabase.auth.getSession()
+        .then(({ data }) => {
+          clearTimeout(fallbackTimer);
+          if (data?.session) {
+            setSession(data.session);
+          }
+          setLoading(false);
+        })
+        .catch((err) => {
+          clearTimeout(fallbackTimer);
+          console.warn("Supabase auth unavailable:", err);
+          setLoading(false);
+        });
+
+      const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
+        if (!localStorage.getItem("cognita_guest_mode")) {
+          setSession(newSession);
+          if (event === "PASSWORD_RECOVERY") setRecovering(true);
+        }
+      });
+
+      return () => {
+        clearTimeout(fallbackTimer);
+        listener?.subscription?.unsubscribe();
+      };
+    } catch (e) {
+      clearTimeout(fallbackTimer);
+      setLoading(false);
+    }
   }, []);
+
+  const loginAsGuest = () => {
+    localStorage.setItem("cognita_guest_mode", "true");
+    setSession(MOCK_GUEST_SESSION);
+    setLoading(false);
+  };
+
+  const logout = async () => {
+    localStorage.removeItem("cognita_guest_mode");
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+    setSession(null);
+  };
 
   return (
     <AuthContext.Provider
@@ -52,6 +118,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken: session?.access_token ?? null,
         recovering,
         completeRecovery: () => setRecovering(false),
+        loginAsGuest,
+        logout,
       }}
     >
       {children}

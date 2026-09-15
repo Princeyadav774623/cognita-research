@@ -87,14 +87,22 @@
 
   --text-primary: #141413;
   --text-secondary: #4d4c48;
-  --text-muted: #7a7874;
+  /* Was #7a7874 — 3.79:1 on the cream ground, under the 4.5:1 AA floor for
+     body text. The dark theme's equivalent already passed; this brings light
+     in line without changing the warmth of the grey. */
+  --text-muted: #6b6965;
   --text-inverse: #faf9f5;
 
-  --accent: #c15c3d;
-  --accent-warm: #c15c3d;
-  --accent-hover: #b05033;
-  --accent-subtle: rgba(193, 92, 61, 0.12);
-  --accent-border: rgba(193, 92, 61, 0.35);
+  /* Was #c15c3d at 3.72:1. This is also the link colour, so it carried body
+     text at a failing ratio. Darkened just enough to clear AA on both the
+     page ground (#f0eee6) and the card ground (#fbfaf7). */
+  --accent: #a94b2f;
+  --accent-warm: #a94b2f;
+  --accent-hover: #8f3d25;
+  /* Kept in step with --accent above; these still carried the pre-Phase-1
+     #c15c3d after that token was darkened for contrast. */
+  --accent-subtle: rgba(169, 75, 47, 0.12);
+  --accent-border: rgba(169, 75, 47, 0.35);
 
   --shadow-sm: 0 2px 6px rgba(20, 20, 19, 0.06);
   --shadow-md: 0 8px 20px rgba(20, 20, 19, 0.08);

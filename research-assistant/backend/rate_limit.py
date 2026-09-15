@@ -1,9 +1,12 @@
 from fastapi import Request
 from slowapi import Limiter
-from slowapi.util import get_remote_address
+from rate_limit_middleware import client_ip
+
+import logging
 
 import jwt
 from auth import verify_token
+from config import get_settings
 
 
 def rate_limit_key(request: Request) -> str:
@@ -24,7 +27,20 @@ def rate_limit_key(request: Request) -> str:
             return f"user:{claims['sub']}"
         except jwt.PyJWTError:
             pass
-    return f"ip:{get_remote_address(request)}"
+    return f"ip:{client_ip(request)}"
 
 
-limiter = Limiter(key_func=rate_limit_key)
+_settings = get_settings()
+
+if _settings.rate_limit_storage_uri:
+    limiter = Limiter(key_func=rate_limit_key, storage_uri=_settings.rate_limit_storage_uri)
+else:
+    # Single-instance default. Loud rather than silent, because the failure
+    # mode when it is wrong is a limit that quietly does not hold.
+    if _settings.env != "development":
+        logging.getLogger(__name__).warning(
+            "[RateLimit] Using in-process storage. Counters are per-instance, so "
+            "running more than one process multiplies every limit. Set "
+            "RATE_LIMIT_STORAGE_URI to a redis:// URL before scaling out."
+        )
+    limiter = Limiter(key_func=rate_limit_key)
