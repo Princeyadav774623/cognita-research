@@ -37,13 +37,9 @@ class UserSubscription(Base):
 
 
 def init_billing_db() -> None:
-    """Idempotent column-add for deployments whose user_subscriptions table
-    predates usage_period_start. Same stopgap pattern as db._migrate_add_user_id,
-    and equally a candidate for replacement by real Alembic migrations."""
-    with engine.begin() as conn:
-        conn.execute(text(
-            "ALTER TABLE user_subscriptions ADD COLUMN IF NOT EXISTS usage_period_start TIMESTAMP"
-        ))
+    """Retained as a no-op call site. The schema this used to patch by hand is
+    owned by Alembic now (see db.init_db)."""
+    return None
 
 
 def _same_billing_period(period_start: datetime | None, now: datetime) -> bool:
@@ -124,9 +120,15 @@ def consume_quota(user_id: str) -> dict:
             raise QuotaExceededError(status)
 
         sub.monthly_queries_used = (sub.monthly_queries_used or 0) + 1
+        # Build the return value from in-memory state before committing, and do
+        # not re-read afterwards. A refresh() after commit is a second query on
+        # a fresh connection, and anything that goes wrong there raises *after*
+        # the increment is already durable — so the caller never learns the
+        # query was reserved, never triggers the refund, and the user silently
+        # loses an allowance they did not spend.
+        reserved = _status_dict(sub)
         db.commit()
-        db.refresh(sub)
-        return _status_dict(sub)
+        return reserved
 
 
 def refund_quota(user_id: str) -> None:

@@ -2,6 +2,9 @@
 .env
 backend/.env
 *.env
+# Backups of a real .env carry live API keys and DB passwords; nothing matching
+# .env with a suffix should ever be committable.
+.env.*
 !.env.example
 
 # Python

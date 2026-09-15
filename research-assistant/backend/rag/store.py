@@ -62,22 +62,9 @@ class RagMessage(Base):
 
 
 def init_rag_db():
-    """Enable pgvector, create RAG tables, and add user_id to pre-existing
-    deployments. Safe to call repeatedly."""
-    with engine.begin() as conn:
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-    Base.metadata.create_all(bind=engine, tables=[
-        RagDocument.__table__, RagChunk.__table__, RagConversation.__table__, RagMessage.__table__,
-    ])
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE rag_documents ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
-        conn.execute(text("ALTER TABLE rag_conversations ADD COLUMN IF NOT EXISTS user_id VARCHAR"))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_rag_documents_user_id ON rag_documents (user_id)"
-        ))
-        conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS ix_rag_conversations_user_id ON rag_conversations (user_id)"
-        ))
+    """Retained as a no-op call site. The rag_* tables, the pgvector extension
+    and the HNSW index are all owned by Alembic now (see db.init_db)."""
+    return None
 
 
 def delete_all_user_rag_data(user_id: str) -> dict:
