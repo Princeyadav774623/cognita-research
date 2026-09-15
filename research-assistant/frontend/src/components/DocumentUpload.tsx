@@ -39,6 +39,16 @@ export function DocumentUpload({ onDocumentsChange }: Props) {
     refresh();
   }, [refresh]);
 
+  // Indexing now happens after the upload response returns, so the row starts
+  // at "processing" and nothing would ever move it off that label without
+  // asking again. Polls only while something is actually in flight.
+  const anyProcessing = documents.some((d) => d.status === "processing");
+  useEffect(() => {
+    if (!anyProcessing) return;
+    const id = setInterval(refresh, 2000);
+    return () => clearInterval(id);
+  }, [anyProcessing, refresh]);
+
   const handleFileSelect = async (file: File) => {
     if (!accessToken) return;
     if (file.size > MAX_FILE_SIZE_BYTES) {

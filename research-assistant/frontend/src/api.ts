@@ -13,11 +13,20 @@ export interface Source {
   url: string;
 }
 
+/** A figure published by one of the sources — evidence, not an illustration. */
+export interface SourceImage {
+  url: string;
+  description: string;
+  origin_url: string;
+}
+
 export interface VerifiedClaim {
   claim: string;
   verified: boolean;
   confidence: number;
   source: string;
+  /** Held up against a source the draft was NOT written from. */
+  independently_corroborated?: boolean;
 }
 
 export interface ResearchResult {
@@ -25,6 +34,7 @@ export interface ResearchResult {
   query: string;
   final_report: string;
   sources: Source[];
+  images?: SourceImage[];
   confidence: number;
   verified_claims: VerifiedClaim[];
 }

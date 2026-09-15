@@ -2468,3 +2468,592 @@
   border-radius: var(--radius-sm);
   text-align: left;
 }
+
+/* ==========================================================================
+   PHASE 1 — ACCESSIBILITY & NARROW-VIEWPORT CORRECTIONS
+   ========================================================================== */
+
+/* Keyboard focus was entirely invisible: only inputs picked up a ring from
+   index.css, so every button, tab, chip and link left a keyboard user with no
+   idea where they were on the page. One rule covers the whole app. */
+:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* The account pill never collapsed, so at 375px the header alone was 285px of
+   unshrinkable content and the whole document scrolled sideways by 265px.
+   Below this width the email is dropped (it is already shown in the account
+   menu's title attribute) and the remaining controls become real tap targets.
+   700px rather than a smaller value because the email is what overflows first. */
+@media (max-width: 700px) {
+  .app__header {
+    padding-inline: 1rem;
+    margin-inline: -1rem;
+  }
+
+  .app__header-top {
+    gap: 0.6rem;
+  }
+
+  .app__brand,
+  .app__brand-title {
+    min-width: 0;
+  }
+
+  .app__brand-title {
+    font-size: 1.05rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app__brand-badge {
+    display: none;
+  }
+
+  .app__header-actions {
+    gap: 0.35rem;
+  }
+
+  .app__account-email {
+    display: none;
+  }
+
+  .app__account-pill {
+    padding: 0.2rem 0.25rem;
+    gap: 0.3rem;
+  }
+}
+
+/* Apple's HIG floor is 44pt and 15 of 29 controls sat under it — "Sign out"
+   at 19px tall, and the history delete button at 18x24px, which is a
+   destructive action at roughly a third of the minimum. Padding grows the hit
+   area without changing how any of these look. */
+@media (pointer: coarse), (max-width: 700px) {
+  .app__theme-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .app__signout-btn,
+  .app__tab,
+  .app__nav-btn,
+  .app__nav-link,
+  .suggestion-chip,
+  .paper-action-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .history-item__delete {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .query-box__input,
+  .query-box__btn {
+    min-height: 44px;
+  }
+
+  /* Footer links sat at 17px — the smallest targets in the app. Padding
+     rather than min-height so the row still reads as a line of links. */
+  .app-footer__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: 0.25rem;
+  }
+
+  .app__brand {
+    min-height: 44px;
+  }
+}
+
+/* ==========================================================================
+   PHASE 3 — PROGRESS, STOP, CLAIM→SOURCE LINKING
+   ========================================================================== */
+
+.agent-stream__counter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A two-minute wait needs a shape, not a spinner. */
+.agent-progress {
+  height: 3px;
+  background: var(--border-subtle);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin: 0.75rem 0 1rem;
+}
+
+.agent-progress__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-warm);
+  border-radius: var(--radius-pill);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agent-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.agent-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.45rem 0.1rem;
+}
+
+.agent-step__body { flex: 1; min-width: 0; }
+
+.agent-step__label {
+  font-size: 0.87rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Stages not yet reached stay visible but recede, so the reader can see what
+   is still to come without it competing with what is happening now. */
+.agent-step--pending { opacity: 0.4; }
+.agent-step--pending .agent-step__label { font-weight: 400; }
+
+.agent-step--active .agent-step__label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.agent-step--done .agent-step__label { color: var(--text-muted); }
+
+.agent-step__tick {
+  color: var(--success);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.new-search-btn--stop {
+  color: var(--danger);
+  border-color: var(--danger-subtle);
+}
+
+.new-search-btn--stop:hover {
+  background: var(--danger-subtle);
+  border-color: var(--danger);
+}
+
+.stop-notice {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.query-box__counter {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  text-align: right;
+}
+
+.query-box__counter--full { color: var(--warning); }
+
+/* Textarea replaced the single-line input; keep it from being drag-resized
+   out of the layout since it already grows with its content. */
+textarea.query-box__input {
+  resize: none;
+  overflow-y: auto;
+  line-height: 1.5;
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+/* Claim → source. The architecture exists to make claims traceable; this is
+   the control that finally exposes it. */
+.claim-item__source--link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: right;
+}
+
+.claim-item__jump {
+  color: var(--accent-warm);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.claim-item__source--link:hover .claim-item__jump { color: var(--accent-hover); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .source-pill { transition: box-shadow 0.3s ease, border-color 0.3s ease; }
+}
+
+/* History rows are now a container with two sibling controls (open + delete)
+   rather than a button nested inside a button. */
+.history-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+}
+
+.history-item__open {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+/* ==========================================================================
+   PRINT — the PDF export is the browser's own print engine
+   ========================================================================== */
+
+@media print {
+  /* Everything that isn't the paper: navigation, the query box, the agent
+     stream, history, the marketing sections, the buttons that produced this
+     file. A printed report should look like a report. */
+  .app__header,
+  .app__tabs,
+  .hero,
+  .query-box,
+  .suggestion-chips,
+  .query-box__counter,
+  .agent-stream,
+  .app__sidebar-column,
+  .new-search-btn,
+  .stop-notice,
+  .bleed,
+  .website-section,
+  .app-footer,
+  .report-paper__actions {
+    display: none !important;
+  }
+
+  /* Print on white regardless of the viewer's theme: the dark palette wastes
+     an entire cartridge and reads badly on paper. */
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"] {
+    --bg-app: #ffffff;
+    --bg-card: #ffffff;
+    --bg-surface: #ffffff;
+    --bg-surface-raised: #ffffff;
+    --bg-surface-subtle: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #222222;
+    --text-muted: #555555;
+    --border-subtle: #cccccc;
+    --border-medium: #999999;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  .app,
+  .app__main-grid,
+  .app__content-column {
+    display: block !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .report-paper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Keep a claim and its verdict together, and never strand a heading at the
+     foot of a page. */
+  .claim-item,
+  .source-pill { break-inside: avoid; }
+
+  .report-prose h1,
+  .report-prose h2,
+  .report-prose h3 { break-after: avoid; }
+
+  /* A citation is useless on paper without its target. */
+  .report-prose a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+    word-break: break-all;
+  }
+
+  .sources-grid { display: block !important; }
+  .source-pill { display: block; border: none !important; padding: 0.15rem 0 !important; }
+
+  @page { margin: 18mm 16mm; }
+}
+
+/* ==========================================================================
+   MARKDOWN — tables and diagrams
+   ========================================================================== */
+
+/* A wide table scrolls inside its own box; the page body never scrolls
+   sideways because of one comparison table. */
+.md-table-wrap {
+  overflow-x: auto;
+  margin: 1.4rem 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+}
+
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.md-table th {
+  text-align: left;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-medium);
+  white-space: nowrap;
+}
+
+.md-table td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.md-table tr:last-child td { border-bottom: none; }
+.md-table tbody tr:hover { background: var(--bg-surface-raised); }
+
+/* Code inside a cell is usually an identifier, so let it wrap rather than
+   force the column wide enough to hold it on one line. */
+.md-table code {
+  font-size: 0.82em;
+  word-break: break-word;
+}
+
+.md-diagram {
+  margin: 1.6rem 0;
+  padding: 1.25rem;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  text-align: center;
+}
+
+.md-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.md-code {
+  overflow-x: auto;
+  padding: 0.9rem 1rem;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+}
+
+@media print {
+  .md-table-wrap, .md-diagram { break-inside: avoid; }
+}
+
+/* ==========================================================================
+   CHARTS & SOURCE IMAGES
+   ========================================================================== */
+
+.chart {
+  margin: 1.6rem 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.chart__title {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-svg--pie { max-width: 190px; flex-shrink: 0; }
+
+.chart-bars { display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* Label column sized so bars share a baseline and are comparable at a glance —
+   the only thing a bar chart is actually for. */
+.chart-bar {
+  display: grid;
+  grid-template-columns: minmax(70px, 22%) 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chart-bar__label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-bar__track {
+  height: 20px;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.chart-bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-warm);
+  border-radius: var(--radius-sm);
+}
+
+.chart-bar__value {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-pie { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+
+.chart-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chart-legend li { display: flex; align-items: center; gap: 0.55rem; font-size: 0.83rem; }
+
+.chart-legend__swatch {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  background: var(--accent-warm);
+  flex-shrink: 0;
+}
+
+.chart-legend__label {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-legend__value {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-legend__pct { color: var(--text-muted); margin-left: 0.4rem; }
+
+/* Figures published by the sources, not generated ones. */
+.figures-card { margin-top: 2rem; }
+
+.figures-card__title {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+}
+
+.figures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.figure-tile {
+  display: block;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-surface-raised);
+}
+
+.figure-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--bg-surface-subtle);
+}
+
+.figure-tile__caption {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  padding: 0.5rem 0.6rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .chart-bar { grid-template-columns: minmax(60px, 30%) 1fr auto; gap: 0.5rem; }
+  .figures-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}
+
+@media print {
+  .chart, .figure-tile { break-inside: avoid; }
+  .figures-card { display: none !important; }
+}

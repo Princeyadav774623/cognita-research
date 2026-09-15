@@ -4,7 +4,7 @@ import { AgentStatusStream } from "./components/AgentStatusStream";
 import { ReportView } from "./components/ReportView";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { AuthScreen } from "./components/AuthScreen";
-import ReactMarkdown from "react-markdown";
+import { Markdown } from "./components/Markdown";
 import { RagSection } from "./RagSection";
 import { Icon } from "./components/Icon";
 import { useResearch } from "./useResearch";
@@ -18,7 +18,7 @@ import "./App.css";
 type Tab = "research" | "rag";
 
 function App() {
-  const { session, loading, accessToken, recovering } = useAuth();
+  const { session, loading, accessToken, recovering, logout } = useAuth();
   const [theme, setTheme] = useState<"dark" | "light">(() => {
     return (localStorage.getItem("cognita_theme") as "dark" | "light") || "dark";
   });
@@ -58,6 +58,7 @@ function App() {
       userEmail={session.user.email ?? ""}
       theme={theme}
       onToggleTheme={toggleTheme}
+      onSignOut={logout}
     />
   );
 }
@@ -69,8 +70,8 @@ const FREE_QUERIES_PER_MONTH = 10;
 
 const FAQS = [
   {
-    q: "How does Cognita's 5-Agent Architecture eliminate hallucinations?",
-    a: "Unlike single-pass LLMs, Cognita orchestrates an explicit LangGraph state machine. The Planner decomposes queries, the Search and Reader agents fetch verified external web and paper content, the Analyst synthesizes a preliminary draft, and a dedicated Fact-Checker verifies every claim with direct source grounding before compiling the final paper.",
+    q: "How does Cognita's 5-Agent Architecture reduce unsupported claims?",
+    a: "Unlike single-pass LLMs, Cognita orchestrates an explicit LangGraph state machine. The Planner decomposes queries, the Search and Reader agents fetch external web and paper content, the Analyst synthesizes a preliminary draft, and a dedicated Fact-Checker extracts the draft's key claims and checks each one against the retrieved sources, attaching a per-claim confidence score you can inspect. That catches claims the sources don't support — it is not a guarantee of truth, because a claim can be faithfully drawn from a source that is itself wrong.",
   },
   {
     q: "How does the AI Engineering Inspector (LLM-as-a-Judge & Re-ranking) work in Chat with Files?",
@@ -91,11 +92,13 @@ function AuthenticatedApp({
   userEmail,
   theme,
   onToggleTheme,
+  onSignOut,
 }: {
   accessToken: string;
   userEmail: string;
   theme: "dark" | "light";
   onToggleTheme: () => void;
+  onSignOut?: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("research");
   const { phase, steps, result, error, streamedReport, start, reset } = useResearch();
@@ -105,6 +108,7 @@ function AuthenticatedApp({
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [billingNote, setBillingNote] = useState<string | null>(null);
+  const [stopNotice, setStopNotice] = useState<string | null>(null);
 
   useReveal();
 
@@ -141,12 +145,25 @@ function AuthenticatedApp({
 
   const handleSubmit = (query: string) => {
     setViewingHistorical(null);
+    setStopNotice(null);
     start(accessToken, query);
   };
 
   const handleNewSearch = () => {
     reset();
     setViewingHistorical(null);
+    setStopNotice(null);
+  };
+
+  // Closing the socket is what triggers the refund: the server treats a
+  // disconnect before the report was saved exactly like a failed run and hands
+  // the reserved query back. Saying so matters — the user is watching a
+  // counter they only get ten of a month.
+  const handleStop = () => {
+    reset();
+    setViewingHistorical(null);
+    setStopNotice("Research stopped. That query has been returned to your monthly allowance.");
+    refreshQuota();
   };
 
   const displayedResult = viewingHistorical ?? result;
@@ -176,26 +193,9 @@ function AuthenticatedApp({
           </a>
 
           <nav className="app__nav-links">
-            <button
-              type="button"
-              className={`app__nav-btn ${tab === "research" ? "app__nav-btn--active" : ""}`}
-              onClick={() => {
-                setTab("research");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            >
-              Research
-            </button>
-            <button
-              type="button"
-              className={`app__nav-btn ${tab === "rag" ? "app__nav-btn--active" : ""}`}
-              onClick={() => {
-                setTab("rag");
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            >
-              Chat with Files
-            </button>
+            {/* Section links only. "Research" / "Chat with Files" used to sit
+                here too, duplicating the tab row directly below with different
+                labels and different scroll behaviour. */}
             <a href="#architecture" className="app__nav-link">
               Architecture
             </a>
@@ -231,7 +231,7 @@ function AuthenticatedApp({
               <button
                 type="button"
                 className="app__signout-btn"
-                onClick={() => supabase.auth.signOut()}
+                onClick={() => (onSignOut ? onSignOut() : supabase.auth.signOut())}
                 title="Sign out of your account"
               >
                 Sign out
@@ -298,11 +298,17 @@ function AuthenticatedApp({
             <main className="app__content-column">
               <QueryInput disabled={phase === "running"} onSubmit={handleSubmit} />
 
-              {phase !== "idle" && (
-                <button type="button" className="new-search-btn" onClick={handleNewSearch}>
-                  <Icon name="chevron" size={15} style={{ transform: "rotate(90deg)" }} /> New Research Query
+              {phase === "running" && (
+                <button type="button" className="new-search-btn new-search-btn--stop" onClick={handleStop}>
+                  <Icon name="alert" size={15} /> Stop research
                 </button>
               )}
+              {phase !== "idle" && phase !== "running" && (
+                <button type="button" className="new-search-btn" onClick={handleNewSearch}>
+                  <Icon name="chevron" size={15} style={{ transform: "rotate(90deg)" }} /> New research query
+                </button>
+              )}
+              {stopNotice && <div className="stop-notice">{stopNotice}</div>}
 
               {phase === "running" && <AgentStatusStream steps={steps} running />}
 
@@ -317,7 +323,7 @@ function AuthenticatedApp({
                     Writing the report…
                   </div>
                   <div className="report-prose">
-                    <ReactMarkdown>{streamedReport}</ReactMarkdown>
+                    <Markdown>{streamedReport}</Markdown>
                   </div>
                 </article>
               )}
@@ -456,24 +462,26 @@ function AuthenticatedApp({
       {/* Section 2: Benchmarks & Telemetry */}
       <section id="benchmarks" className="website-section">
         <div className="section-header" data-reveal>
-          <div className="section-header__eyebrow">Empirical Grounding</div>
-          <h2 className="section-header__title">Engineered for Academic & Industry Rigor</h2>
+          <div className="section-header__eyebrow">Measured, not claimed</div>
+          <h2 className="section-header__title">What the evaluation set actually shows</h2>
           <p className="section-header__subtitle">
-            Every figure below comes from a benchmark you can re-run yourself: <code>python -m evals.run --answers</code> in the backend.
+            Every figure below comes from a suite you can re-run yourself: <code>python -m evals.run --answers</code> in
+            the backend. The golden set is deliberately small — 14 questions over 3 synthetic documents, 5 of them
+            unanswerable on purpose — so treat these as a regression check, not a public benchmark.
           </p>
         </div>
 
         <div className="benchmarks-grid">
           <div className="stat-card" data-reveal data-reveal-delay="0">
-            <div className="stat-card__number">100%</div>
-            <div className="stat-card__label">Retrieval Recall</div>
-            <div className="stat-card__subtext">Every answerable question in the evaluation set reached its correct source document</div>
+            <div className="stat-card__number">9/9</div>
+            <div className="stat-card__label">Answerable questions retrieved</div>
+            <div className="stat-card__subtext">Each one reached the source document it had to be answered from</div>
           </div>
 
           <div className="stat-card" data-reveal data-reveal-delay="80">
-            <div className="stat-card__number">100%</div>
-            <div className="stat-card__label">Grounded Refusals</div>
-            <div className="stat-card__subtext">Questions the corpus cannot answer are declined rather than invented</div>
+            <div className="stat-card__number">5/5</div>
+            <div className="stat-card__label">Unanswerable questions declined</div>
+            <div className="stat-card__subtext">Refused rather than answered from the model's own parametric knowledge</div>
           </div>
 
           <div className="stat-card" data-reveal data-reveal-delay="160">
@@ -483,9 +491,9 @@ function AuthenticatedApp({
           </div>
 
           <div className="stat-card" data-reveal data-reveal-delay="240">
-            <div className="stat-card__number">86</div>
+            <div className="stat-card__number">89</div>
             <div className="stat-card__label">Automated Tests</div>
-            <div className="stat-card__subtext">Plus a golden evaluation set that fails the build on quality regression</div>
+            <div className="stat-card__subtext">Unit-level and run on every push, alongside the golden set above</div>
           </div>
         </div>
       </section>
@@ -531,7 +539,6 @@ function AuthenticatedApp({
             </div>
             <ul className="pricing-features">
               <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Unlimited Deep Research queries</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Priority queue during high demand</li>
               <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Unlimited PDF / document RAG</li>
               <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Verified Claim Audit Trail</li>
               <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> LLM-as-a-Judge Telemetry</li>

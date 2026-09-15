@@ -73,7 +73,7 @@ export function AuthScreen({
   // event (with a real signed-in session attached) when a reset link is
   // opened, and App.tsx renders this screen instead of the main app for as
   // long as this stays true.
-  const { recovering, completeRecovery } = useAuth();
+  const { recovering, completeRecovery, loginAsGuest } = useAuth();
 
   const clear = () => {
     setError(null);
@@ -193,6 +193,40 @@ export function AuthScreen({
         <div className="auth-card__logo"><Icon name="spark" size={32} weight={1.4} /></div>
         <h1>{copy.title}</h1>
         <p className="auth-card__subtitle">{copy.subtitle}</p>
+
+        {/* Dev-only. The backend now honours dev- tokens only when ENV is
+            development, so in a production build this button would sign the
+            visitor in locally and then 401 on the first API call. Hiding it
+            keeps the two halves of the bypass in agreement. */}
+        {import.meta.env.DEV && (
+        <div style={{ marginBottom: "1.25rem" }}>
+          <button
+            type="button"
+            className="auth-card__btn"
+            style={{
+              width: "100%",
+              background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+              color: "#ffffff",
+              fontWeight: 600,
+              padding: "0.75rem 1rem",
+              borderRadius: "8px",
+              cursor: "pointer",
+              border: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              fontSize: "0.95rem",
+              boxShadow: "0 2px 8px rgba(37, 99, 235, 0.3)",
+            }}
+            onClick={loginAsGuest}
+          >
+            <span>⚡</span> Continue as Guest (Local Dev)
+          </button>
+        </div>
+        )}
+
+        <div className="auth-divider" style={{ margin: "1rem 0" }}><span>or sign in with credentials</span></div>
 
         {mode !== "reset" && googleEnabled && (
           <>
