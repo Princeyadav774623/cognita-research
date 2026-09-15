@@ -7,7 +7,7 @@
 .app {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1.5rem 5rem;
+  padding: 0 var(--space-5) 5rem;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -24,19 +24,20 @@
   background: var(--bg-app);
   border-bottom: 1px solid var(--border-subtle);
   margin: 0 -1.5rem 2.5rem;
-  padding: 0.85rem 2rem;
+  padding: 0.85rem var(--space-6);
 }
 
 .app__header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1.5rem;
+  gap: var(--space-5);
 }
 
 .app__brand {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 0.65rem;
   text-decoration: none;
   cursor: pointer;
@@ -68,7 +69,7 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem var(--space-2);
   background: var(--bg-surface-raised);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-pill);
@@ -78,14 +79,14 @@
 .app__nav-links {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
-  padding: 0.25rem 0.4rem;
+  padding: var(--space-1) 0.4rem;
   border-radius: var(--radius-pill);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 960px) {
   .app__nav-links {
     display: none;
   }
@@ -120,11 +121,17 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* Shrinks rather than overflowing. This block used to be flex-shrink: 0, so
+   between the brand and a full email address the header was simply wider than
+   the page and the whole document scrolled sideways. Making it fluid means the
+   header fits at every width instead of only at the widths a breakpoint
+   happens to cover. */
 .app__header-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
+  gap: var(--space-3);
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .app__theme-toggle {
@@ -150,10 +157,11 @@
 .app__account-pill {
   display: flex;
   align-items: center;
+  min-width: 0;
   gap: 0.6rem;
   background: var(--bg-surface-raised);
   border: 1px solid var(--border-subtle);
-  padding: 0.25rem 0.75rem 0.25rem 0.3rem;
+  padding: var(--space-1) var(--space-3) var(--space-1) 0.3rem;
   border-radius: var(--radius-pill);
 }
 
@@ -174,6 +182,8 @@
 .app__account-email {
   font-size: 0.82rem;
   color: var(--text-secondary);
+  min-width: 0;
+  flex-shrink: 1;
   max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -181,6 +191,8 @@
 }
 
 .app__signout-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
   font-size: 0.75rem;
   color: var(--text-muted);
   padding: 0.15rem 0.35rem;
@@ -195,10 +207,10 @@
 /* Secondary In-Header Tabs */
 .app__tabs {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
   border-top: 1px solid var(--border-subtle);
-  padding-top: 0.75rem;
+  padding-top: var(--space-3);
 }
 
 .app__tab {
@@ -212,7 +224,7 @@
   border: 1px solid transparent;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -240,15 +252,15 @@
    ========================================================================== */
 
 .hero {
-  padding: 4rem 0 4.5rem;
-  margin-bottom: 2rem;
+  padding: var(--space-8) 0 4.5rem;
+  margin-bottom: var(--space-6);
   text-align: left;
   display: grid;
-  gap: 3rem;
+  gap: var(--space-7);
   align-items: center;
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1080px) {
   .hero {
     /* Copy holds the left column; the plate sits right, where its open
        negative space faces outward and the linework reads inboard. */
@@ -335,7 +347,7 @@
 
 .hero-cta-row {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-4);
   flex-wrap: wrap;
 }
 
@@ -348,7 +360,7 @@
   font-size: 0.95rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   box-shadow: 0 4px 14px var(--accent-subtle);
   transition: all 0.2s ease;
 }
@@ -375,18 +387,18 @@
 .launch-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-top: 1rem;
+  gap: var(--space-5);
+  margin-top: var(--space-4);
 }
 
-@media (max-width: 680px) {
+@media (max-width: 640px) {
   .launch-cards {
     grid-template-columns: 1fr;
   }
 }
 
 .launch-card {
-  padding: 1.75rem 1.5rem;
+  padding: 1.75rem var(--space-5);
   border-radius: var(--radius-xl);
   background: var(--bg-surface);
   border: 1px solid var(--border-medium);
@@ -425,7 +437,7 @@
 
 .launch-card__icon {
   font-size: 2rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-3);
 }
 
 .launch-card__title {
@@ -461,8 +473,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
-  padding: 0.75rem 1.25rem;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) 1.25rem;
   background: var(--bg-surface);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-pill);
@@ -491,7 +503,7 @@
 .workspace-banner__tag {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   font-size: 0.85rem;
   color: var(--text-muted);
 }
@@ -508,7 +520,7 @@
   margin-bottom: 5rem;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 960px) {
   .app__main-grid {
     grid-template-columns: 1fr;
   }
@@ -528,10 +540,10 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-xl);
-  padding: 0.75rem 0.85rem 0.75rem 1.25rem;
+  padding: var(--space-3) 0.85rem var(--space-3) 1.25rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
   box-shadow: var(--shadow-md), var(--glass-glow);
   backdrop-filter: var(--backdrop-blur);
   -webkit-backdrop-filter: var(--backdrop-blur);
@@ -571,7 +583,7 @@
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   flex-shrink: 0;
   box-shadow: 0 2px 8px var(--accent-subtle);
 }
@@ -586,8 +598,8 @@
 .suggestion-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
 }
 
 .suggestion-chip {
@@ -631,8 +643,8 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
   box-shadow: var(--shadow-sm);
 }
 
@@ -648,7 +660,7 @@
   font-size: 1.15rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .agent-stream__pulse {
@@ -668,14 +680,14 @@
 .agent-steps {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .agent-step {
   display: flex;
   align-items: flex-start;
   gap: 0.85rem;
-  padding: 0.75rem 1rem;
+  padding: var(--space-3) var(--space-4);
   background: var(--bg-surface-raised);
   border-radius: var(--radius-md);
   border-left: 3px solid var(--accent-warm);
@@ -697,7 +709,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem var(--space-2);
   background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -726,14 +738,14 @@
 
 @media (max-width: 640px) {
   .report-paper {
-    padding: 1.5rem;
+    padding: var(--space-5);
   }
 }
 
 .report-paper__header {
   border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 1.5rem;
-  margin-bottom: 2rem;
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
 }
 
 .report-paper__query-title {
@@ -764,7 +776,7 @@
 .meta-badge {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  padding: 0.25rem 0.65rem;
+  padding: var(--space-1) 0.65rem;
   border-radius: var(--radius-pill);
   display: flex;
   align-items: center;
@@ -798,7 +810,7 @@
 .report-paper__actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .paper-action-btn {
@@ -825,7 +837,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-6);
 }
 
 .claims-card__title {
@@ -887,29 +899,29 @@
   font-family: var(--font-serif);
   font-size: 1.55rem;
   font-weight: 500;
-  margin: 2.25rem 0 1rem;
+  margin: 2.25rem 0 var(--space-4);
   border-bottom: 1px solid var(--border-subtle);
-  padding-bottom: 0.5rem;
+  padding-bottom: var(--space-2);
 }
 
 .report-prose h3 {
   font-family: var(--font-serif);
   font-size: 1.25rem;
   font-weight: 500;
-  margin: 1.75rem 0 0.75rem;
+  margin: 1.75rem 0 var(--space-3);
 }
 
 .report-prose ul, .report-prose ol {
-  padding-left: 1.5rem;
-  margin: 1rem 0 1.25rem;
+  padding-left: var(--space-5);
+  margin: var(--space-4) 0 1.25rem;
 }
 
 .report-prose li {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .report-prose blockquote {
-  margin: 1.5rem 0;
+  margin: var(--space-5) 0;
   padding: 0.85rem 1.25rem;
   background: var(--bg-surface-raised);
   border-left: 3px solid var(--accent-warm);
@@ -921,7 +933,7 @@
 .report-prose table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1.5rem 0;
+  margin: var(--space-5) 0;
   font-size: 0.92rem;
 }
 
@@ -939,13 +951,13 @@
 .report-prose hr {
   border: none;
   border-top: 1px solid var(--border-subtle);
-  margin: 2rem 0;
+  margin: var(--space-6) 0;
 }
 
 /* Citations Drawer */
 .sources-card {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
   border-top: 1px solid var(--border-subtle);
 }
 
@@ -956,13 +968,13 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .sources-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .source-pill {
@@ -1016,8 +1028,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
 }
 
@@ -1030,14 +1042,14 @@
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
   max-height: 520px;
   overflow-y: auto;
-  padding-right: 0.25rem;
+  padding-right: var(--space-1);
 }
 
 .history-item {
-  padding: 0.75rem 0.85rem;
+  padding: var(--space-3) 0.85rem;
   border-radius: var(--radius-md);
   background: var(--bg-surface-raised);
   border: 1px solid transparent;
@@ -1103,7 +1115,7 @@
   margin-bottom: 5rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .rag-layout {
     grid-template-columns: 1fr;
   }
@@ -1115,7 +1127,7 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: 1.5rem;
+  padding: var(--space-5);
 }
 
 .rag-chat-container {
@@ -1128,7 +1140,7 @@
   align-items: stretch;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 960px) {
   .rag-chat-container {
     grid-template-columns: 1fr;
   }
@@ -1138,7 +1150,7 @@
   background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 1rem;
+  padding: var(--space-4);
   display: flex;
   flex-direction: column;
 }
@@ -1176,7 +1188,7 @@
 }
 
 .rag-chat-history__item {
-  padding: 0.6rem 0.75rem;
+  padding: 0.6rem var(--space-3);
   border-radius: var(--radius-md);
   background: var(--bg-surface-raised);
   border: 1px solid transparent;
@@ -1217,7 +1229,7 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xl);
-  padding: 1.5rem;
+  padding: var(--space-5);
   display: flex;
   flex-direction: column;
   /* A *definite* height (not just max-height) so .chat-messages becomes the
@@ -1241,7 +1253,7 @@
   align-items: center;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .rag-params-drawer {
@@ -1254,7 +1266,7 @@
 .params-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .param-item {
@@ -1279,7 +1291,7 @@
   gap: 1.25rem;
   overflow-y: auto;
   margin-bottom: 1.25rem;
-  padding-right: 0.5rem;
+  padding-right: var(--space-2);
   /* Must be 0, not a pixel floor: a flex item refuses to shrink below its
      content height unless min-height is explicitly cleared, which silently
      defeats the overflow-y above. */
@@ -1352,7 +1364,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  margin-top: 0.75rem;
+  margin-top: var(--space-3);
   border-top: 1px solid var(--border-subtle);
   padding-top: 0.6rem;
 }
@@ -1369,7 +1381,7 @@
 
 /* AI Engineering Inspector */
 .engineering-inspector {
-  margin-top: 1rem;
+  margin-top: var(--space-4);
   padding: 1.15rem 1.25rem;
   border-radius: 14px;
   /* Same tonal step the architecture and pricing cards use, instead of a
@@ -1384,7 +1396,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--space-3);
   flex-wrap: wrap;
   font-family: var(--font-sans);
   font-size: 0.9rem;
@@ -1419,11 +1431,11 @@
 .judge-scorecard {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .judge-scorecard {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1431,7 +1443,7 @@
 
 .judge-score {
   text-align: center;
-  padding: 0.7rem 0.5rem;
+  padding: 0.7rem var(--space-2);
   border-radius: 10px;
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
@@ -1444,7 +1456,7 @@
   font-weight: 600;
   color: var(--accent-warm);
   line-height: 1;
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
 }
 
 .judge-score__lbl {
@@ -1461,7 +1473,7 @@
 }
 
 .rerank-item {
-  padding: 0.5rem 0.7rem;
+  padding: var(--space-2) 0.7rem;
   border-radius: 8px;
   background: var(--bg-app);
   border: 1px solid var(--border-subtle);
@@ -1470,7 +1482,7 @@
 
 .rerank-bars {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .pipeline-trace {
@@ -1509,7 +1521,7 @@
 .rag-doc-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .rag-doc-item {
@@ -1525,7 +1537,7 @@
 
 .chat-input-bar {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -1554,7 +1566,7 @@
    ========================================================================== */
 
 .website-section {
-  padding: 6rem 0 4rem;
+  padding: var(--space-9) 0 var(--space-8);
   border-top: 1px solid var(--border-medium);
 }
 
@@ -1563,7 +1575,7 @@
      left-aligned reads as editorial, which is the register this design wants. */
   text-align: left;
   max-width: 760px;
-  margin: 0 0 3rem;
+  margin: 0 0 var(--space-7);
 }
 
 .section-header__eyebrow {
@@ -1617,7 +1629,7 @@
   border: 1px solid var(--card-edge);
   box-shadow: var(--card-shadow);
   border-radius: 18px;
-  padding: 2rem 1.9rem;
+  padding: var(--space-6) 1.9rem;
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
@@ -1640,7 +1652,7 @@
   font-weight: 680;
   letter-spacing: -0.026em;
   line-height: 1.15;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .arch-card__role {
@@ -1649,7 +1661,7 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .arch-card__desc {
@@ -1677,8 +1689,8 @@
 .benchmarks-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
 }
 
 .stat-card {
@@ -1696,7 +1708,7 @@
   font-weight: 500;
   color: var(--accent-warm);
   line-height: 1;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 .stat-card__label {
@@ -1766,14 +1778,14 @@
   font-family: var(--font-serif);
   font-size: 0.88rem;
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
 }
 
 .pricing-card__price {
   font-family: var(--font-serif);
   font-size: 2.5rem;
   font-weight: 500;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
   color: var(--text-primary);
 }
 
@@ -1786,10 +1798,10 @@
 .pricing-features {
   list-style: none;
   padding: 0;
-  margin: 0 0 2rem;
+  margin: 0 0 var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: var(--space-3);
   flex: 1;
 }
 
@@ -1842,7 +1854,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .faq-item {
@@ -1851,7 +1863,7 @@
   -webkit-backdrop-filter: var(--backdrop-blur);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 1.25rem 1.5rem;
+  padding: 1.25rem var(--space-5);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -1868,7 +1880,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  gap: var(--space-4);
   color: var(--text-primary);
 }
 
@@ -1888,9 +1900,9 @@
 
 /* Editorial Footer */
 .app-footer {
-  margin-top: 4rem;
+  margin-top: var(--space-8);
   border-top: 1px solid var(--border-subtle);
-  padding: 3rem 0 2rem;
+  padding: var(--space-7) 0 var(--space-6);
 }
 
 .app-footer__grid {
@@ -1900,13 +1912,13 @@
   margin-bottom: 2.5rem;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 960px) {
   .app-footer__grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 640px) {
   .app-footer__grid {
     grid-template-columns: 1fr;
   }
@@ -1926,7 +1938,7 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-muted);
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .app-footer__links {
@@ -1955,9 +1967,9 @@
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-4);
   border-top: 1px solid var(--border-subtle);
-  padding-top: 1.5rem;
+  padding-top: var(--space-5);
   font-size: 0.82rem;
   color: var(--text-muted);
 }
@@ -1965,7 +1977,7 @@
 .app-footer__status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .status-beacon {
@@ -1982,7 +1994,7 @@
   align-items: center;
   justify-content: center;
   min-height: 90vh;
-  padding: 1.5rem;
+  padding: var(--space-5);
 }
 
 .auth-card {
@@ -1997,14 +2009,14 @@
   box-shadow: var(--shadow-lg), var(--glass-glow);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-4);
   text-align: center;
 }
 
 .auth-card__logo {
   font-size: 2.2rem;
   color: var(--accent-warm);
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--space-1);
   filter: drop-shadow(0 0 10px rgba(212, 98, 56, 0.4));
 }
 
@@ -2018,11 +2030,11 @@
 .auth-card__subtitle {
   color: var(--text-secondary);
   font-size: 0.9rem;
-  margin: 0 0 1rem;
+  margin: 0 0 var(--space-4);
 }
 
 .auth-card input {
-  padding: 0.85rem 1rem;
+  padding: 0.85rem var(--space-4);
   font-size: 0.95rem;
 }
 
@@ -2033,7 +2045,7 @@
   border-radius: var(--radius-pill);
   font-weight: 600;
   font-size: 0.95rem;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   box-shadow: 0 2px 8px var(--accent-subtle);
 }
 
@@ -2044,7 +2056,7 @@
 .auth-card__switch {
   color: var(--text-muted);
   font-size: 0.85rem;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
 }
 
 .auth-card__switch:hover {
@@ -2056,7 +2068,7 @@
   color: var(--danger);
   font-size: 0.85rem;
   background: var(--danger-subtle);
-  padding: 0.5rem 0.65rem;
+  padding: var(--space-2) 0.65rem;
   border-radius: var(--radius-sm);
   /* Keeps the leading alert icon on the text's optical baseline. */
   display: flex;
@@ -2068,7 +2080,7 @@
   color: var(--success);
   font-size: 0.85rem;
   background: var(--success-subtle);
-  padding: 0.5rem;
+  padding: var(--space-2);
   border-radius: var(--radius-sm);
 }
 
@@ -2104,18 +2116,23 @@
 /* Full-bleed band: escapes the .app container's max-width to run edge to edge,
    which is what gives the page an Apple-like change of scale between
    reading sections. */
+/* Full-bleed band. 100vw includes the scrollbar, so on any page tall enough to
+   scroll this ran a few pixels wider than the visible viewport and the whole
+   document scrolled sideways. The gutter is subtracted via a variable the app
+   sets from the real client width, so the band is exactly as wide as what the
+   reader can see. */
 .bleed {
   position: relative;
   left: 50%;
   right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
-  width: 100vw;
+  width: var(--viewport-width, 100vw);
+  margin-left: calc(var(--viewport-width, 100vw) / -2);
+  margin-right: calc(var(--viewport-width, 100vw) / -2);
   overflow: hidden;
 }
 
 .showcase {
-  padding: 6rem 0 5rem;
+  padding: var(--space-9) 0 5rem;
   text-align: center;
 }
 
@@ -2145,7 +2162,7 @@
   line-height: 1.6;
   color: var(--text-secondary);
   max-width: 56ch;
-  margin: 0 auto 3rem;
+  margin: 0 auto var(--space-7);
 }
 
 /* Media frame — generous radius and a hairline, so the artwork reads as a
@@ -2254,13 +2271,13 @@
 
 /* Report streaming in, before the saved session is fetched */
 .streaming-report {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
 }
 
 .streaming-report__badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--space-2);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -2314,7 +2331,7 @@
   font-family: var(--font-serif);
   font-size: 0.98rem;
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-5);
 }
 
 /* Google */
@@ -2324,7 +2341,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.65rem;
-  padding: 0.72rem 1rem;
+  padding: 0.72rem var(--space-4);
   font-size: 0.95rem;
   font-weight: 560;
   color: var(--text-primary);
@@ -2377,7 +2394,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-4);
 }
 
 .auth-field__wrap {
@@ -2396,7 +2413,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
-  padding: 0.25rem 0.45rem;
+  padding: var(--space-1) 0.45rem;
   border-radius: var(--radius-sm);
 }
 
@@ -2406,7 +2423,7 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   font-size: 0.75rem;
   color: var(--text-muted);
 }
@@ -2451,7 +2468,7 @@
 }
 
 .auth-card__fine {
-  margin-top: 1rem;
+  margin-top: var(--space-4);
   font-size: 0.74rem;
   line-height: 1.5;
   color: var(--text-muted);
@@ -2487,9 +2504,9 @@
    Below this width the email is dropped (it is already shown in the account
    menu's title attribute) and the remaining controls become real tap targets.
    700px rather than a smaller value because the email is what overflows first. */
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .app__header {
-    padding-inline: 1rem;
+    padding-inline: var(--space-4);
     margin-inline: -1rem;
   }
 
@@ -2522,7 +2539,7 @@
   }
 
   .app__account-pill {
-    padding: 0.2rem 0.25rem;
+    padding: 0.2rem var(--space-1);
     gap: 0.3rem;
   }
 }
@@ -2531,7 +2548,7 @@
    at 19px tall, and the history delete button at 18x24px, which is a
    destructive action at roughly a third of the minimum. Padding grows the hit
    area without changing how any of these look. */
-@media (pointer: coarse), (max-width: 700px) {
+@media (pointer: coarse), (max-width: 640px) {
   .app__theme-toggle {
     width: 44px;
     height: 44px;
@@ -2547,6 +2564,12 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Introduced when the nested-button row was split into siblings, and missed
+     by the original touch-target pass. */
+  .history-item__open {
+    min-height: 44px;
   }
 
   .history-item__delete {
@@ -2568,7 +2591,7 @@
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    padding-inline: 0.25rem;
+    padding-inline: var(--space-1);
   }
 
   .app__brand {
@@ -2594,7 +2617,7 @@
   background: var(--border-subtle);
   border-radius: var(--radius-pill);
   overflow: hidden;
-  margin: 0.75rem 0 1rem;
+  margin: var(--space-3) 0 var(--space-4);
 }
 
 .agent-progress__fill {
@@ -2716,7 +2739,7 @@ textarea.query-box__input {
 .history-item {
   display: flex;
   align-items: stretch;
-  gap: 0.25rem;
+  gap: var(--space-1);
 }
 
 .history-item__open {
@@ -2885,7 +2908,7 @@ textarea.query-box__input {
 
 .md-code {
   overflow-x: auto;
-  padding: 0.9rem 1rem;
+  padding: 0.9rem var(--space-4);
   background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -2915,7 +2938,7 @@ textarea.query-box__input {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-4);
 }
 
 .chart-svg { width: 100%; height: auto; display: block; }
@@ -2929,7 +2952,7 @@ textarea.query-box__input {
   display: grid;
   grid-template-columns: minmax(70px, 22%) 1fr auto;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .chart-bar__label {
@@ -3018,7 +3041,7 @@ textarea.query-box__input {
 .figures-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem;
+  gap: var(--space-3);
 }
 
 .figure-tile {
@@ -3041,14 +3064,14 @@ textarea.query-box__input {
   font-size: 0.74rem;
   line-height: 1.4;
   color: var(--text-muted);
-  padding: 0.5rem 0.6rem;
+  padding: var(--space-2) 0.6rem;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .chart-bar { grid-template-columns: minmax(60px, 30%) 1fr auto; gap: 0.5rem; }
   .figures-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 }
@@ -3056,4 +3079,27 @@ textarea.query-box__input {
 @media print {
   .chart, .figure-tile { break-inside: avoid; }
   .figures-card { display: none !important; }
+}
+
+/* Marketing is a route now, not a band under the workspace. */
+.marketing-back {
+  /* .app is a flex column, so an inline-flex child still stretches to full
+     width unless it opts out. */
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin-bottom: var(--space-5);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.marketing-back:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
 }

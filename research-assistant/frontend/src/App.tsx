@@ -4,6 +4,7 @@ import { AgentStatusStream } from "./components/AgentStatusStream";
 import { ReportView } from "./components/ReportView";
 import { HistoryPanel } from "./components/HistoryPanel";
 import { AuthScreen } from "./components/AuthScreen";
+import { MarketingPage, MARKETING_ROUTES, type MarketingRoute } from "./components/MarketingPage";
 import { Markdown } from "./components/Markdown";
 import { RagSection } from "./RagSection";
 import { Icon } from "./components/Icon";
@@ -87,6 +88,14 @@ const FAQS = [
   },
 ];
 
+/** The hash is the route. Keeping the existing #architecture-style anchors
+ *  means every link that used to scroll within one long page still works as a
+ *  deep link, without pulling in a router for four static sections. */
+function marketingRouteFromHash(): MarketingRoute | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  return (MARKETING_ROUTES as readonly string[]).includes(hash) ? (hash as MarketingRoute) : null;
+}
+
 function AuthenticatedApp({
   accessToken,
   userEmail,
@@ -105,12 +114,31 @@ function AuthenticatedApp({
   const [historyKey, setHistoryKey] = useState(0);
   const [viewingHistorical, setViewingHistorical] = useState<SessionRecord | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [marketingRoute, setMarketingRoute] = useState<MarketingRoute | null>(marketingRouteFromHash);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      setMarketingRoute(marketingRouteFromHash());
+      window.scrollTo({ top: 0, behavior: "instant" });
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const backToApp = useCallback(() => {
+    // Clearing the hash without pushing a new entry, so Back returns to
+    // wherever the reader came from rather than toggling the route.
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+    setMarketingRoute(null);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [billingNote, setBillingNote] = useState<string | null>(null);
   const [stopNotice, setStopNotice] = useState<string | null>(null);
 
-  useReveal();
+  // Re-observes when the marketing route mounts its own sections.
+  useReveal(marketingRoute);
 
   // Live plan state, so the pricing card shows what this account actually
   // has left rather than a static marketing number.
@@ -266,8 +294,23 @@ function AuthenticatedApp({
         </nav>
       </header>
 
+      {marketingRoute && (
+        <MarketingPage
+          theme={theme}
+          quota={quota}
+          upgrading={upgrading}
+          billingNote={billingNote}
+          openFaq={openFaq}
+          onToggleFaq={setOpenFaq}
+          onUpgrade={handleUpgrade}
+          onBackToApp={backToApp}
+          freeQueriesPerMonth={FREE_QUERIES_PER_MONTH}
+          faqs={FAQS}
+        />
+      )}
+
       {/* Hero Header Section - Only on Research Tab */}
-      {tab === "research" && phase === "idle" && !displayedResult && (
+      {!marketingRoute && tab === "research" && phase === "idle" && !displayedResult && (
         <section className="hero">
           <div className="hero__eyebrow">
             <Icon name="spark" size={13} /> Autonomous Epistemic Intelligence
@@ -292,7 +335,7 @@ function AuthenticatedApp({
       )}
 
       {/* Main Interactive Research Workspace */}
-      <section id="workspace" style={{ minHeight: "650px", marginBottom: "4rem" }}>
+      {!marketingRoute && <section id="workspace" style={{ minHeight: "650px", marginBottom: "4rem" }}>
         {tab === "research" && (
           <div className="app__main-grid">
             <main className="app__content-column">
@@ -373,246 +416,14 @@ function AuthenticatedApp({
         )}
 
         {tab === "rag" && <RagSection />}
-      </section>
+      </section>}
 
       {/* Full-bleed showcase band — an Apple-style change of scale between
           reading sections, and the plate's five columns echo the five agents. */}
-      <section className="bleed showcase" data-reveal>
-        <div className="showcase__eyebrow">The pipeline</div>
-        <h2 className="showcase__title">Every claim traced back to its source.</h2>
-        <p className="showcase__sub">
-          Five agents hand work to one another in a recursive loop — planning, gathering,
-          reading, synthesising, and verifying — so each statement in the final paper
-          carries the evidence it came from.
-        </p>
-        <figure className="media-frame" style={{ margin: "0 auto" }}>
-          <img
-            src={theme === "dark" ? "/visual-pipeline-dark.png" : "/visual-pipeline.png"}
-            alt="Ink plate of five connected columns representing the five research agents and the evidence passed between them"
-            loading="lazy"
-            width={1376}
-            height={768}
-          />
-        </figure>
-      </section>
 
-      {/* Section 1: Architecture Showcase */}
-      <section id="architecture" className="website-section">
-        <div className="section-header" data-reveal>
-          <div className="section-header__eyebrow">LangGraph Architecture</div>
-          <h2 className="section-header__title">Five Collaborative Autonomous Agents</h2>
-          <p className="section-header__subtitle">
-            Cognita replaces brittle single-prompt calls with a structured multi-agent graph with self-reflection, evidence gathering, and claim-level verification.
-          </p>
-        </div>
+      {/* Marketing lives on its own route now — see components/MarketingPage. */}
 
-        <div className="architecture-grid">
-          <div className="arch-card" data-reveal data-reveal-delay="0">
-            <div className="arch-card__icon"><Icon name="compass" size={26} /></div>
-            <div className="arch-card__name">Planner Agent</div>
-            <div className="arch-card__role">Query Decomposition</div>
-            <div className="arch-card__desc">
-              Analyzes complex inquiries, detects conceptual dependencies, and generates targeted search vectors.
-            </div>
-            <span className="arch-card__badge">Deterministic JSON</span>
-          </div>
-
-          <div className="arch-card" data-reveal data-reveal-delay="90">
-            <div className="arch-card__icon"><Icon name="search" size={26} /></div>
-            <div className="arch-card__name">Search Agent</div>
-            <div className="arch-card__role">Live Web Gathering</div>
-            <div className="arch-card__desc">
-              Executes parallel search queries via Tavily API to gather up to 40 academic and industry sources.
-            </div>
-            <span className="arch-card__badge">Multi-Source</span>
-          </div>
-
-          <div className="arch-card" data-reveal data-reveal-delay="180">
-            <div className="arch-card__icon"><Icon name="document" size={26} /></div>
-            <div className="arch-card__name">Reader Agent</div>
-            <div className="arch-card__role">Document Extraction</div>
-            <div className="arch-card__desc">
-              Parses HTML, PDF, and Markdown content with resilient fallback to search snippet vectors on 403 blocks.
-            </div>
-            <span className="arch-card__badge">Async Scraping</span>
-          </div>
-
-          <div className="arch-card" data-reveal data-reveal-delay="270">
-            <div className="arch-card__icon"><Icon name="brain" size={26} /></div>
-            <div className="arch-card__name">Analyst Agent</div>
-            <div className="arch-card__role">Epistemic Synthesis</div>
-            <div className="arch-card__desc">
-              Synthesizes insights across dozens of documents, identifying consensus, controversies, and key data points.
-            </div>
-            <span className="arch-card__badge">Cross-Document</span>
-          </div>
-
-          <div className="arch-card" data-reveal data-reveal-delay="360">
-            <div className="arch-card__icon"><Icon name="verified" size={26} /></div>
-            <div className="arch-card__name">Fact-Checker</div>
-            <div className="arch-card__role">Claim Verification</div>
-            <div className="arch-card__desc">
-              Extracts factual claims and verifies each claim against retrieved sources, assigning grounded confidence scores.
-            </div>
-            <span className="arch-card__badge">Zero Tolerance</span>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 2: Benchmarks & Telemetry */}
-      <section id="benchmarks" className="website-section">
-        <div className="section-header" data-reveal>
-          <div className="section-header__eyebrow">Measured, not claimed</div>
-          <h2 className="section-header__title">What the evaluation set actually shows</h2>
-          <p className="section-header__subtitle">
-            Every figure below comes from a suite you can re-run yourself: <code>python -m evals.run --answers</code> in
-            the backend. The golden set is deliberately small — 14 questions over 3 synthetic documents, 5 of them
-            unanswerable on purpose — so treat these as a regression check, not a public benchmark.
-          </p>
-        </div>
-
-        <div className="benchmarks-grid">
-          <div className="stat-card" data-reveal data-reveal-delay="0">
-            <div className="stat-card__number">9/9</div>
-            <div className="stat-card__label">Answerable questions retrieved</div>
-            <div className="stat-card__subtext">Each one reached the source document it had to be answered from</div>
-          </div>
-
-          <div className="stat-card" data-reveal data-reveal-delay="80">
-            <div className="stat-card__number">5/5</div>
-            <div className="stat-card__label">Unanswerable questions declined</div>
-            <div className="stat-card__subtext">Refused rather than answered from the model's own parametric knowledge</div>
-          </div>
-
-          <div className="stat-card" data-reveal data-reveal-delay="160">
-            <div className="stat-card__number">2.7×</div>
-            <div className="stat-card__label">Faster Synthesis</div>
-            <div className="stat-card__subtext">361s to 134s end-to-end on an instrumented benchmark run</div>
-          </div>
-
-          <div className="stat-card" data-reveal data-reveal-delay="240">
-            <div className="stat-card__number">89</div>
-            <div className="stat-card__label">Automated Tests</div>
-            <div className="stat-card__subtext">Unit-level and run on every push, alongside the golden set above</div>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3: Pricing & Access */}
-      <section id="pricing" className="website-section">
-        <div className="section-header" data-reveal>
-          <div className="section-header__eyebrow">Transparent Plans</div>
-          <h2 className="section-header__title">Designed for Researchers & Teams</h2>
-          <p className="section-header__subtitle">
-            Start free with autonomous research queries or upgrade for unlimited synthesis and API access.
-          </p>
-        </div>
-
-        <div className="pricing-grid">
-          <div className="pricing-card">
-            <div className="pricing-card__name">Explorer</div>
-            <div className="pricing-card__desc">Ideal for students and individual research tasks.</div>
-            <div className="pricing-card__price">
-              $0 <span>/ month</span>
-            </div>
-            <ul className="pricing-features">
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span>
-                {quota && quota.plan_tier === "free"
-                  ? `${quota.remaining_queries} of ${quota.quota_limit} Deep Research queries left this month`
-                  : `${FREE_QUERIES_PER_MONTH} Deep Research queries / mo`}
-              </li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> 5-Agent LangGraph pipeline</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Markdown report export</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Document uploads up to 15MB each</li>
-            </ul>
-            <button type="button" className="pricing-card__btn" onClick={() => setTab("research")}>
-              {quota?.plan_tier === "pro" ? "Free plan" : "Current plan"}
-            </button>
-          </div>
-
-          <div className="pricing-card pricing-card--popular">
-            <span className="pricing-card__pill">Recommended</span>
-            <div className="pricing-card__name">Pro Researcher</div>
-            <div className="pricing-card__desc">For analysts, scientists, and power researchers.</div>
-            <div className="pricing-card__price">
-              $20 <span>/ month</span>
-            </div>
-            <ul className="pricing-features">
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Unlimited Deep Research queries</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Unlimited PDF / document RAG</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Verified Claim Audit Trail</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> LLM-as-a-Judge Telemetry</li>
-            </ul>
-            <button
-              type="button"
-              className="pricing-card__btn pricing-card__btn--primary"
-              onClick={handleUpgrade}
-              disabled={upgrading || quota?.plan_tier === "pro"}
-            >
-              {quota?.plan_tier === "pro"
-                ? "Current plan"
-                : upgrading
-                  ? "Starting checkout…"
-                  : "Upgrade to Pro"}
-            </button>
-            {billingNote && (
-              <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.75rem", lineHeight: 1.45 }}>
-                {billingNote}
-              </p>
-            )}
-          </div>
-
-          <div className="pricing-card">
-            <div className="pricing-card__name">Enterprise & Lab</div>
-            <div className="pricing-card__desc">Custom deployments for organizations and labs.</div>
-            <div className="pricing-card__price">
-              Custom <span>/ team</span>
-            </div>
-            <ul className="pricing-features">
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Dedicated self-hosted VPS / Hostinger</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Private Supabase & PostgreSQL instance</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> Custom agent graph customization</li>
-              <li className="pricing-feature"><span className="pricing-feature__icon"><Icon name="check" size={14} weight={2} /></span> 24/7 SLA & Team onboarding</li>
-            </ul>
-            <button type="button" className="pricing-card__btn">
-              Contact Enterprise
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 4: FAQ Accordion */}
-      <section id="faq" className="website-section">
-        <div className="section-header" data-reveal>
-          <div className="section-header__eyebrow">Common Questions</div>
-          <h2 className="section-header__title">Frequently Asked Questions</h2>
-          <p className="section-header__subtitle">
-            Everything you need to know about Cognita's architecture and capabilities.
-          </p>
-        </div>
-
-        <div className="faq-grid">
-          {FAQS.map((faq, i) => {
-            const isOpen = openFaq === i;
-            return (
-              <div
-                key={i}
-                className="faq-item"
-                onClick={() => setOpenFaq(isOpen ? null : i)}
-              >
-                <div className="faq-item__question">
-                  <span>{faq.q}</span>
-                  <span className="faq-item__toggle">{isOpen ? "−" : "+"}</span>
-                </div>
-                {isOpen && <div className="faq-item__answer">{faq.a}</div>}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Editorial Footer */}
-      <footer className="app-footer">
+            <footer className="app-footer">
         <div className="app-footer__grid">
           <div>
             <div className="app__brand-title" style={{ marginBottom: "0.5rem" }}>

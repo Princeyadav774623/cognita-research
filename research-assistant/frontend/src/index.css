@@ -52,6 +52,28 @@
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.45);
   --glass-glow: 0 0 30px rgba(212, 98, 56, 0.12);
 
+  /* Spacing scale. 306 hand-written padding/margin/gap values were the reason
+     the same visual gap came out slightly different in each component, and why
+     nobody but the original author could safely extend the stylesheet. Roughly
+     a 1.5x progression, which keeps the small end fine-grained where controls
+     need it and opens up quickly for section rhythm. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  /* Three breakpoints, not nine. Values are documented here because media
+     queries cannot read custom properties — these are the numbers App.css
+     uses, and the only ones it should. */
+  /* phone   <= 640px
+     tablet  <= 960px
+     wide    >= 1080px */
+
   --radius-sm: 6px;
   --radius-md: 12px;
   --radius-lg: 18px;

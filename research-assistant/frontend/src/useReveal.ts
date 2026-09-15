@@ -13,8 +13,13 @@ import { useEffect } from "react";
  *
  * Honours `prefers-reduced-motion` by revealing everything immediately, so the
  * page is never gated on an animation the reader asked not to see.
+ *
+ * Pass anything that changes when new `data-reveal` content mounts. The
+ * observer only ever sees nodes that exist when the effect runs, so content
+ * added later — a route that mounts its own sections — would sit at opacity 0
+ * permanently, which is a blank page rather than a missing animation.
  */
-export function useReveal() {
+export function useReveal(deps: unknown = null) {
   useEffect(() => {
     const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (nodes.length === 0) return;
@@ -42,5 +47,5 @@ export function useReveal() {
 
     nodes.forEach((n) => observer.observe(n));
     return () => observer.disconnect();
-  }, []);
+  }, [deps]);
 }
