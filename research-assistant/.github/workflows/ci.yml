@@ -11,6 +11,25 @@ jobs:
     name: Backend Tests & Lint
     runs-on: ubuntu-latest
 
+    # The app refuses to start on SQLite (db.py raises), yet CI ran the whole
+    # suite against it — so pgvector queries, the set_config tenant scoping and
+    # the ADD COLUMN migrations were covered by nothing. This is the same image
+    # the app actually runs on.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cognita_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,16 +51,53 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Create the low-privilege runtime role
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d cognita_test -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE cognita_app LOGIN PASSWORD 'cognita_ci';
+          GRANT CONNECT ON DATABASE cognita_test TO cognita_app;
+          GRANT USAGE ON SCHEMA public TO cognita_app;
+          SQL
+
       - name: Run Pytest Test Suite
         env:
           GROQ_API_KEY: "test_groq_key"
           TAVILY_API_KEY: "test_tavily_key"
           SUPABASE_URL: "https://test.supabase.co"
-          DATABASE_URL: "sqlite:///./test.db"
-          APP_DATABASE_URL: "sqlite:///./test.db"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/cognita_test"
+          APP_DATABASE_URL: "postgresql://cognita_app:cognita_ci@localhost:5432/cognita_test"
         run: |
           cd backend
           PYTHONPATH=. pytest tests/ -v
+
+      # Verifies tenant isolation is actually enforced by Postgres, not just
+      # that the policy statements ran. Needs a real database, which is why it
+      # could not exist before.
+      - name: Verify Row-Level Security blocks cross-tenant reads
+        env:
+          GROQ_API_KEY: "test_groq_key"
+          TAVILY_API_KEY: "test_tavily_key"
+          SUPABASE_URL: "https://test.supabase.co"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/cognita_test"
+          APP_DATABASE_URL: "postgresql://cognita_app:cognita_ci@localhost:5432/cognita_test"
+        run: |
+          cd backend
+          PYTHONPATH=. python scripts/verify_rls.py
+
+      # The landing page claims the golden set fails the build on regression.
+      # Without this step that sentence was not true.
+      - name: Golden evaluation set
+        env:
+          GROQ_API_KEY: "test_groq_key"
+          TAVILY_API_KEY: "test_tavily_key"
+          SUPABASE_URL: "https://test.supabase.co"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/cognita_test"
+          APP_DATABASE_URL: "postgresql://cognita_app:cognita_ci@localhost:5432/cognita_test"
+        run: |
+          cd backend
+          PYTHONPATH=. pytest tests/test_evals.py -v
 
   frontend-build:
     name: Frontend Typecheck & Build
@@ -67,3 +123,8 @@ jobs:
         run: |
           cd frontend
           npm run build
+
+      - name: Frontend unit tests
+        run: |
+          cd frontend
+          npm run test
