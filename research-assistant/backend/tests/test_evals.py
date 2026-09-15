@@ -1,10 +1,12 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from graph.state import ResearchState
 from graph.research_graph import create_initial_state, should_loop_or_report, should_continue_after_search
 from agents.planner_agent import planner_agent, ResearchPlan
 from agents.gap_analysis_agent import gap_analysis_agent, GapAnalysisResult
-from agents.factcheck_agent import factcheck_agent, ClaimsList, ClaimVerification
+from agents.factcheck_agent import (
+    factcheck_agent, ClaimsList, ClaimVerification, BatchedVerification, BatchedVerdict,
+)
 
 
 def make_eval_state(**kwargs) -> ResearchState:
@@ -67,17 +69,22 @@ class TestEvaluations:
         assert new_state["is_sufficient"] is True
         assert should_loop_or_report(new_state) == "report"
 
+    @pytest.mark.asyncio
+    @patch("agents.factcheck_agent._gather_corroboration", new_callable=AsyncMock, return_value={})
     @patch("agents.factcheck_agent.ChatGroq")
-    def test_factcheck_structured_evaluation(self, mock_groq_class):
+    async def test_factcheck_structured_evaluation(self, mock_groq_class, _no_corroboration):
         mock_llm = MagicMock()
         mock_structured = MagicMock()
-        
-        # When called with ClaimsList vs ClaimVerification
+
         def mock_invoke(messages):
-            # If claim extraction prompt
             if "Extract the 5 most important" in messages[0].content:
                 return ClaimsList(claims=["Mamba uses selective state spaces", "Transformers have quadratic complexity"])
-            return ClaimVerification(verified=True, confidence=0.95, source="Arxiv 2024", explanation="Supported")
+            # One batched call now carries a verdict per claim, each judged
+            # against its own evidence block.
+            return BatchedVerification(verdicts=[
+                BatchedVerdict(claim_index=0, verified=True, confidence=0.95, source="Arxiv 2024"),
+                BatchedVerdict(claim_index=1, verified=True, confidence=0.95, source="Arxiv 2024"),
+            ])
 
         mock_structured.invoke.side_effect = mock_invoke
         mock_llm.with_structured_output.return_value = mock_structured
@@ -88,9 +95,14 @@ class TestEvaluations:
             source_documents=[{"title": "Arxiv", "url": "https://arxiv.org", "text": "Mamba introduces selective state spaces."}]
         )
 
-        result = factcheck_agent(state)
+        result = await factcheck_agent(state)
         assert len(result["verified_claims"]) == 2
-        assert result["overall_confidence"] == 0.95
+        # Both claims scored 0.95, but the whole run rests on a single source,
+        # so the score is capped regardless of how sure the verifier was.
+        # Perfect claims over one document is not a confident answer.
+        assert result["overall_confidence"] == 0.60
+        assert any("source" in f["label"].lower() for f in result["confidence_factors"])
+        assert result["confidence_to_improve"], "a capped score must say what would lift it"
         assert result["current_step"] == "factcheck_done"
 
 

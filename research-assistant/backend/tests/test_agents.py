@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from graph.state import ResearchState
 
 
@@ -292,22 +292,25 @@ class TestAnalystAgent:
 # =============================================
 
 class TestFactCheckAgent:
-    def test_no_draft_answer_short_circuits(self):
+    @pytest.mark.asyncio
+    async def test_no_draft_answer_short_circuits(self):
         from agents.factcheck_agent import factcheck_agent
 
         state = make_state(draft_answer="")
-        result = factcheck_agent(state)
+        result = await factcheck_agent(state)
 
         assert result["verified_claims"] == []
         assert result["overall_confidence"] == 0.0
         assert result["current_step"] == "factcheck_done"
 
+    @pytest.mark.asyncio
+    @patch("agents.factcheck_agent._gather_corroboration", new_callable=AsyncMock, return_value={})
     @patch("agents.factcheck_agent.ChatGroq")
-    def test_verifies_extracted_claims(self, mock_groq_class):
+    async def test_verifies_extracted_claims(self, mock_groq_class, _no_corroboration):
         from agents.factcheck_agent import factcheck_agent
 
         mock_llm = MagicMock()
-        # Two calls total now, not one-per-claim: extract_claims, then a single
+        # Two calls total, not one-per-claim: extract_claims, then a single
         # batched verification carrying every verdict keyed by claim_index.
         mock_llm.invoke.side_effect = [
             MagicMock(content='["AI is transforming research", "Models are larger"]'),
@@ -321,19 +324,24 @@ class TestFactCheckAgent:
             draft_answer="AI is transforming research.",
             source_documents=[{"title": "AI Article", "url": "https://example.com", "text": "content"}],
         )
-        result = factcheck_agent(state)
+        result = await factcheck_agent(state)
 
         assert len(result["verified_claims"]) == 2
         by_claim = {c["claim"]: c for c in result["verified_claims"]}
         assert by_claim["AI is transforming research"]["verified"] is True
         assert by_claim["Models are larger"]["verified"] is False
-        assert result["overall_confidence"] == 0.5   # (0.9 + 0.1) / 2
+        # No longer the plain mean of (0.9, 0.1). An unsupported claim is
+        # weighted more heavily than a supported one, so it cannot be averaged
+        # away by its neighbours.
+        assert result["overall_confidence"] == 0.42
         assert result["current_step"] == "factcheck_done"
         # The whole point of the change: evidence is sent once, not per claim.
         assert mock_llm.invoke.call_count == 2
 
+    @pytest.mark.asyncio
+    @patch("agents.factcheck_agent._gather_corroboration", new_callable=AsyncMock, return_value={})
     @patch("agents.factcheck_agent.ChatGroq")
-    def test_reuses_verdicts_from_previous_pass(self, mock_groq_class):
+    async def test_reuses_verdicts_from_previous_pass(self, mock_groq_class, _no_corroboration):
         """The reflective loop must not re-verify claims it already settled."""
         from agents.factcheck_agent import factcheck_agent
 
@@ -350,15 +358,17 @@ class TestFactCheckAgent:
         state["verified_claims"] = [
             {"claim": "Already checked", "verified": True, "confidence": 0.8, "source": "e.com"}
         ]
-        result = factcheck_agent(state)
+        result = await factcheck_agent(state)
 
         assert len(result["verified_claims"]) == 1
         assert result["verified_claims"][0]["confidence"] == 0.8
         # extract_claims only — no verification call, because nothing was pending.
         assert mock_llm.invoke.call_count == 1
 
+    @pytest.mark.asyncio
+    @patch("agents.factcheck_agent._gather_corroboration", new_callable=AsyncMock, return_value={})
     @patch("agents.factcheck_agent.ChatGroq")
-    def test_handles_malformed_claim_json(self, mock_groq_class):
+    async def test_handles_malformed_claim_json(self, mock_groq_class, _no_corroboration):
         from agents.factcheck_agent import factcheck_agent
 
         mock_llm = MagicMock()
@@ -369,11 +379,13 @@ class TestFactCheckAgent:
             draft_answer="Some claim.",
             source_documents=[{"title": "Doc", "url": "https://example.com", "text": "content"}],
         )
-        result = factcheck_agent(state)
+        result = await factcheck_agent(state)
 
-        # extract_claims fails gracefully -> no claims -> default confidence
+        # extract_claims fails gracefully -> no claims. Zero, not 0.5: an
+        # invented middling number reads as a measurement when nothing was
+        # measured at all.
         assert result["verified_claims"] == []
-        assert result["overall_confidence"] == 0.5
+        assert result["overall_confidence"] == 0.0
         assert result["current_step"] == "factcheck_done"
 
     @patch("agents.factcheck_agent.ChatGroq")
