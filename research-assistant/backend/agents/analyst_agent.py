@@ -5,12 +5,18 @@ from langchain_core.documents import Document
 from config import get_settings
 from graph.state import ResearchState
 from utils import invoke_with_retry, clean_llm_response
+from rag.ingest import chunk_text
 import logging
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
 CHUNK_SIZE = 800
+# Chunks were previously sliced with no overlap at all, mid-word, so any
+# statistic or claim straddling an 800-character boundary became two unusable
+# halves — in the exact path that produces the report. rag/ingest.py already
+# had this right; this brings the analyst in line with it.
+CHUNK_OVERLAP = 120
 TOP_K_CHUNKS = 10
 
 
@@ -20,16 +26,21 @@ TOP_K_CHUNKS = 10
 # Uses the smarter Groq model for deep reasoning
 # =============================================
 
-SYSTEM_PROMPT = """You are an expert research analyst. Your job is to synthesize information
-from multiple sources and produce a comprehensive, accurate answer to a research question.
+SYSTEM_PROMPT = """You are an expert research analyst. Synthesize the provided
+sources into a clear, accurate answer for a reader who is new to the topic.
 
-Rules:
-- Synthesize across ALL provided sources, don't just summarize one
-- Cite sources by their title or URL when making specific claims
-- Structure your answer with clear sections
-- Be thorough but concise
-- If sources contradict each other, mention both perspectives
-- Use markdown formatting for headers and lists
+- Draw across ALL the sources; don't summarise one and stop.
+- Explain each idea in full sentences. A term needs a sentence saying what it is
+  and why it matters, not a two-word definition — the reader cannot look it up
+  from a fragment.
+- Say why a fact matters, not only that it is true.
+- Where sources disagree, say so and give both readings.
+- Cite by title or URL at the specific claim it supports.
+- Use concrete numbers, dates and names wherever the sources provide them.
+- Markdown for structure. Reach for a table only when comparing several things
+  across the same dimensions; if the cells would be sentence fragments, write
+  paragraphs instead.
+- Skip throat-clearing. Start with the answer.
 """
 
 
@@ -49,7 +60,7 @@ def analyst_agent(state: ResearchState) -> ResearchState:
     context = build_context(state["query"], state["source_documents"])
 
     llm = ChatGroq(
-        model=settings.groq_model_smart,   # llama-3.3-70b-versatile — best reasoning
+        model=settings.groq_model_smart,    # strongest available — deep reasoning
         api_key=settings.groq_api_key,
         temperature=0.2,                    # low temp = more factual
         max_tokens=2048,
@@ -89,22 +100,23 @@ Please provide a comprehensive, well-structured answer based on these sources.
 
 
 def chunk_documents(documents: list) -> list[Document]:
-    """Split each source document into smaller chunks for retrieval, keeping
-    provenance (title/url) attached to every chunk."""
+    """Split each source document into overlapping chunks for retrieval,
+    keeping provenance (title/url) attached to every chunk.
+
+    Splitting is delegated to rag.ingest.chunk_text so the research path and
+    the document-upload path cannot drift apart on chunking behaviour again.
+    """
     chunks = []
     for doc in documents:
-        text = doc["text"]
-        for start in range(0, len(text), CHUNK_SIZE):
-            piece = text[start:start + CHUNK_SIZE].strip()
-            if piece:
-                chunks.append(Document(
-                    page_content=piece,
-                    metadata={
-                        "title": doc["title"],
-                        "url": doc["url"],
-                        "origin": doc.get("origin", "web"),
-                    },
-                ))
+        for piece in chunk_text(doc["text"], chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
+            chunks.append(Document(
+                page_content=piece,
+                metadata={
+                    "title": doc["title"],
+                    "url": doc["url"],
+                    "origin": doc.get("origin", "web"),
+                },
+            ))
     return chunks
 
 
@@ -115,10 +127,34 @@ def chunk_documents(documents: list) -> list[Document]:
 RESERVED_CORPUS_CHUNKS = 4
 
 
+def _rank_chunks(query: str, chunks: list, top_k: int) -> list:
+    """Return the top_k chunks most relevant to the query.
+
+    Uses Cohere rerank when a key is configured and there is something to
+    choose between; otherwise falls back to the leading chunks, which is the
+    best available ordering without a relevance signal.
+    """
+    if not chunks or top_k <= 0:
+        return []
+    if len(chunks) <= top_k or not settings.cohere_api_key:
+        return chunks[:top_k]
+
+    try:
+        reranker = CohereRerank(
+            cohere_api_key=settings.cohere_api_key,
+            model="rerank-english-v3.0",
+            top_n=top_k,
+        )
+        return list(reranker.compress_documents(documents=chunks, query=query))
+    except Exception as e:
+        logger.warning(f"[AnalystAgent] Cohere rerank failed, using first {top_k} chunks: {e}")
+        return chunks[:top_k]
+
+
 def build_context(query: str, documents: list) -> str:
-    """Rank all source chunks by relevance to the query with Cohere rerank
-    and keep only the top-K, so the analyst sees the most relevant material
-    instead of the first N characters of each source.
+    """Rank all source chunks by relevance to the query and keep only the
+    top-K, so the analyst sees the most relevant material instead of the first
+    N characters of each source.
 
     Chunks from the user's own corpus are ranked separately and guaranteed a
     share of the context: they were chosen deliberately, so they should not
@@ -131,33 +167,22 @@ def build_context(query: str, documents: list) -> str:
     corpus_chunks = [c for c in all_chunks if c.metadata.get("origin") == "corpus"]
     web_chunks = [c for c in all_chunks if c.metadata.get("origin") != "corpus"]
 
-    kept_corpus = corpus_chunks[:RESERVED_CORPUS_CHUNKS]
+    # Both pools are ranked. The corpus pool used to be sliced with
+    # corpus_chunks[:4] — the first four in insertion order, which for an
+    # uploaded paper means its title page and abstract boilerplate rather than
+    # the passages that answer the question. "Reserved" is about guaranteeing
+    # the slots, not about skipping the ranking.
+    kept_corpus = _rank_chunks(query, corpus_chunks, RESERVED_CORPUS_CHUNKS)
     web_budget = max(TOP_K_CHUNKS - len(kept_corpus), 1)
-
-    chunks = web_chunks
-    TOP_K = web_budget
-    ranked_chunks = chunks
-    if len(chunks) > TOP_K and settings.cohere_api_key:
-        try:
-            reranker = CohereRerank(
-                cohere_api_key=settings.cohere_api_key,
-                model="rerank-english-v3.0",
-                top_n=TOP_K,
-            )
-            ranked_chunks = reranker.compress_documents(documents=chunks, query=query)
-        except Exception as e:
-            logger.warning(f"[AnalystAgent] Cohere rerank failed, using first {TOP_K} chunks: {e}")
-            ranked_chunks = chunks[:TOP_K]
-    else:
-        ranked_chunks = chunks[:TOP_K]
+    ranked_web = _rank_chunks(query, web_chunks, web_budget)
 
     # The user's documents lead the context, so they are the first thing the
     # analyst reads rather than a footnote after forty web pages.
-    ranked_chunks = kept_corpus + list(ranked_chunks)
+    ranked_chunks = kept_corpus + ranked_web
     if kept_corpus:
         logger.info(
             f"[AnalystAgent] Context: {len(kept_corpus)} chunk(s) from the user's documents "
-            f"+ {len(ranked_chunks) - len(kept_corpus)} from the web"
+            f"+ {len(ranked_web)} from the web"
         )
 
     parts = []

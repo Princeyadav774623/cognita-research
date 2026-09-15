@@ -17,8 +17,9 @@ from logging_config import configure_logging
 from rate_limit import limiter
 from rate_limit_middleware import GlobalIPRateLimitMiddleware
 from auth import get_current_user_id, verify_token
-from graph.research_graph import run_research, stream_research
+from graph.research_graph import run_research, stream_research, finalize_cost
 from db import init_db, save_session, get_session, list_sessions, delete_session, delete_user_data
+from rls import apply_rls_policies
 from billing import consume_quota, refund_quota, init_billing_db, QuotaExceededError
 from rag.store import init_rag_db, delete_all_user_rag_data
 from rag.embeddings import embed_query
@@ -36,6 +37,10 @@ async def lifespan(app: FastAPI):
     init_db()
     init_billing_db()
     init_rag_db()
+    # Last, because a policy can only be attached to a table that exists —
+    # research_sessions, user_subscriptions and the rag_* tables are each
+    # created by one of the three calls above.
+    apply_rls_policies()
     # fastembed loads its ONNX weights lazily on first use — measured 2.2s
     # cold vs 2ms warm. Left alone, whichever user happens to send the first
     # RAG chat message after a deploy pays that latency. Warming it here means
@@ -334,6 +339,7 @@ async def research_websocket(websocket: WebSocket):
                 "data": event["data"],
             })
 
+        accumulated_state = finalize_cost(accumulated_state, session_id)
         save_session(session_id, user_id, query, accumulated_state)
         research_completed = True
 

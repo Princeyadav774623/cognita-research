@@ -25,11 +25,29 @@ class SourceDocument(TypedDict):
     via_fallback: Optional[bool]
 
 
+class SourceImage(TypedDict):
+    """A picture published by one of the sources, not a generated one.
+
+    Tavily returns these alongside results. Showing a real figure from a paper
+    or a chart from a report is evidence; an invented illustration would be the
+    opposite of what this product is for.
+    """
+    url: str
+    description: str
+    origin_url: str
+
+
 class VerifiedClaim(TypedDict):
     claim: str
     verified: bool
     confidence: float
     source: str
+    # True when the claim held up against a source the draft was NOT written
+    # from. Verification against only the analyst's own sources is circular —
+    # a faithful summary always agrees with the text it summarised — so this
+    # is what separates "consistent with the draft" from "corroborated".
+    # Missing/None means the run predates the distinction, not "not corroborated".
+    independently_corroborated: Optional[bool]
 
 
 # =============================================
@@ -54,6 +72,7 @@ class ResearchState(TypedDict):
 
     # Search Agent output
     search_results: List[SearchResult]
+    images: List[SourceImage]
 
     # Reader Agent output
     source_documents: List[SourceDocument]
@@ -64,6 +83,10 @@ class ResearchState(TypedDict):
     # Fact-check Agent output
     verified_claims: List[VerifiedClaim]
     overall_confidence: float
+    # Why the score is what it is, and what would raise it. A number the reader
+    # cannot interrogate is decoration.
+    confidence_factors: List[Dict[str, Any]]
+    confidence_to_improve: List[str]
 
     # Reflection / Gap Analysis
     is_sufficient: bool

@@ -9,6 +9,7 @@ from agents.analyst_agent import analyst_agent
 from agents.factcheck_agent import factcheck_agent
 from agents.gap_analysis_agent import gap_analysis_agent
 from agents.report_agent import report_agent
+from utils import new_token_ledger, current_token_ledger, estimate_cost_usd
 import logging
 
 logger = logging.getLogger(__name__)
@@ -135,10 +136,13 @@ def create_initial_state(
         "sub_queries": [query],
         "research_plan": [],
         "search_results": [],
+        "images": [],
         "source_documents": [],
         "draft_answer": "",
         "verified_claims": [],
         "overall_confidence": 0.0,
+        "confidence_factors": [],
+        "confidence_to_improve": [],
         "is_sufficient": False,
         "missing_information": [],
         "iteration": 1,
@@ -151,14 +155,29 @@ def create_initial_state(
     }
 
 
+def finalize_cost(state: dict, session_id: str) -> dict:
+    """Fold the run's measured token usage into the state it belongs to."""
+    ledger = current_token_ledger() or {}
+    if not ledger.get("total_tokens"):
+        return state
+    cost = estimate_cost_usd(ledger)
+    logger.info(
+        f"[Graph] Session {session_id} used {ledger['total_tokens']:,} tokens "
+        f"across {ledger['calls']} call(s) — estimated ${cost:.4f}"
+    )
+    state["cost_tracking"] = {**ledger, "estimated_cost_usd": cost}
+    return state
+
+
 async def run_research(query: str, session_id: str, max_iterations: int = 2,
                        user_id: str | None = None):
     """Run the full research pipeline and return the final state."""
     initial_state = create_initial_state(query, session_id, max_iterations, user_id)
+    new_token_ledger()
     logger.info(f"[Graph] Starting deep research for session {session_id}: {query}")
     final_state = await research_graph.ainvoke(initial_state)
     logger.info(f"[Graph] Deep research complete for session {session_id}")
-    return final_state
+    return finalize_cost(final_state, session_id)
 
 
 # Streaming is opt-in per LLM call, not per node. Filtering by node leaked the
@@ -181,6 +200,7 @@ async def stream_research(query: str, session_id: str, max_iterations: int = 2,
     matters far more to a reader than time-to-completion.
     """
     initial_state = create_initial_state(query, session_id, max_iterations, user_id)
+    new_token_ledger()
 
     async for event in research_graph.astream_events(initial_state, version="v2"):
         kind = event["event"]
