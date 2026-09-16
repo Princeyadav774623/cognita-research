@@ -3250,3 +3250,98 @@ textarea.query-box__input {
 }
 
 .mode-switch--entry .mode-card:hover .mode-card__go { color: var(--accent-warm); }
+
+/* ==========================================================================
+   CHAT WITH FILES — column alignment
+   ========================================================================== */
+
+/* With research history gone from this page, the tools get the full width
+   instead of sharing it with a column of unrelated content. */
+.app__main-grid--full {
+  grid-template-columns: 1fr;
+}
+
+/* The three panels (documents, conversations, chat) were each sized by their
+   own content, so a short document list sat beside a tall chat panel and the
+   page read as three unrelated boxes at three different heights. They now
+   share one height and scroll internally, which is what makes the row look
+   deliberate rather than stacked by accident. */
+.rag-layout {
+  align-items: stretch;
+}
+
+.rag-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: clamp(480px, calc(100vh - 13rem), 880px);
+  overflow: hidden;
+}
+
+/* The document list is the part that grows, so it takes the leftover space
+   and scrolls; the heading and dropzone above it stay put. */
+.rag-sidebar .doc-upload,
+.rag-sidebar .document-upload {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rag-doc-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 960px) {
+  /* Stacked, so a fixed height would just crop each panel in turn. */
+  .rag-sidebar {
+    height: auto;
+    overflow: visible;
+  }
+
+  .rag-doc-list {
+    max-height: 320px;
+  }
+}
+
+/* One header for the page, so both columns below start at the same line. */
+.rag-page__header {
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.rag-page__title {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  margin: 0 0 var(--space-1);
+}
+
+.rag-page__subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Panel headings share one treatment, rather than each card inventing its own
+   inline styles — which is why the two columns previously disagreed on type
+   size, spacing and rule weight. */
+.rag-panel__header {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.rag-panel__title {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  margin: 0 0 var(--space-1);
+}
+
+.rag-panel__subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.45;
+}

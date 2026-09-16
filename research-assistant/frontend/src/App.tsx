@@ -345,7 +345,7 @@ function AuthenticatedApp({
           <Icon name="chevron" size={15} style={{ transform: "rotate(90deg)" }} /> Back to home
         </button>
 
-        <div className="app__main-grid">
+        <div className={`app__main-grid ${route === "files" ? "app__main-grid--full" : ""}`}>
           <main className="app__content-column">
             {route === "research" && (
               <QueryInput disabled={phase === "running"} onSubmit={handleSubmit} />
@@ -420,15 +420,21 @@ function AuthenticatedApp({
             )}
           </main>
 
-          <aside className="app__sidebar-column">
-            <HistoryPanel
-              refreshKey={historyKey}
-              onSelect={(record) => {
-                reset();
-                setViewingHistorical(record);
-              }}
-            />
-          </aside>
+          {/* Research history only. On the Files page it was a fourth column
+              of unrelated content squeezing the chat, so it renders only where
+              it means something. */}
+          {route === "research" && (
+            <aside className="app__sidebar-column">
+              <HistoryPanel
+                refreshKey={historyKey}
+                onSelect={(record) => {
+                  reset();
+                  setViewingHistorical(record);
+                }}
+              />
+            </aside>
+          )}
+
         </div>
       </section>}
 
