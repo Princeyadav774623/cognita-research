@@ -229,40 +229,48 @@ def f5():
 
 # ------------------------------------------------------------------ F.6
 def f6():
-    """Entity-relationship diagram — the corpus and the conversations over it."""
-    b = ""
-    e1, h1 = entity(40, 44, 200, "users", ["id", "email", "created_at"], pk="id")
-    e2, h2 = entity(320, 44, 240, "rag_documents",
-                    ["id", "user_id", "filename", "mime_type", "status",
-                     "error", "created_at"], pk="id")
-    e3, h3 = entity(640, 44, 210, "rag_chunks",
-                    ["id", "document_id", "ordinal", "text", "embedding",
-                     "tsv"], pk="id")
-    e4, h4 = entity(320, 250, 240, "rag_conversations",
-                    ["id", "user_id", "title", "created_at"], pk="id")
-    e5, h5 = entity(640, 250, 210, "rag_messages",
-                    ["id", "conversation_id", "role", "content", "sources"], pk="id")
-    b += e1 + e2 + e3 + e4 + e5
+    """Entity-relationship diagram — the corpus and the conversations over it.
 
-    b += arrow(240, 80, 316, 80, "lnt")
-    b += note(256, 72, ["1 : N"], TEAL)
-    b += arrow(560, 80, 636, 80, "lnt")
-    b += note(576, 72, ["1 : N"], TEAL)
-    b += elbow([(140, 44 + h1), (140, 286), (316, 286)], "lnt")
-    b += note(148, 200, ["1 : N"], TEAL)
-    b += arrow(560, 286, 636, 286, "lnt")
-    b += note(576, 278, ["1 : N"], TEAL)
+    Column names are the real ones, read from backend/rag/store.py and the
+    hybrid-search migration. There is no users table: identity is delegated to
+    Supabase, so user_id is a subject claim from a verified JWT.
+    """
+    b = para(30, 60, 170, 50, "Supabase identity", "user_id from a JWT")
 
-    b += note(40, 360,
-              ["rag_chunks and rag_messages carry no user_id of their own. Their row-level security",
-               "policies are derived — a chunk is visible only if its parent document is, and a message",
-               "only if its conversation is. One fewer column to forget, and no way for the two to",
-               "disagree about who owns a row.",
+    e1, h1 = entity(250, 44, 230, "rag_documents",
+                    ["id", "user_id", "filename", "file_type", "status",
+                     "char_count", "chunk_count", "error", "created_at"], pk="id")
+    e2, h2 = entity(560, 44, 250, "rag_chunks",
+                    ["id", "document_id", "chunk_index", "content",
+                     "embedding  vector(384)", "content_tsv  tsvector"], pk="id")
+    e3, h3 = entity(250, 252, 230, "rag_conversations",
+                    ["id", "user_id", "created_at"], pk="id")
+    e4, h4 = entity(560, 252, 250, "rag_messages",
+                    ["id", "conversation_id", "role", "content",
+                     "sources  (JSON text)", "created_at"], pk="id")
+    b += e1 + e2 + e3 + e4
+
+    b += arrow(480, 80, 556, 80, "lnt")
+    b += note(496, 72, ["1 : N"], TEAL)
+    b += arrow(480, 288, 556, 288, "lnt")
+    b += note(496, 280, ["1 : N"], TEAL)
+    b += elbow([(200, 84), (225, 84), (225, 80), (246, 80)], "lnt")
+    b += elbow([(200, 96), (225, 96), (225, 288), (246, 288)], "lnt")
+    b += note(206, 200, ["1 : N"], TEAL)
+
+    b += note(30, 132, ["No local users", "table — identity", "lives in Supabase"])
+
+    b += note(30, 372,
+              ["rag_chunks and rag_messages carry no user_id of their own. Their row-level security policies",
+               "are derived — a chunk is visible only if its parent document is, and a message only if its",
+               "conversation is. One fewer column to forget on insert, and no way for a chunk and its document",
+               "to disagree about who owns them. Both foreign keys are ON DELETE CASCADE.",
                "",
-               "embedding is vector(384) with an HNSW index; tsv is a generated tsvector with a GIN",
-               "index. Both halves of hybrid retrieval are indexed in the same table."])
-    b += legend(40, 468, [(TEAL, "entity and relationship"), (BRONZE, "key column")])
-    return svg(880, 496, b)
+               "embedding is vector(384) behind an HNSW index; content_tsv is a generated tsvector behind a GIN",
+               "index. Both halves of hybrid retrieval are indexed on the same row, so fusion needs no join."])
+    b += legend(30, 470, [(TEAL, "entity and relationship"), (BRONZE, "key column"),
+                          (PLUM, "outside the boundary")])
+    return svg(880, 498, b)
 
 
 # ------------------------------------------------------------------ F.7

@@ -200,36 +200,50 @@ def r5():
 
 # ------------------------------------------------------------------ R.6
 def r6():
-    """Entity-relationship diagram — what a research run persists."""
-    b = ""
-    e1, h1 = entity(40, 44, 210, "users", ["id", "email", "created_at"], pk="id")
-    e2, h2 = entity(40, 230, 210, "user_subscriptions",
-                    ["id", "user_id", "tier", "queries_used", "period_end"], pk="id")
-    e3, h3 = entity(330, 44, 250, "research_sessions",
-                    ["id", "user_id", "question", "report_md", "confidence",
-                     "tokens_used", "cost_usd", "created_at"], pk="id")
-    e4, h4 = entity(660, 44, 190, "sources",
-                    ["url", "title", "snippet_only", "read_ok"])
-    e5, h5 = entity(660, 200, 190, "claims", ["text", "verdict", "corroborated"])
-    b += e1 + e2 + e3 + e4 + e5
+    """Entity-relationship diagram — what a research run persists.
 
-    b += arrow(250, 80, 326, 80, "lnt")
-    b += note(268, 72, ["1 : N"], TEAL)
-    b += arrow(145, 44 + h1, 145, 226, "lnt")
-    b += note(152, 176, ["1 : 1"], TEAL)
-    b += arrow(580, 92, 656, 92, "lnt")
-    b += note(596, 84, ["1 : N"], TEAL)
-    b += elbow([(580, 140), (620, 140), (620, 240), (656, 240)], "lnt")
-    b += note(626, 190, ["1 : N"], TEAL)
+    Column names are the real ones, read from backend/db.py. There is no users
+    table: identity is delegated to Supabase, so user_id is a subject claim from
+    a verified JWT and there is nothing local to join to.
+    """
+    b = para(40, 52, 190, 52, "Supabase identity", "user_id comes from a JWT")
 
-    b += note(330, 320,
-              ["sources and claims are stored inside the session's JSON report payload rather",
-               "than as tables of their own — they are written once with the run and never",
-               "queried across runs.",
+    e1, h1 = entity(300, 44, 250, "research_sessions",
+                    ["id", "user_id", "query", "status", "final_report",
+                     "sources  (JSON)", "images  (JSON)", "verified_claims  (JSON)",
+                     "confidence", "total_tokens", "estimated_cost_usd",
+                     "error", "created_at"], pk="id")
+    e2, h2 = entity(620, 44, 230, "user_subscriptions",
+                    ["user_id", "stripe_customer_id", "stripe_subscription_id",
+                     "plan_tier", "status", "monthly_queries_used",
+                     "usage_period_start"], pk="user_id")
+    b += e1 + e2
+
+    b += elbow([(230, 78), (265, 78), (265, 80), (296, 80)], "lnt")
+    b += note(238, 66, ["1 : N"], TEAL)
+    # Routed over the top rather than straight across: at any y between the two
+    # boxes this line would pass through research_sessions.
+    b += elbow([(230, 66), (265, 66), (265, 22), (735, 22), (735, 40)], "lnt")
+    b += note(486, 16, ["1 : 1"], TEAL)
+
+    b += note(40, 150,
+              ["No local users table.",
+               "user_id is the Supabase",
+               "subject claim, verified",
+               "against a public JWKS",
+               "endpoint. Nothing in this",
+               "database owns identity."])
+
+    b += note(300, 44 + h1 + 30,
+              ["sources, images and verified_claims are JSON columns on the session row rather than",
+               "tables of their own. They are written once when the run finishes and are never queried",
+               "across runs, so normalising them would buy joins nobody performs.",
                "",
-               "Every table above carries a row-level security policy keyed on",
-               "app.current_user_id; a connection with no tenant set matches zero rows."])
-    b += legend(40, 424, [(TEAL, "entity and relationship"), (BRONZE, "key column")])
+               "Both tables carry a row-level security policy keyed on app.current_user_id, and",
+               "current_setting(..., true) returns NULL when it is unset — so a connection with no",
+               "tenant set matches zero rows rather than every row."])
+    b += legend(300, 424, [(TEAL, "entity and relationship"), (BRONZE, "key column"),
+                           (PLUM, "outside the boundary")])
     return svg(880, 452, b)
 
 
