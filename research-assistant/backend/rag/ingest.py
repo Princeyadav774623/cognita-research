@@ -1,6 +1,8 @@
 import io
 import logging
 
+from utils import sanitize_external_text
+
 logger = logging.getLogger(__name__)
 
 ALLOWED_EXTENSIONS = {"pdf", "docx", "txt", "md", "png", "jpg", "jpeg"}
@@ -35,6 +37,18 @@ def validate_file_signature(ext: str, content: bytes) -> None:
 
 
 def extract_text(filename: str, content: bytes) -> str:
+    """Extract readable text from an uploaded file.
+
+    Output is passed through the same injection sanitiser as scraped web pages.
+    That was applied to everything the reader agent fetched but never to
+    uploaded documents — so a file was the one path into the model's context
+    that nothing filtered, despite being the easiest one for an attacker to
+    control. Anyone who can upload can write whatever they like.
+
+    The sanitiser is a speed bump, not a wall — the real defence is that
+    retrieved text is delimited and labelled as data in the prompt (see
+    rag/chat_agent._format_context). Both matter; neither is sufficient alone.
+    """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
     if ext not in ALLOWED_EXTENSIONS:
@@ -47,15 +61,17 @@ def extract_text(filename: str, content: bytes) -> str:
     validate_file_signature(ext, content)
 
     if ext == "pdf":
-        return _extract_pdf(content)
-    if ext == "docx":
-        return _extract_docx(content)
-    if ext in ("txt", "md"):
-        return _extract_text_file(content)
-    if ext in ("png", "jpg", "jpeg"):
-        return _extract_image_ocr(content)
+        text = _extract_pdf(content)
+    elif ext == "docx":
+        text = _extract_docx(content)
+    elif ext in ("txt", "md"):
+        text = _extract_text_file(content)
+    elif ext in ("png", "jpg", "jpeg"):
+        text = _extract_image_ocr(content)
+    else:
+        raise IngestError(f"Unsupported file type: .{ext}")
 
-    raise IngestError(f"Unsupported file type: .{ext}")
+    return sanitize_external_text(text)
 
 
 def _extract_pdf(content: bytes) -> str:

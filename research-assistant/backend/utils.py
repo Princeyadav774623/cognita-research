@@ -118,18 +118,46 @@ def normalize_url(url: str) -> str:
 
 
 def sanitize_external_text(text: str) -> str:
-    """Sanitize scraped web or RAG document text against prompt injection attempts."""
+    """Flag the most obvious instruction-injection phrasings in untrusted text.
+
+    Read this as a speed bump, not a defence. The patterns below catch common
+    phrasings and nothing else: the first version missed a realistic test case
+    outright because it said "disregard all prior directives" rather than
+    "ignore previous instructions", and put a word between "SYSTEM" and its
+    colon. Any attacker who rephrases walks straight through, and non-English
+    or encoded text is not looked at.
+
+    What actually holds is structural, and lives at the point of use: retrieved
+    text is wrapped in <document> tags and the system prompt states that
+    anything inside them is data rather than a command (see
+    rag/chat_agent._format_context). Tested against the same injection this
+    function missed, the model answered from the document and reported the
+    injected line instead of obeying it.
+
+    The patterns are deliberately not broader than this. A security paper
+    discussing prompt injection is a legitimate document, and redacting half of
+    it to look thorough would damage real content to no benefit.
+    """
     if not text:
         return ""
-    # Defuse common system override delimiters & instructions
+
     patterns = [
-        r"(?i)\b(ignore\s+(all\s+)?(previous|prior)\s+instructions?)\b",
-        r"(?i)\b(system\s*:\s*)",
-        r"(?i)\b(you\s+are\s+now\s+(in\s+developer\s+mode|unrestricted))\b",
+        # "ignore/disregard/forget (all) (previous/prior/above) instructions"
+        r"(?i)\b(ignore|disregard|forget|override)\s+(all\s+|any\s+)?"
+        r"(previous|prior|earlier|above|preceding)\s+"
+        r"(instructions?|directives?|prompts?|rules?|commands?)\b",
+        # A line pretending to be a system turn: "SYSTEM:", "SYSTEM INSTRUCTION:"
+        r"(?i)^\s*(system|assistant|developer)\b[^\n:]{0,24}:",
+        # "you are now (in) X mode" / "you are now unrestricted"
+        r"(?i)\byou\s+are\s+now\s+(in\s+)?[a-z ]{0,24}"
+        r"(mode|unrestricted|jailbroken|dan)\b",
+        # "new instructions follow" / "your new instructions are"
+        r"(?i)\b(new|updated|revised)\s+(instructions?|directives?|rules?)\b",
     ]
+
     cleaned = text
     for p in patterns:
-        cleaned = re.sub(p, "[REDACTED_INSTRUCTION]", cleaned)
+        cleaned = re.sub(p, "[REDACTED_INSTRUCTION]", cleaned, flags=re.MULTILINE)
     return cleaned
 
 
