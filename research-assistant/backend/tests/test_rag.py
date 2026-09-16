@@ -657,3 +657,40 @@ class TestContextIsDelimited:
         lowered = SYSTEM_PROMPT.lower()
         assert "never instructions" in lowered or "not a command" in lowered
         assert "<document>" in SYSTEM_PROMPT
+
+
+class TestHybridRetrieval:
+    """Vectors alone miss exact strings. Embeddings put "Sev-1" and "Sev-2"
+    almost on top of each other, which is exactly wrong when someone asked
+    about one of them."""
+
+    def test_fusion_rewards_agreement_between_both_retrievers(self):
+        from rag.retrieval import _reciprocal_rank_fusion
+
+        # "b" is second on both lists; "a" and "c" are first on one each.
+        scores = _reciprocal_rank_fusion(["a", "b", "c"], ["c", "b", "a"])
+        assert scores["b"] > 0
+        # Fusing by rank means a chunk both retrievers liked beats one that
+        # only topped a single list.
+        assert scores["a"] == scores["c"]
+
+    def test_a_chunk_only_one_retriever_found_still_ranks(self):
+        from rag.retrieval import _reciprocal_rank_fusion
+        scores = _reciprocal_rank_fusion(["a"], ["b"])
+        assert scores["a"] > 0 and scores["b"] > 0
+
+    def test_keyword_search_is_skipped_without_postgres(self):
+        """SQLite has no tsvector; the unit suite must not fall over on it."""
+        from rag.retrieval import _keyword_candidates
+        db = MagicMock()
+        db.bind.dialect.name = "sqlite"
+        assert _keyword_candidates(db, "user-1", "anything", 10) == []
+
+    def test_keyword_failure_degrades_to_vectors_instead_of_erroring(self):
+        """Keyword search is the optional half. Taking the whole query down
+        with it would be a worse outcome than losing exact-match recall."""
+        from rag.retrieval import _keyword_candidates
+        db = MagicMock()
+        db.bind.dialect.name = "postgresql"
+        db.execute.side_effect = RuntimeError("tsquery syntax error")
+        assert _keyword_candidates(db, "user-1", "a ':: broken query", 10) == []

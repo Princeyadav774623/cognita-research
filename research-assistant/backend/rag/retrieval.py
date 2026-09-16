@@ -1,6 +1,8 @@
 import logging
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import text
+
 from rag.store import RagDocument, RagChunk, get_tenant_session
 from rag.ingest import extract_text, chunk_text, IngestError
 from rag.embeddings import embed_texts, embed_query
@@ -151,32 +153,145 @@ def delete_document(document_id: str, user_id: str) -> bool:
         return True
 
 
+# How many candidates each retriever contributes before fusion. Wider than the
+# final k on purpose: fusion can only promote something one side ranked, so a
+# narrow candidate list throws away the recall hybrid search exists to gain.
+CANDIDATE_POOL = 20
+
+# Reciprocal Rank Fusion constant. Fuses by *rank*, not score, which is what
+# makes it usable here: cosine similarity and ts_rank are different scales with
+# no meaningful conversion between them, and normalising one onto the other
+# invents a relationship that does not exist. 60 is the value from the original
+# paper and is not sensitive.
+RRF_K = 60
+
+
+def _vector_candidates(db, user_id: str, query: str, limit: int) -> list[tuple[str, float]]:
+    """(chunk_id, cosine similarity), best first."""
+    query_vector = embed_query(query)
+    # pgvector's cosine_distance is 1 - cosine_similarity, so similarity comes
+    # back directly rather than being estimated.
+    distance = RagChunk.embedding.cosine_distance(query_vector)
+    rows = (
+        db.query(RagChunk.id, distance.label("distance"))
+        .join(RagDocument, RagChunk.document_id == RagDocument.id)
+        .filter(RagDocument.status == "ready", RagDocument.user_id == user_id)
+        .order_by(distance)
+        .limit(limit)
+        .all()
+    )
+    return [(cid, max(0.0, min(1.0, 1.0 - float(d)))) for cid, d in rows]
+
+
+def _keyword_candidates(db, user_id: str, query: str, limit: int) -> list[str]:
+    """Chunk ids ranked by Postgres full-text relevance, best first.
+
+    websearch_to_tsquery rather than plainto_tsquery: it accepts what people
+    actually type — quoted phrases, OR, leading minus — and, unlike
+    to_tsquery, never raises on punctuation. A query that throws here would
+    take the whole retrieval down with it.
+    """
+    if db.bind.dialect.name != "postgresql":
+        return []   # SQLite in unit tests has no tsvector
+
+    sql = text("""
+        SELECT c.id
+        FROM rag_chunks c
+        JOIN rag_documents d ON d.id = c.document_id
+        WHERE d.user_id = :uid
+          AND d.status = 'ready'
+          AND c.content_tsv @@ websearch_to_tsquery('english', :q)
+        ORDER BY ts_rank(c.content_tsv, websearch_to_tsquery('english', :q)) DESC
+        LIMIT :lim
+    """)
+    try:
+        return [row[0] for row in db.execute(sql, {"uid": user_id, "q": query, "lim": limit})]
+    except Exception as e:
+        # Keyword search is the optional half. If it fails, vector search still
+        # answers; taking the whole query down would be a worse outcome.
+        logger.warning(f"[RAG] Keyword search unavailable, using vectors only: {e}")
+        return []
+
+
+def _reciprocal_rank_fusion(*rankings: list[str]) -> dict[str, float]:
+    """Fuse several ranked id lists into one score per id."""
+    scores: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, chunk_id in enumerate(ranking, start=1):
+            scores[chunk_id] = scores.get(chunk_id, 0.0) + 1.0 / (RRF_K + rank)
+    return scores
+
+
 def retrieve_relevant_chunks(user_id: str, query: str, top_k: int = TOP_K, limit: int | None = None) -> list[dict]:
-    """Embed the query and find the most semantically similar chunks across
-    this user's ready documents only, via pgvector cosine distance."""
+    """Find the chunks most relevant to the query, across this user's ready
+    documents only.
+
+    Hybrid: semantic similarity and keyword relevance are run separately and
+    their rankings fused. Vectors alone miss exact strings — error codes, part
+    numbers, version numbers, proper nouns — because embeddings place "Sev-1"
+    and "Sev-2" almost on top of each other, which is exactly wrong when the
+    user asked about one of them. Keyword search has the opposite blind spot:
+    no synonyms, no paraphrase. Neither is reliable alone.
+
+    Every returned chunk keeps a real cosine `similarity`, including ones only
+    keyword search found, because callers threshold on it — corpus_agent and
+    the chat path both do, and a fabricated score there would quietly change
+    what they let through.
+    """
     effective_k = limit if limit is not None else top_k
+
     with get_tenant_session(user_id) as db:
-        query_vector = embed_query(query)
-        # pgvector's cosine_distance is 1 - cosine_similarity, so similarity
-        # is recovered directly from it rather than estimated.
-        distance = RagChunk.embedding.cosine_distance(query_vector)
+        vector_hits = _vector_candidates(db, user_id, query, CANDIDATE_POOL)
+        keyword_ids = _keyword_candidates(db, user_id, query, CANDIDATE_POOL)
+
+        similarity_by_id = dict(vector_hits)
+        vector_ids = [cid for cid, _ in vector_hits]
+
+        fused = _reciprocal_rank_fusion(vector_ids, keyword_ids)
+        if not fused:
+            return []
+
+        ranked_ids = sorted(fused, key=lambda cid: fused[cid], reverse=True)[:effective_k]
+
         rows = (
-            db.query(RagChunk, RagDocument.filename, distance.label("distance"))
+            db.query(RagChunk, RagDocument.filename)
             .join(RagDocument, RagChunk.document_id == RagDocument.id)
-            .filter(RagDocument.status == "ready", RagDocument.user_id == user_id)
-            .order_by(distance)
-            .limit(effective_k)
+            .filter(RagChunk.id.in_(ranked_ids))
             .all()
         )
-        return [
-            {
+        by_id = {chunk.id: (chunk, filename) for chunk, filename in rows}
+
+        # A chunk only keyword search surfaced has no similarity from the pool
+        # above, so it is measured rather than guessed.
+        missing = [cid for cid in ranked_ids if cid in by_id and cid not in similarity_by_id]
+        if missing:
+            query_vector = embed_query(query)
+            distance = RagChunk.embedding.cosine_distance(query_vector)
+            for cid, dist in (
+                db.query(RagChunk.id, distance.label("distance"))
+                .filter(RagChunk.id.in_(missing))
+                .all()
+            ):
+                similarity_by_id[cid] = max(0.0, min(1.0, 1.0 - float(dist)))
+
+        out = []
+        for cid in ranked_ids:
+            if cid not in by_id:
+                continue
+            chunk, filename = by_id[cid]
+            out.append({
                 "content": chunk.content,
                 "filename": filename,
                 "chunk_index": chunk.chunk_index,
-                "similarity": max(0.0, min(1.0, 1.0 - float(dist))),
-            }
-            for chunk, filename, dist in rows
-        ]
+                "similarity": similarity_by_id.get(cid, 0.0),
+                "fusion_score": round(fused[cid], 5),
+                "matched_by": (
+                    "both" if cid in similarity_by_id and cid in keyword_ids
+                    else "keyword" if cid in keyword_ids
+                    else "vector"
+                ),
+            })
+        return out
 
 
 def _document_to_dict(doc: RagDocument) -> dict:
