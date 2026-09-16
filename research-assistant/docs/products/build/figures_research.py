@@ -7,8 +7,56 @@ this product's side: an external store the pipeline reads.
 """
 from common import (esc, box, cyl, para, actor, ellipse, diamond, svg, arrow,
                     elbow, band, note, lifeline, msg, selfmsg, activation,
-                    entity, legend, BRONZE, TEAL, PLUM, GREEN, RED, AMBER,
-                    INK, INK2, INK3, RULE)
+                    entity, legend, BRONZE, TERRACOTTA, TEAL, PLUM, GREEN, RED,
+                    AMBER, INK, INK2, INK3, RULE)
+
+
+# ------------------------------------------------------------------ R.0
+def r0():
+    """Layered architecture — the path one typed question takes through the tiers.
+
+    Chapter 11's deployment diagram says where processes physically run; this
+    one says what each layer is made of and in what order a request touches it.
+    """
+    b = f'<text class="eyb" x="30" y="24" fill="{INK3}">DEEP RESEARCH — ONE REQUEST, TIER BY TIER</text>'
+
+    b += band(24, 40, 832, 96, "PRESENTATION", INK3)
+    b += box(56, 68, 200, 52, "Query page", "/#research")
+    b += box(288, 68, 200, 52, "Pipeline animation", "driven by progress events")
+    b += box(520, 68, 200, 52, "Report view", "sources, confidence, export")
+    b += cyl(744, 68, 88, 52, "history", "")
+
+    b += band(24, 168, 832, 152, "APPLICATION", INK3)
+    b += box(56, 196, 200, 52, "WebSocket endpoint", "/ws/research")
+    b += box(288, 196, 200, 52, "Quota gate", "consume, refund on failure")
+    b += box(520, 196, 312, 52, "LangGraph state machine", "nine nodes, one conditional edge back to search")
+    b += box(56, 262, 432, 46, "invoke_with_retry", "classify transient vs permanent · log every model substitution")
+    b += box(520, 262, 312, 46, "token ledger", "usage accumulated per run, persisted with the session")
+
+    b += band(24, 352, 400, 96, "PERSISTENCE", INK3)
+    b += cyl(56, 382, 160, 50, "research_sessions", "")
+    b += cyl(240, 382, 152, 50, "quota", "")
+
+    b += band(456, 352, 400, 96, "EXTERNAL", INK3)
+    b += para(480, 380, 118, 52, "Search", "sub-queries")
+    b += para(616, 380, 108, 52, "Pages", "HTML / PDF")
+    b += para(740, 380, 96, 52, "Groq", "20B / 120B")
+
+    b += elbow([(156, 120), (156, 192)], "lna")
+    b += arrow(256, 222, 284, 222, "lna")
+    b += arrow(488, 222, 516, 222, "lna")
+    b += elbow([(676, 248), (676, 258)], "lna")
+    # Down the right margin and in above Groq: a straight drop from the middle
+    # of the application band lands its arrowhead on the EXTERNAL caption.
+    b += elbow([(832, 222), (850, 222), (850, 340), (788, 340), (788, 376)], "lnp")
+    b += elbow([(272, 248), (272, 258)], "lna")
+    b += elbow([(136, 308), (136, 378)], "lnt")
+
+    b += note(452, 146, ["every runtime query uses the low-privilege role,",
+                         "so row-level security applies to every read"])
+    b += legend(24, 466, [(TERRACOTTA, "process"), (TEAL, "data at rest"),
+                          (PLUM, "external service")])
+    return svg(880, 494, b)
 
 
 # ------------------------------------------------------------------ R.1

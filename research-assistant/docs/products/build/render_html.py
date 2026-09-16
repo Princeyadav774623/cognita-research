@@ -382,7 +382,7 @@ def build(meta, chapters):
                  '<div class="chapter__num">Chapter Eleven</div>'
                  "<h2>SRS Diagrams</h2>"
                  f'<p class="lede measure">{SRS_LEDE[key]}</p>')
-    parts.append(legend_figure(pal))
+    parts.append(legend_figure(key))
     for fid, title, fn, caption in figmod.FIGURES:
         number = fid.split(".")[1]
         parts.append(
@@ -399,36 +399,43 @@ def build(meta, chapters):
     return "\n".join(parts)
 
 
-def legend_figure(pal):
+def legend_figure(key):
     return (f"""<figure>
 <figcaption>Figure 11.0 — Notation used throughout this chapter
 <span class="cap">One visual language across all nine diagrams, so it is learned once rather than re-read per figure.</span>
 </figcaption>
-<div class="frame">{namespace_svg(_LEGEND_SVG)}</div></figure>""")
+<div class="frame">{namespace_svg(_legend_svg(key))}</div></figure>""")
 
 
-def _legend_svg():
-    """The notation key, drawn with the same primitives as the diagrams so it
-    cannot describe a visual language the figures no longer use."""
+def _legend_svg(key):
+    """The notation key for one product, showing only the shapes its own figures
+    use — so neither document explains a symbol the reader will never meet."""
     import draw
+    terminal = ("terminal states" if key == "deep-research"
+                else "ready / deleted", "failed")
     b = draw.box(30, 28, 122, 46, "Process", "the system")
     b += draw.cyl(186, 28, 122, 46, "Data store", "at rest")
     b += draw.para(342, 28, 122, 46, "External", "outside")
-    b += draw.box(498, 28, 122, 46, "Success", "terminal", cls="ok")
-    b += draw.box(654, 28, 122, 46, "Failure", "terminal", cls="bad")
+    if key == "deep-research":
+        b += draw.box(498, 28, 122, 46, "Complete", "run finished", cls="ok")
+        b += draw.box(654, 28, 122, 46, "Failed", "run abandoned", cls="bad")
+        tail = ("A diamond is a decision, and the one dashed edge that matters is gap analysis "
+                "returning the run to search.")
+    else:
+        b += draw.box(498, 28, 122, 46, "Ready", "answerable", cls="ok")
+        b += draw.box(654, 28, 122, 46, "Failed", "unusable", cls="bad")
+        tail = ("A diamond is a decision, and the dashed edges are the grading loop: rewrite, "
+                "retry once, then decline.")
 
     b += '<path class="ln" d="M30,104 L86,104"/>'
     b += draw.note(96, 108, ["a step in the flow"])
     b += '<path class="ln dash" d="M232,104 L288,104"/>'
     b += draw.note(298, 108, ["a conditional or optional path"])
-
     b += draw.note(30, 138, [
-        "Shape carries meaning as well as colour: a rounded rectangle is a process, a cylinder is a store,",
-        "a slanted parallelogram is something outside the boundary, and a diamond is a decision."])
-    return draw.svg(880, 166, b)
-
-
-_LEGEND_SVG = _legend_svg()
+        "Shape carries meaning as well as colour: a rounded rectangle is a process, a cylinder is a",
+        "store, and a slanted parallelogram is something outside this product's boundary.",
+        tail])
+    return draw.svg(880, 180, b)
 
 
 def appendix(meta, pal):
@@ -459,15 +466,8 @@ def appendix(meta, pal):
             f"<pre><code>{esc(r['text'])}</code></pre></article>")
 
     out.append('<div class="measure"><h3>B. Environment</h3></div>')
-    out.append(render_block({"k": "tbl", "headers": ["Component", "Version / detail"], "rows": [
-        ["Backend", "Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0"],
-        ["Frontend", "React 19, Vite 8, TypeScript, Vitest"],
-        ["Database", "PostgreSQL 16, pgvector 0.4.1, HNSW + GIN indexes"],
-        ["Embeddings", "BAAI/bge-small-en-v1.5, 384 dimensions, local"],
-        ["Inference", "openai/gpt-oss-120b (synthesis), openai/gpt-oss-20b (structural, judge)"],
-        ["Codebase", "8,807 lines backend · 8,516 lines frontend"],
-        ["Tests", "165 backend · 31 frontend"],
-    ], "widths": None}, pal))
+    out.append(render_block({"k": "tbl", "headers": ["Component", "Version / detail"],
+                             "rows": ENV[meta["key"]], "widths": None}, pal))
 
     cmds = {
         "deep-research": [
@@ -532,25 +532,45 @@ def docx_payload(meta, chapters):
         "srs": [{"id": "11.0", "number": "11.0", "title": "Notation used throughout this chapter",
                  "caption": "One visual language across all nine diagrams, so it is learned "
                             "once rather than re-read per figure.",
-                 "png": "fig-legend.png"}]
+                 "png": f"fig-legend-{meta['key']}.png"}]
                + [{"id": fid, "number": "11." + fid.split(".")[1], "title": t,
                  "caption": cap, "png": "fig-" + fid.replace(".", "").lower() + ".png"}
                 for fid, t, fn, cap in figmod.FIGURES],
         "prompts": [{"n": i, **r} for i, r in enumerate(mine, 1)],
-        "env": ENV,
+        "env": ENV[meta["key"]],
         "commands": COMMANDS[meta["key"]],
     }
 
 
-ENV = [
-    ["Backend", "Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0"],
-    ["Frontend", "React 19, Vite 8, TypeScript, Vitest"],
-    ["Database", "PostgreSQL 16, pgvector 0.4.1, HNSW + GIN indexes"],
-    ["Embeddings", "BAAI/bge-small-en-v1.5, 384 dimensions, local"],
-    ["Inference", "openai/gpt-oss-120b (synthesis), openai/gpt-oss-20b (structural, judge)"],
-    ["Codebase", "8,807 lines backend · 8,516 lines frontend"],
-    ["Tests", "165 backend · 31 frontend"],
-]
+ENV = {
+    # Each product's own stack. A single table listing everything either one
+    # touches would put pgvector in the research report and LangGraph in the
+    # document report, which is exactly the mixing these two reports exist to
+    # undo.
+    "deep-research": [
+        ["Orchestration", "LangGraph 0.2.76 — nine nodes, one conditional edge"],
+        ["Backend", "Python 3.12, FastAPI 0.121, SQLAlchemy 2.0"],
+        ["Transport", "WebSocket, /ws/research"],
+        ["Inference", "openai/gpt-oss-120b (analyst, fact-checker, report)"],
+        ["", "openai/gpt-oss-20b (triage, planner, gap analysis)"],
+        ["Persistence", "PostgreSQL 16 — research_sessions, user_subscriptions"],
+        ["Identity", "Supabase JWT, verified against a public JWKS endpoint"],
+        ["Frontend", "React 19, Vite 8, TypeScript"],
+        ["Tests", "74 — test_agents, test_confidence, test_evidence, test_evals"],
+    ],
+    "chat-with-files": [
+        ["Retrieval", "pgvector 0.4.1 (HNSW) + Postgres FTS (GIN), fused by RRF"],
+        ["Backend", "Python 3.12, FastAPI 0.121, SQLAlchemy 2.0"],
+        ["Embeddings", "BAAI/bge-small-en-v1.5, 384 dimensions, in-process"],
+        ["Extraction", "PyMuPDF, python-docx, Tesseract OCR"],
+        ["Inference", "openai/gpt-oss-120b (answering)"],
+        ["", "openai/gpt-oss-20b (contextualise, grade, rewrite, judge)"],
+        ["Persistence", "PostgreSQL 16 — rag_documents, rag_chunks, rag_conversations, rag_messages"],
+        ["Identity", "Supabase JWT, verified against a public JWKS endpoint"],
+        ["Frontend", "React 19, Vite 8, TypeScript"],
+        ["Tests", "53 — all of test_rag"],
+    ],
+}
 
 COMMANDS = {
     "deep-research": [

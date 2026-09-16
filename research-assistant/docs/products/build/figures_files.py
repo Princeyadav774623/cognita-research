@@ -7,8 +7,57 @@ most common way to misread this product.
 """
 from common import (esc, box, cyl, para, actor, ellipse, diamond, svg, arrow,
                     elbow, band, note, lifeline, msg, selfmsg, activation,
-                    entity, legend, BRONZE, TEAL, PLUM, GREEN, RED, AMBER,
-                    INK, INK2, INK3, RULE)
+                    entity, legend, BRONZE, TERRACOTTA, TEAL, PLUM, GREEN, RED,
+                    AMBER, INK, INK2, INK3, RULE)
+
+
+# ------------------------------------------------------------------ F.0
+def f0():
+    """Layered architecture — what each tier is made of, and the two paths through it.
+
+    Ingestion and answering touch different parts of the same stack, so they are
+    drawn as two separate routes rather than one arrow per layer.
+    """
+    b = f'<text class="eyb" x="30" y="24" fill="{INK3}">CHAT WITH FILES — TWO PATHS THROUGH THE SAME TIERS</text>'
+
+    b += band(24, 40, 832, 96, "PRESENTATION", INK3)
+    b += box(56, 68, 208, 52, "Upload widget", "polls ingestion status")
+    b += box(296, 68, 208, 52, "Chat page", "/#files")
+    b += box(536, 68, 208, 52, "Passage panel", "what the answer used")
+    b += cyl(768, 68, 64, 52, "chats", "")
+
+    b += band(24, 168, 832, 152, "APPLICATION", INK3)
+    b += box(56, 196, 208, 52, "Ingest task", "background, same process")
+    b += box(296, 196, 208, 52, "fastembed", "bge-small, in-process")
+    b += box(536, 196, 296, 52, "Retrieval + RRF", "two searches fused by rank, k = 60")
+    b += box(56, 262, 448, 46, "Grade · rewrite · retry · decline", "the loop that decides not to answer")
+    b += box(536, 262, 296, 46, "LLM-as-a-Judge", "faithfulness and relevance, separate model")
+
+    b += band(24, 352, 496, 96, "PERSISTENCE", INK3)
+    b += cyl(56, 382, 136, 50, "rag_documents", "")
+    b += cyl(212, 382, 136, 50, "rag_chunks", "")
+    b += box(368, 382, 128, 50, "HNSW + GIN", "both halves indexed", cls="store")
+
+    b += band(552, 352, 304, 96, "EXTERNAL", INK3)
+    b += para(580, 380, 128, 52, "Groq", "20B / 120B")
+    b += para(724, 380, 116, 52, "Supabase", "JWKS")
+
+    b += elbow([(160, 120), (160, 192)], "lna")
+    b += elbow([(400, 120), (400, 192)], "lna")
+    b += arrow(264, 222, 292, 222, "lna")
+    b += arrow(504, 222, 532, 222, "lna")
+    b += elbow([(160, 248), (160, 258)], "lna")
+    b += elbow([(684, 248), (684, 258)], "lna")
+    b += elbow([(124, 308), (124, 378)], "lnt")
+    b += elbow([(280, 308), (280, 378)], "lnt")
+    # Same reason as R.0: a straight drop puts the arrowhead on the band caption.
+    b += elbow([(832, 222), (850, 222), (850, 340), (644, 340), (644, 376)], "lnp")
+
+    b += note(536, 146, ["nothing leaves the deployment to be embedded —",
+                         "which is what makes evaluation free"])
+    b += legend(24, 466, [(TERRACOTTA, "process"), (TEAL, "data at rest"),
+                          (PLUM, "external service")])
+    return svg(880, 494, b)
 
 
 # ------------------------------------------------------------------ F.1

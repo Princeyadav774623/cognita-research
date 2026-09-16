@@ -194,10 +194,16 @@ def actor(x, y, label):
 
 
 def band(x, y, w, h, label, colour=None):
-    """A labelled boundary the system under discussion sits inside."""
+    """A labelled boundary the system under discussion sits inside.
+
+    The caption sits at the top left, not centred. Centred, it lands in the
+    middle of the band's top edge — exactly where a connector descending from
+    the tier above crosses into it, which struck the caption through in two of
+    the layered diagrams.
+    """
     return (f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{R_LG}" '
             f'fill="#f4f1e9" stroke="{RULE}" stroke-width="1.1"/>'
-            f'<text class="eyb" x="{x+w/2}" y="{y+21}" text-anchor="middle" '
+            f'<text class="eyb" x="{x+16}" y="{y+21}" '
             f'fill="{colour or ACCENT}">{esc(label)}</text>')
 
 

@@ -343,11 +343,11 @@
     {
      "k": "fig",
      "id": "3.1",
-     "title": "System architecture",
-     "caption": "Request paths are solid. Every runtime query passes through the low-privilege role so row-level security applies; the embedding model runs in the application process.",
-     "src": "fig3-architecture.png",
-     "w": 860,
-     "h": 400
+     "title": "Chat with Files, tier by tier",
+     "caption": "Ingestion and answering touch different parts of the same stack, so they are drawn as two routes rather than one arrow per layer. The embedding model sits inside the application process.",
+     "src": "fig-f0.png",
+     "w": 880,
+     "h": 494
     },
     {
      "k": "h3",
@@ -769,14 +769,14 @@
      "k": "stats",
      "items": [
       [
-       "165",
-       "Backend tests",
-       "unit and integration, 5 s"
+       "53",
+       "Tests for this product",
+       "all of test_rag.py"
       ],
       [
-       "31",
-       "Frontend tests",
-       "hooks and components"
+       "38",
+       "Shared platform tests",
+       "auth and provider retry"
       ],
       [
        "4",
@@ -789,6 +789,10 @@
        "25 questions, no API cost"
       ]
      ]
+    },
+    {
+     "k": "p",
+     "text": "The 53 are the ones that fail when ingestion, retrieval or the answer loop breaks. Deep Research has its own 74 across test_agents.py, test_confidence.py, test_evidence.py and test_evals.py, and they are not counted here \u2014 a number that covers both products tells you nothing about either."
     },
     {
      "k": "h3",
@@ -816,7 +820,8 @@
       "a spoofed file whose magic bytes contradict its extension is rejected (test_rejects_spoofed_file_magic_bytes);",
       "a document stuck in processing past the threshold is failed by the reaper (test_marks_an_abandoned_document_as_failed);",
       "an insufficient first retrieval is rewritten and retried (test_rewrites_and_retries_when_first_attempt_is_insufficient);",
-      "chunk windows overlap so an answer is not lost at a boundary (test_windows_overlap_so_boundaries_are_not_lost)."
+      "consecutive chunks share their overlap, so an answer on a boundary survives whole (test_long_text_splits_with_overlap);",
+      "no chunk ever exceeds the configured size (test_chunks_never_exceed_chunk_size)."
      ]
     },
     {
@@ -1170,7 +1175,7 @@
    "number": "11.0",
    "title": "Notation used throughout this chapter",
    "caption": "One visual language across all nine diagrams, so it is learned once rather than re-read per figure.",
-   "png": "fig-legend.png"
+   "png": "fig-legend-chat-with-files.png"
   },
   {
    "id": "F.1",
@@ -1295,32 +1300,44 @@
  ],
  "env": [
   [
+   "Retrieval",
+   "pgvector 0.4.1 (HNSW) + Postgres FTS (GIN), fused by RRF"
+  ],
+  [
    "Backend",
-   "Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0"
-  ],
-  [
-   "Frontend",
-   "React 19, Vite 8, TypeScript, Vitest"
-  ],
-  [
-   "Database",
-   "PostgreSQL 16, pgvector 0.4.1, HNSW + GIN indexes"
+   "Python 3.12, FastAPI 0.121, SQLAlchemy 2.0"
   ],
   [
    "Embeddings",
-   "BAAI/bge-small-en-v1.5, 384 dimensions, local"
+   "BAAI/bge-small-en-v1.5, 384 dimensions, in-process"
+  ],
+  [
+   "Extraction",
+   "PyMuPDF, python-docx, Tesseract OCR"
   ],
   [
    "Inference",
-   "openai/gpt-oss-120b (synthesis), openai/gpt-oss-20b (structural, judge)"
+   "openai/gpt-oss-120b (answering)"
   ],
   [
-   "Codebase",
-   "8,807 lines backend \u00b7 8,516 lines frontend"
+   "",
+   "openai/gpt-oss-20b (contextualise, grade, rewrite, judge)"
+  ],
+  [
+   "Persistence",
+   "PostgreSQL 16 \u2014 rag_documents, rag_chunks, rag_conversations, rag_messages"
+  ],
+  [
+   "Identity",
+   "Supabase JWT, verified against a public JWKS endpoint"
+  ],
+  [
+   "Frontend",
+   "React 19, Vite 8, TypeScript"
   ],
   [
    "Tests",
-   "165 backend \u00b7 31 frontend"
+   "53 \u2014 all of test_rag"
   ]
  ],
  "commands": [

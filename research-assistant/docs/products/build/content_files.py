@@ -148,10 +148,11 @@ CHAPTERS = [
        "Three tiers: a React single-page application, a FastAPI service, and Postgres with "
        "pgvector holding documents, chunks, vectors and conversations in one place.",
 
-       FIG("3.1", "System architecture",
-           "Request paths are solid. Every runtime query passes through the low-privilege role "
-           "so row-level security applies; the embedding model runs in the application process.",
-           "fig3-architecture.png", 860, 400),
+       FIG("3.1", "Chat with Files, tier by tier",
+           "Ingestion and answering touch different parts of the same stack, so they are drawn "
+           "as two routes rather than one arrow per layer. The embedding model sits inside the "
+           "application process.",
+           "fig-f0.png", 880, 494),
 
        H3("3.1 One database, not two"),
        P("The most consequential architectural decision in this product is that vectors live in "
@@ -416,10 +417,14 @@ CHAPTERS = [
        "The suite and the gates that protect this product, and the reason both run against a "
        "real Postgres rather than a convenient substitute.",
 
-       STATS(("165", "Backend tests", "unit and integration, 5 s"),
-             ("31", "Frontend tests", "hooks and components"),
+       STATS(("53", "Tests for this product", "all of test_rag.py"),
+             ("38", "Shared platform tests", "auth and provider retry"),
              ("4", "Build gates", "tests · RLS · evals · frontend"),
              ("0.3 s", "Retrieval eval", "25 questions, no API cost")),
+       P("The 53 are the ones that fail when ingestion, retrieval or the answer loop breaks. "
+         "Deep Research has its own 74 across test_agents.py, test_confidence.py, "
+         "test_evidence.py and test_evals.py, and they are not counted here — a number that "
+         "covers both products tells you nothing about either."),
 
        H3("8.1 What CI verifies"),
        P("The pipeline runs against pgvector/pgvector:pg16 with a genuine low-privilege role — "
@@ -447,8 +452,10 @@ CHAPTERS = [
           "(test_marks_an_abandoned_document_as_failed);",
           "an insufficient first retrieval is rewritten and retried "
           "(test_rewrites_and_retries_when_first_attempt_is_insufficient);",
-          "chunk windows overlap so an answer is not lost at a boundary "
-          "(test_windows_overlap_so_boundaries_are_not_lost)."),
+          "consecutive chunks share their overlap, so an answer on a boundary survives whole "
+          "(test_long_text_splits_with_overlap);",
+          "no chunk ever exceeds the configured size "
+          "(test_chunks_never_exceed_chunk_size)."),
        NOTE("What the suite does not cover.",
             "Two things this report would like to claim and cannot. Nothing asserts that the "
             "embedding query prefix is applied at query time and not at index time — getting "

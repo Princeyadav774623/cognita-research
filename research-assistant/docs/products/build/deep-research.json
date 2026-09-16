@@ -355,11 +355,11 @@
     {
      "k": "fig",
      "id": "3.1",
-     "title": "System architecture",
-     "caption": "Request paths are solid; the WebSocket carries streamed progress and report tokens. Every runtime query passes through the low-privilege role so row-level security applies.",
-     "src": "fig3-architecture.png",
-     "w": 860,
-     "h": 400
+     "title": "Deep Research, tier by tier",
+     "caption": "What each layer is made of and the order one typed question touches it. The deployment diagram in Chapter 11 says where these processes physically run; this one says what they are.",
+     "src": "fig-r0.png",
+     "w": 880,
+     "h": 494
     },
     {
      "k": "h3",
@@ -890,14 +890,14 @@
      "k": "stats",
      "items": [
       [
-       "165",
-       "Backend tests",
-       "unit and integration, 5 s"
+       "74",
+       "Tests for this product",
+       "agents \u00b7 confidence \u00b7 evidence \u00b7 graph"
       ],
       [
-       "31",
-       "Frontend tests",
-       "hooks and components"
+       "38",
+       "Shared platform tests",
+       "auth and provider retry"
       ],
       [
        "4",
@@ -910,6 +910,10 @@
        "versioned, reversible"
       ]
      ]
+    },
+    {
+     "k": "p",
+     "text": "The 74 are the ones that fail when this pipeline breaks: test_agents.py, test_confidence.py, test_evidence.py and test_evals.py. Chat with Files has its own 53 in test_rag.py, and they are not counted here \u2014 a number that covers both products tells you nothing about either."
     },
     {
      "k": "h3",
@@ -1254,7 +1258,7 @@
    "number": "11.0",
    "title": "Notation used throughout this chapter",
    "caption": "One visual language across all nine diagrams, so it is learned once rather than re-read per figure.",
-   "png": "fig-legend.png"
+   "png": "fig-legend-deep-research.png"
   },
   {
    "id": "R.1",
@@ -1423,32 +1427,40 @@
  ],
  "env": [
   [
+   "Orchestration",
+   "LangGraph 0.2.76 \u2014 nine nodes, one conditional edge"
+  ],
+  [
    "Backend",
-   "Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0"
+   "Python 3.12, FastAPI 0.121, SQLAlchemy 2.0"
   ],
   [
-   "Frontend",
-   "React 19, Vite 8, TypeScript, Vitest"
-  ],
-  [
-   "Database",
-   "PostgreSQL 16, pgvector 0.4.1, HNSW + GIN indexes"
-  ],
-  [
-   "Embeddings",
-   "BAAI/bge-small-en-v1.5, 384 dimensions, local"
+   "Transport",
+   "WebSocket, /ws/research"
   ],
   [
    "Inference",
-   "openai/gpt-oss-120b (synthesis), openai/gpt-oss-20b (structural, judge)"
+   "openai/gpt-oss-120b (analyst, fact-checker, report)"
   ],
   [
-   "Codebase",
-   "8,807 lines backend \u00b7 8,516 lines frontend"
+   "",
+   "openai/gpt-oss-20b (triage, planner, gap analysis)"
+  ],
+  [
+   "Persistence",
+   "PostgreSQL 16 \u2014 research_sessions, user_subscriptions"
+  ],
+  [
+   "Identity",
+   "Supabase JWT, verified against a public JWKS endpoint"
+  ],
+  [
+   "Frontend",
+   "React 19, Vite 8, TypeScript"
   ],
   [
    "Tests",
-   "165 backend \u00b7 31 frontend"
+   "74 \u2014 test_agents, test_confidence, test_evidence, test_evals"
   ]
  ],
  "commands": [

@@ -158,10 +158,11 @@ CHAPTERS = [
        "state machine, and Postgres holding both relational and vector data. This chapter "
        "describes them as they serve this product.",
 
-       FIG("3.1", "System architecture",
-           "Request paths are solid; the WebSocket carries streamed progress and report tokens. "
-           "Every runtime query passes through the low-privilege role so row-level security applies.",
-           "fig3-architecture.png", 860, 400),
+       FIG("3.1", "Deep Research, tier by tier",
+           "What each layer is made of and the order one typed question touches it. The "
+           "deployment diagram in Chapter 11 says where these processes physically run; this "
+           "one says what they are.",
+           "fig-r0.png", 880, 494),
 
        H3("3.1 Why a graph and not a chain"),
        P("The single structural decision that shapes this product is that the pipeline must be "
@@ -441,10 +442,14 @@ CHAPTERS = [
        "The suite and the gates that protect this product, and the reason both are run against "
        "a real Postgres rather than a convenient substitute.",
 
-       STATS(("165", "Backend tests", "unit and integration, 5 s"),
-             ("31", "Frontend tests", "hooks and components"),
+       STATS(("74", "Tests for this product", "agents · confidence · evidence · graph"),
+             ("38", "Shared platform tests", "auth and provider retry"),
              ("4", "Build gates", "tests · RLS · evals · frontend"),
              ("4", "Migrations", "versioned, reversible")),
+       P("The 74 are the ones that fail when this pipeline breaks: test_agents.py, "
+         "test_confidence.py, test_evidence.py and test_evals.py. Chat with Files has its own "
+         "53 in test_rag.py, and they are not counted here — a number that covers both products "
+         "tells you nothing about either."),
 
        H3("8.1 What CI verifies"),
        P("The pipeline runs against pgvector/pgvector:pg16 with a genuine low-privilege role — "
