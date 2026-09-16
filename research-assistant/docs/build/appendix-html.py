@@ -392,6 +392,8 @@ p{margin:0 0 var(--s4)}
 .prompt{background:var(--card);border:1px solid var(--rule);border-radius:10px;margin:var(--s5) 0;overflow:hidden;break-inside:avoid}
 .prompt__head{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s2) var(--s4);padding:var(--s4) var(--s5);border-bottom:1px solid var(--rule2);background:var(--paper2)}
 .prompt__n{font-family:var(--mono);font-size:.7rem;color:var(--bronze);letter-spacing:.1em}
+.tag--research{background:rgba(160,107,33,.12);color:#7d5115;font-weight:600}
+.tag--files{background:rgba(29,95,99,.12);color:#1d5f63;font-weight:600}
 .prompt__role{font-family:var(--sans);font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
 .prompt__meta{margin-left:auto;display:flex;gap:var(--s3);flex-wrap:wrap}
 .tag{font-family:var(--mono);font-size:.63rem;letter-spacing:.05em;padding:2px 7px;border-radius:3px;background:rgba(29,95,99,.1);color:var(--teal);white-space:nowrap}
@@ -443,8 +445,10 @@ def build() -> str:
 <section id="partA">
 <h2>Part A — Prompt Catalogue</h2>
 <p class="lede measure">These are extracted from the source files, not retyped, so this document
-cannot drift from what the system actually sends. Each entry records the model it goes to, the
-temperature it runs at, and why it is worded the way it is.</p>
+cannot drift from what the system actually sends. Each entry records which of the two products it
+belongs to — Deep Research or Chat with Files, as set out in §1.2 of the report — the model it goes
+to, the temperature it runs at, and why it is worded the way it is. Nine of the fourteen drive the
+research pipeline; the remaining five drive retrieval and answering over uploaded documents.</p>
 
 <div class="note measure"><b>Why temperature varies.</b> Classification and verification run at 0.0
 because the same input should give the same verdict — a fact-checker that disagrees with itself
@@ -459,6 +463,7 @@ sources and high enough not to produce stilted prose.</div>
     <span class="prompt__n">A{i:02d}</span>
     <span class="prompt__role">{r['role']}</span>
     <span class="prompt__meta">
+      <span class="tag tag--{'files' if r['file'].startswith('rag/') else 'research'}">{'Chat with Files' if r['file'].startswith('rag/') else 'Deep Research'}</span>
       <span class="tag">{r['model']}</span>
       <span class="tag">temp {r['temp']}</span>
       <span class="tag tag--f">{r['file']} · {r['name']}</span>

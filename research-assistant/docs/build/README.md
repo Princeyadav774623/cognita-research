@@ -38,6 +38,35 @@ Two things that will bite if you edit it:
   smaller than the drawing — the first attempt came out 600px wide instead of
   1760.
 
+## The two products must stay visible
+
+Cognita is two products — Deep Research and Chat with Files — over one shared
+platform. That is obvious in the code (`agents/` and `graph/` versus `rag/`)
+and in the app (two routes, two query boxes), and it was almost invisible in
+this report: both product names appeared three times in 7,200 words, and never
+in the eight chapters that describe them.
+
+Four things carry the distinction now, and they need to stay in step:
+
+- **§1.2 "Two products, one platform"** — the comparison table, Figure 1.1, and
+  the statement of the one crossing point (the corpus node, FR-6). Without that
+  last paragraph a reader finishing Chapter 4 concludes that Chapter 5's RAG is
+  a *stage of the research pipeline*, which is wrong.
+- **A badge on every chapter opener and every contents entry**, from
+  `CONTENTS_TAGS` in `report-docx.js` and `.tag--research/files/shared` in the
+  HTML. Add a chapter, add its badge in both.
+- **A Product column on the functional requirements table.** FR-1…FR-12 and
+  FR-15 are Deep Research, FR-13/FR-14 are Chat with Files, FR-16/FR-17 are
+  shared, and FR-6 is the crossing point and carries both.
+- **A product label on every appendix prompt**, derived from the source path —
+  `rag/` is Chat with Files, everything else is Deep Research. Derived, not
+  hand-listed, so it cannot go stale.
+
+Figure 1.1 lives in `Cognita-Project-Report.html` as inline SVG and is extracted
+to `build/figures/fig1-boundary.svg` / `.png`. Its CSS classes are prefixed
+`bd` on purpose: inline SVG `<style>` is a real document stylesheet, so the
+single-letter class names the other figures use collide across figures.
+
 ## Prerequisites
 
 `node` with the `docx` package resolvable from `docs/`, and `python3`. No

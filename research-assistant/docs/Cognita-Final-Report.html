@@ -119,6 +119,17 @@ td strong { color: var(--ink); }
 .pill--good { background: rgba(31,107,74,.12); color: var(--good); }
 .pill--warn { background: rgba(138,99,20,.12); color: var(--warn); }
 .pill--bad  { background: rgba(156,47,38,.12); color: var(--bad); }
+/* Product badges. Bronze is Deep Research, teal is Chat with Files, grey is
+   the platform both sit on — the same three roles the SRS diagrams use. */
+.tag { display: inline-block; font-family: var(--mono); font-size: .58rem; letter-spacing: .1em;
+       text-transform: uppercase; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+       white-space: nowrap; border: 1px solid; }
+.tag--research { background: var(--bronze-soft); color: var(--bronze-deep); border-color: rgba(160,107,33,.30); }
+.tag--files    { background: var(--teal-soft);   color: var(--teal);        border-color: rgba(29,95,99,.30); }
+.tag--shared   { background: rgba(124,117,102,.10); color: var(--ink-3);    border-color: rgba(124,117,102,.28); }
+.chapter__tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 var(--space-4); }
+.toc li .tag { margin-left: 8px; vertical-align: 1px; }
+.tag-key { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: var(--space-4) 0 0; }
 
 /* ---------- figures ---------- */
 figure { margin: var(--space-6) 0; }
@@ -185,18 +196,18 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <nav class="toc">
   <h2>Contents</h2>
   <ol>
-    <li><a href="#ch1">Introduction and Problem Statement</a></li>
-    <li><a href="#ch2">Software Requirements Specification</a></li>
-    <li><a href="#ch3">System Architecture</a></li>
-    <li><a href="#ch4">The Agent Pipeline</a></li>
-    <li><a href="#ch5">Retrieval-Augmented Generation Subsystem</a></li>
-    <li><a href="#ch6">Data Layer and Security</a></li>
-    <li><a href="#ch7">Verification and Confidence Scoring</a></li>
-    <li><a href="#ch8">Testing and Continuous Integration</a></li>
-    <li><a href="#ch9">Results and Measurements</a></li>
-    <li><a href="#ch10">Evaluation, Limitations and Future Work</a></li>
-    <li><a href="#ch11">SRS Diagrams</a></li>
-    <li><a href="#appendix">Appendix: Environment and Reproduction</a></li>
+    <li><a href="#ch1">Introduction and Problem Statement</a><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#ch2">Software Requirements Specification</a><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#ch3">System Architecture</a><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#ch4">The Agent Pipeline</a><span class="tag tag--research">Deep Research</span></li>
+    <li><a href="#ch5">Retrieval-Augmented Generation Subsystem</a><span class="tag tag--files">Chat with Files</span></li>
+    <li><a href="#ch6">Data Layer and Security</a><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#ch7">Verification and Confidence Scoring</a><span class="tag tag--research">Deep Research</span></li>
+    <li><a href="#ch8">Testing and Continuous Integration</a><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#ch9">Results and Measurements</a><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span></li>
+    <li><a href="#ch10">Evaluation, Limitations and Future Work</a><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#ch11">SRS Diagrams</a><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></li>
+    <li><a href="#appendix">Appendix: Environment and Reproduction</a><span class="tag tag--shared">Shared platform</span></li>
   </ol>
 </nav>
 
@@ -204,6 +215,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch1">
   <div class="chapter__num">Chapter One</div>
   <h2>Introduction and Problem Statement</h2>
+  <div class="chapter__tags"><span class="tag tag--shared">Shared platform</span></div>
 
   <p class="lede measure">
     A language model asked a research question will produce a fluent, confident,
@@ -231,15 +243,100 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
       <li><b>Confidence must be honest.</b> A score that does not reflect the quality of the underlying evidence is decoration, and worse than no score at all.</li>
     </ul>
 
-    <h3>1.2 Scope</h3>
+    <h3>1.2 Two products, one platform</h3>
     <p>
-      The system provides two tools over one evidence model. <b>Deep Research</b> answers
-      a question from the open web using a multi-agent pipeline. <b>Chat with Files</b>
-      answers from documents the user uploads. Both produce cited answers, both refuse
-      when the evidence does not support an answer, and both report measured telemetry
-      rather than assertions.
+      Cognita is not one tool. It is <b>two separate products</b>, reached from the home
+      page as two separate entry points and running as two separate pages with two
+      separate query boxes. They answer different kinds of question, and the difference
+      between them is worth stating before anything else in this report, because every
+      chapter that follows belongs to one of them or to the platform beneath both.
+    </p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th></th><th>Deep Research</th><th>Chat with Files</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Entry point</strong></td><td><code>/#research</code></td><td><code>/#files</code></td></tr>
+        <tr><td><strong>What you give it</strong></td><td>A question, typed. Nothing to upload.</td><td>Your documents, uploaded first. No files, nothing to ask.</td></tr>
+        <tr><td><strong>Where the evidence comes from</strong></td><td><strong>The open web</strong> — the system goes and finds it</td><td><strong>Your own corpus</strong> — you supply it</td></tr>
+        <tr><td><strong>How it works</strong></td><td>A nine-node agent pipeline that plans, searches, reads, fact-checks and scores</td><td>Ingestion, then hybrid retrieval over your chunks with a grading loop</td></tr>
+        <tr><td><strong>What you get back</strong></td><td>A cited report with a confidence score</td><td>An answer grounded in your files, with the passages it used</td></tr>
+        <tr><td><strong>How it fails safely</strong></td><td>Re-searches, then reports low confidence</td><td>Declines to answer</td></tr>
+        <tr><td><strong>Described in</strong></td><td>Chapters 4 and 7</td><td>Chapter 5</td></tr>
+        <tr><td><strong>Measured in</strong></td><td>§9.2, §9.3, §9.4</td><td>§9.1 (SQuAD 2.0)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <figcaption>Figure 1.1 — The two products and the platform they share
+      <span class="cap">Each product owns its own pipeline and its own source of
+      evidence. Everything in the grey band is shared by both and belongs to
+      neither. The dashed line is the single place the two meet.</span>
+    </figcaption>
+    <div class="frame"><svg viewBox="0 0 880 500" width="880" height="500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The two products and the platform they share">
+  <rect width="880" height="500" fill="#ffffff"/>
+  <style>
+    .bdE{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.11em;font-weight:600}
+    .bdN{font-family:'Plus Jakarta Sans',sans-serif;font-size:19px;font-weight:700;fill:#16150f}
+    .bdB{font-family:'Newsreader',Georgia,serif;font-size:11.5px;fill:#474338}
+    .bdS{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;fill:#474338}
+    .bdL{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#7c7566}
+    .bdH{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;fill:#16150f}
+    .bdC{font-family:'Plus Jakarta Sans',sans-serif;font-size:9.5px;fill:#474338}
+  </style>
+
+  <text class="bdE" x="24" y="24" fill="#7c7566">TWO PRODUCTS — SEPARATE PAGES, SEPARATE QUERIES</text>
+
+  <rect x="24" y="44" width="400" height="250" rx="12" fill="#ffffff" stroke="#a06b21" stroke-width="1.8"/><text class="bdE" x="44" y="70" fill="#a06b21">PRODUCT ONE  ·  /#research</text><text class="bdN" x="44" y="96">Deep Research</text><text class="bdB" x="44" y="117">You type a question. There is nothing to upload.</text><rect x="44" y="134" width="360" height="24" rx="6" fill="#fdfaf4" stroke="#a06b21" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="56" y="150">Plan the question into sub-queries</text><path d="M62,158 L62,164" stroke="#a06b21" stroke-opacity=".5" stroke-width="1.2"/><rect x="44" y="164" width="360" height="24" rx="6" fill="#fdfaf4" stroke="#a06b21" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="56" y="180">Search the open web, read the pages</text><path d="M62,188 L62,194" stroke="#a06b21" stroke-opacity=".5" stroke-width="1.2"/><rect x="44" y="194" width="360" height="24" rx="6" fill="#fdfaf4" stroke="#a06b21" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="56" y="210">Fact-check each claim, corroborate it</text><path d="M62,218 L62,224" stroke="#a06b21" stroke-opacity=".5" stroke-width="1.2"/><rect x="44" y="224" width="360" height="24" rx="6" fill="#fdfaf4" stroke="#a06b21" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="56" y="240">Cited report with a confidence score</text><text class="bdE" x="44" y="281" fill="#a06b21">EVIDENCE — FETCHED BY THE SYSTEM</text>
+
+  <rect x="456" y="44" width="400" height="250" rx="12" fill="#ffffff" stroke="#1d5f63" stroke-width="1.8"/><text class="bdE" x="476" y="70" fill="#1d5f63">PRODUCT TWO  ·  /#files</text><text class="bdN" x="476" y="96">Chat with Files</text><text class="bdB" x="476" y="117">You upload documents first. No files, nothing to ask.</text><rect x="476" y="134" width="360" height="24" rx="6" fill="#f4f8f8" stroke="#1d5f63" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="488" y="150">Chunk, embed and store your files</text><path d="M494,158 L494,164" stroke="#1d5f63" stroke-opacity=".5" stroke-width="1.2"/><rect x="476" y="164" width="360" height="24" rx="6" fill="#f4f8f8" stroke="#1d5f63" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="488" y="180">Hybrid search: vectors + keywords (RRF)</text><path d="M494,188 L494,194" stroke="#1d5f63" stroke-opacity=".5" stroke-width="1.2"/><rect x="476" y="194" width="360" height="24" rx="6" fill="#f4f8f8" stroke="#1d5f63" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="488" y="210">Grade the passages, rewrite, retry</text><path d="M494,218 L494,224" stroke="#1d5f63" stroke-opacity=".5" stroke-width="1.2"/><rect x="476" y="224" width="360" height="24" rx="6" fill="#f4f8f8" stroke="#1d5f63" stroke-opacity=".35" stroke-width="1"/><text class="bdS" x="488" y="240">Answer from your files — or a refusal</text><text class="bdE" x="476" y="281" fill="#1d5f63">EVIDENCE — SUPPLIED BY YOU</text>
+
+  <path d="M656,294 L656,318 L232,318 L232,300" fill="none" stroke="#a06b21" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <path d="M232,294 l-5,9 l10,0 z" fill="#a06b21"/>
+  <text class="bdL" x="440" y="337" text-anchor="middle">the one crossing point — Deep Research may also read your uploaded files (FR-6)</text>
+
+  <rect x="24" y="360" width="832" height="116" rx="12" fill="#f7f5f0" stroke="#7c7566" stroke-opacity=".35" stroke-width="1.4"/>
+  <text class="bdE" x="44" y="386" fill="#7c7566">ONE PLATFORM UNDERNEATH</text>
+  <text class="bdH" x="44" y="408">Shared by both — owned by neither</text>
+  <rect x="44" y="424" width="142" height="30" rx="7" fill="#ffffff" stroke="#7c7566" stroke-opacity=".3"/><text class="bdC" x="115" y="443" text-anchor="middle">Accounts &amp; quota</text><rect x="196" y="424" width="142" height="30" rx="7" fill="#ffffff" stroke="#7c7566" stroke-opacity=".3"/><text class="bdC" x="267" y="443" text-anchor="middle">Tenant isolation (RLS)</text><rect x="348" y="424" width="142" height="30" rx="7" fill="#ffffff" stroke="#7c7566" stroke-opacity=".3"/><text class="bdC" x="419" y="443" text-anchor="middle">LLM retry &amp; fallback</text><rect x="500" y="424" width="142" height="30" rx="7" fill="#ffffff" stroke="#7c7566" stroke-opacity=".3"/><text class="bdC" x="571" y="443" text-anchor="middle">Token ledger</text><rect x="652" y="424" width="142" height="30" rx="7" fill="#ffffff" stroke="#7c7566" stroke-opacity=".3"/><text class="bdC" x="723" y="443" text-anchor="middle">Postgres + pgvector</text>
+</svg></div>
+  </figure>
+
+  <div class="measure">
+    <p>
+      The two are not hermetically sealed, and it would be dishonest to draw them that
+      way. One connection exists, marked in the figure above: the corpus node in the
+      research pipeline can fold your uploaded documents into the evidence set alongside
+      the web (FR-6). That is <em>Deep Research borrowing the other product's corpus</em>
+      — not evidence that Chat with Files is a component of the research pipeline. It is
+      a product in its own right, with its own page, its own retrieval path and its own
+      benchmark.
+    </p>
+    <p>
+      Below both sits a platform neither of them owns: accounts and quota, tenant
+      isolation enforced in the database, LLM invocation with retry and model fallback,
+      the token ledger, and the schema. Chapters 3, 6 and 8 describe that layer, and
+      apply to both products equally.
     </p>
 
+    <h4>How to read this report</h4>
+    <p>
+      Every chapter opens with a badge saying which of the three it belongs to, and the
+      same badges appear in the contents, so the boundary is visible without having to
+      hold it in mind:
+    </p>
+    <div class="tag-key">
+      <span class="tag tag--research">Deep Research</span>
+      <span class="tag tag--files">Chat with Files</span>
+      <span class="tag tag--shared">Shared platform</span>
+    </div>
+  </div>
+
+  <div class="measure">
     <h3>1.3 What this report covers</h3>
     <p>
       Chapters 2 to 8 describe requirements, architecture and implementation. Chapter 9
@@ -254,6 +351,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch2">
   <div class="chapter__num">Chapter Two</div>
   <h2>Software Requirements Specification</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></div>
 
   <div class="measure">
     <h3>2.1 Purpose and intended audience</h3>
@@ -267,25 +365,25 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
   <h3>2.2 Functional requirements</h3>
   <div class="tbl-wrap">
     <table>
-      <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Status</th></tr></thead>
+      <thead><tr><th>ID</th><th>Product</th><th>Requirement</th><th>Priority</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td class="num">FR-1</td><td>Accept a natural-language research question up to 500 characters.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-2</td><td>Decompose a question into 3–5 targeted sub-queries before searching.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-3</td><td>Classify question complexity and scale research depth accordingly.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-4</td><td>Search the open web and extract full text from HTML and PDF sources.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-5</td><td>Disclose when a source degraded to a search snippet rather than full text.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-6</td><td>Search the user's uploaded documents as part of the same evidence set.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-7</td><td>Extract key factual claims and verify each against retrieved evidence.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-8</td><td>Corroborate claims against sources the draft was not written from.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-9</td><td>Re-search when gap analysis finds the evidence insufficient.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-10</td><td>Validate that every citation resolves to a source actually read.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-11</td><td>Report a confidence score with the factors that produced it.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-12</td><td>Stream progress and the report itself as they are produced.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-13</td><td>Upload PDF, DOCX, TXT, MD and images (OCR), up to 15 MB.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-14</td><td>Decline to answer when retrieved evidence is insufficient.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-15</td><td>Export a report as Markdown, BibTeX and PDF.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-16</td><td>Enforce a monthly query allowance, refunding on failure.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
-        <tr><td class="num">FR-17</td><td>Delete all user data on request (GDPR erasure).</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-1</td><td><span class="tag tag--research">Deep Research</span></td><td>Accept a natural-language research question up to 500 characters.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-2</td><td><span class="tag tag--research">Deep Research</span></td><td>Decompose a question into 3–5 targeted sub-queries before searching.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-3</td><td><span class="tag tag--research">Deep Research</span></td><td>Classify question complexity and scale research depth accordingly.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-4</td><td><span class="tag tag--research">Deep Research</span></td><td>Search the open web and extract full text from HTML and PDF sources.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-5</td><td><span class="tag tag--research">Deep Research</span></td><td>Disclose when a source degraded to a search snippet rather than full text.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-6</td><td><span class="tag tag--research">Deep Research</span> <span class="tag tag--files">Chat with Files</span></td><td>Search the user's uploaded documents as part of the same evidence set.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-7</td><td><span class="tag tag--research">Deep Research</span></td><td>Extract key factual claims and verify each against retrieved evidence.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-8</td><td><span class="tag tag--research">Deep Research</span></td><td>Corroborate claims against sources the draft was not written from.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-9</td><td><span class="tag tag--research">Deep Research</span></td><td>Re-search when gap analysis finds the evidence insufficient.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-10</td><td><span class="tag tag--research">Deep Research</span></td><td>Validate that every citation resolves to a source actually read.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-11</td><td><span class="tag tag--research">Deep Research</span></td><td>Report a confidence score with the factors that produced it.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-12</td><td><span class="tag tag--research">Deep Research</span></td><td>Stream progress and the report itself as they are produced.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-13</td><td><span class="tag tag--files">Chat with Files</span></td><td>Upload PDF, DOCX, TXT, MD and images (OCR), up to 15 MB.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-14</td><td><span class="tag tag--files">Chat with Files</span></td><td>Decline to answer when retrieved evidence is insufficient.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-15</td><td><span class="tag tag--research">Deep Research</span></td><td>Export a report as Markdown, BibTeX and PDF.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-16</td><td><span class="tag tag--shared">Shared platform</span></td><td>Enforce a monthly query allowance, refunding on failure.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-17</td><td><span class="tag tag--shared">Shared platform</span></td><td>Delete all user data on request (GDPR erasure).</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -321,6 +419,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch3">
   <div class="chapter__num">Chapter Three</div>
   <h2>System Architecture</h2>
+  <div class="chapter__tags"><span class="tag tag--shared">Shared platform</span></div>
 
   <p class="lede measure">
     Three tiers: a React single-page application, a FastAPI service hosting a LangGraph
@@ -419,11 +518,14 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch4">
   <div class="chapter__num">Chapter Four</div>
   <h2>The Agent Pipeline</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span></div>
 
   <p class="lede measure">
-    Nine nodes in a directed graph. The important structural feature is not their number
-    but the edge that goes backwards: gap analysis can return the run to search when the
-    evidence gathered so far does not support a confident answer.
+    <b>This chapter is the first product, Deep Research</b> — the pipeline that runs when a
+    user types a question at <code>/#research</code>. Nine nodes in a directed graph. The
+    important structural feature is not their number but the edge that goes backwards: gap
+    analysis can return the run to search when the evidence gathered so far does not
+    support a confident answer.
   </p>
 
   <figure>
@@ -489,9 +591,14 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch5">
   <div class="chapter__num">Chapter Five</div>
   <h2>Retrieval-Augmented Generation Subsystem</h2>
+  <div class="chapter__tags"><span class="tag tag--files">Chat with Files</span></div>
 
   <div class="measure">
     <p class="lede">
+      <b>This chapter is the second product, Chat with Files</b> — a separate page at
+      <code>/#files</code> with its own query box, which answers only from documents the
+      user has uploaded. It is not a stage of the pipeline in Chapter 4; the two meet at
+      one point only, the corpus node described in §1.2.
       Retrieval runs two searches and fuses their rankings. Neither is reliable alone:
       embeddings place <code>Sev-1</code> and <code>Sev-2</code> almost on top of each
       other, which is exactly wrong when the user asked about one of them; keyword search
@@ -572,6 +679,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch6">
   <div class="chapter__num">Chapter Six</div>
   <h2>Data Layer and Security</h2>
+  <div class="chapter__tags"><span class="tag tag--shared">Shared platform</span></div>
 
   <div class="measure">
     <h3>6.1 Tenant isolation</h3>
@@ -650,6 +758,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch7">
   <div class="chapter__num">Chapter Seven</div>
   <h2>Verification and Confidence Scoring</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span></div>
 
   <p class="lede measure">
     This chapter describes the part of the system that most distinguishes it, and the
@@ -723,6 +832,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch8">
   <div class="chapter__num">Chapter Eight</div>
   <h2>Testing and Continuous Integration</h2>
+  <div class="chapter__tags"><span class="tag tag--shared">Shared platform</span></div>
 
   <div class="stats">
     <div class="stat"><div class="stat__k">Backend tests</div><div class="stat__v">165</div><div class="stat__n">unit and integration, 5 s</div></div>
@@ -766,6 +876,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch9">
   <div class="chapter__num">Chapter Nine</div>
   <h2>Results and Measurements</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span></div>
 
   <p class="lede measure">
     Every figure in this chapter was produced by running the system. Nothing here is an
@@ -773,7 +884,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
   </p>
 
   <div class="measure">
-    <h3>9.1 Public benchmark — SQuAD 2.0</h3>
+    <h3>9.1 Public benchmark — SQuAD 2.0 <span class="tag tag--files">Chat with Files</span></h3>
     <p>
       The project's own golden set is fourteen questions over three documents written by
       the author. It is a useful regression check and poor evidence: a perfect score on
@@ -807,7 +918,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
   </div>
 
   <div class="measure">
-    <h3>9.2 Internal golden set</h3>
+    <h3>9.2 Internal golden set <span class="tag tag--research">Deep Research</span></h3>
     <p>
       Run as a build gate on every push. Scores of 1.000 here mean "no regression since
       the last commit", and should not be read as evidence of accuracy.
@@ -827,7 +938,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
   </div>
 
   <div class="measure">
-    <h3>9.3 Confidence distribution across real runs</h3>
+    <h3>9.3 Confidence distribution across real runs <span class="tag tag--research">Deep Research</span></h3>
     <p>
       Five genuine research runs against live web sources. The spread is the point: a
       system that returns a high score for every question is not measuring anything.
@@ -887,7 +998,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
   </div>
 
   <div class="measure">
-    <h3>9.4 Cost and latency</h3>
+    <h3>9.4 Cost and latency <span class="tag tag--research">Deep Research</span></h3>
   </div>
 
   <div class="stats">
@@ -932,6 +1043,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch10">
   <div class="chapter__num">Chapter Ten</div>
   <h2>Evaluation, Limitations and Future Work</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></div>
 
   <div class="measure">
     <h3>10.1 Defects found and corrected</h3>
@@ -1000,6 +1112,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="ch11">
   <div class="chapter__num">Chapter Eleven</div>
   <h2>SRS Diagrams</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></div>
   <p class="lede measure">
     The nine diagrams a complete specification carries, drawn in the same palette as
     the rest of this report rather than a tool's defaults. Colour is not decoration
@@ -1403,6 +1516,7 @@ figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; 
 <section class="chapter" id="appendix">
   <div class="chapter__num">Appendix</div>
   <h2>Environment and Reproduction</h2>
+  <div class="chapter__tags"><span class="tag tag--shared">Shared platform</span></div>
 
   <div class="tbl-wrap">
     <table>

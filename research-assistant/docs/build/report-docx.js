@@ -157,12 +157,39 @@ function TBL(headers, rows, widths) {
   });
 }
 
+/* ---- product badges ----
+ * Cognita is two products over one platform. The HTML report marks every
+ * chapter with which of the three it belongs to; these are the Word equivalent,
+ * as shaded runs rather than images so they stay searchable and selectable. */
+const TAG_STYLE = {
+  research: { fill: "FAF2E6", color: "7D5115", label: "DEEP RESEARCH" },
+  files:    { fill: "EDF3F3", color: "1D5F63", label: "CHAT WITH FILES" },
+  shared:   { fill: "F2F1EE", color: "7C7566", label: "SHARED PLATFORM" },
+};
+
+const TAG = (kind) => {
+  const t = TAG_STYLE[kind];
+  return new TextRun({
+    text: "  " + t.label + "  ", font: "Consolas", size: 13, bold: true,
+    color: t.color, characterSpacing: 20,
+    shading: { type: ShadingType.CLEAR, fill: t.fill },
+  });
+};
+
+/** The badge row that sits under a chapter heading. */
+const TAGS = (...kinds) => new Paragraph({
+  spacing: { before: 0, after: 200 },
+  children: kinds.flatMap((k, i) => i === 0
+    ? [TAG(k)]
+    : [new TextRun({ text: "   ", size: 13 }), TAG(k)]),
+});
+
 /** Figure: image plus a caption beneath it. */
 function FIGURE(file, widthIn, number, title, caption) {
   const data = fs.readFileSync(path.join(FIG, file));
   const w = Math.round(widthIn * 96);
   const meta = {
-    3: [860, 400], 4: [860, 240], 5: [700, 220], 9: [700, 260],
+    1: [880, 500], 3: [860, 400], 4: [860, 240], 5: [700, 220], 9: [700, 260],
     "11.1": [880, 390], "11.2": [880, 360], "11.3": [880, 330], "11.4": [880, 400],
     "11.5": [880, 520], "11.6": [880, 440], "11.7": [880, 350], "11.8": [880, 340],
     "11.9": [880, 545],
@@ -209,6 +236,24 @@ children.push(TBL(
    ["Repository", "cognita-research"]],
   [0.3, 0.7]));
 
+/** Which of the two products (or the shared platform) each chapter belongs to.
+ *  Shown under every chapter heading and beside every contents entry, so the
+ *  boundary between the two products is visible without reading for it. */
+const CONTENTS_TAGS = {
+  "1. Introduction and Problem Statement": ["shared"],
+  "2. Software Requirements Specification": ["research", "files", "shared"],
+  "3. System Architecture": ["shared"],
+  "4. The Agent Pipeline": ["research"],
+  "5. Retrieval-Augmented Generation Subsystem": ["files"],
+  "6. Data Layer and Security": ["shared"],
+  "7. Verification and Confidence Scoring": ["research"],
+  "8. Testing and Continuous Integration": ["shared"],
+  "9. Results and Measurements": ["research", "files"],
+  "10. Evaluation, Limitations and Future Work": ["research", "files", "shared"],
+  "11. SRS Diagrams": ["research", "files", "shared"],
+  "Appendix: Environment and Reproduction": ["shared"],
+};
+
 /* ---- contents ---- */
 children.push(
   new Paragraph({ children: [new PageBreak()] }),
@@ -216,15 +261,22 @@ children.push(
     children: [new TextRun({ text: "CONTENTS", font: "Calibri", size: 26, bold: true, color: INK })] }),
   ...CHAPTERS.map((title) => new Paragraph({
     spacing: { after: 100, line: 280 },
-    children: [new InternalHyperlink({
-      anchor: anchorFor(title),
-      children: [new TextRun({ text: title, font: "Georgia", size: 21, color: INK2 })],
-    })],
+    children: [
+      new InternalHyperlink({
+        anchor: anchorFor(title),
+        children: [new TextRun({ text: title, font: "Georgia", size: 21, color: INK2 })],
+      }),
+      // Which product the chapter belongs to, visible before the reader opens it.
+      ...(CONTENTS_TAGS[title] ?? []).flatMap((k) => [
+        new TextRun({ text: "  ", size: 13 }), TAG(k),
+      ]),
+    ],
   })),
 );
 
 /* ---- CH 1 ---- */
 children.push(H1("1. Introduction and Problem Statement"));
+children.push(TAGS("shared"));
 children.push(LEDE("A language model asked a research question will produce a fluent, confident, well-structured answer whether or not it has any basis for it. The failure is not that it is sometimes wrong; it is that a wrong answer is indistinguishable from a right one."));
 children.push(H2("1.1 The problem"));
 children.push(P("Retrieval-augmented generation is the usual response: give the model source documents and instruct it to answer from them. This helps, but it moves the problem rather than solving it. The model can still assert things the sources do not support, cite a document that does not contain the claim, or answer a question the sources never addressed. A reader has no way to tell."));
@@ -232,33 +284,52 @@ children.push(P("Cognita's premise is that a research tool's output is only as v
 children.push(BULLET("Every claim traces to a source. Citations must resolve to a document the system actually read, and that must be verified rather than trusted."));
 children.push(BULLET("Verification must be independent. Checking a claim against the same text it was summarised from proves only that the summary was faithful."));
 children.push(BULLET("Confidence must be honest. A score that does not reflect the quality of the underlying evidence is decoration, and worse than no score at all."));
-children.push(H2("1.2 Scope"));
-children.push(P("The system provides two tools over one evidence model. Deep Research answers a question from the open web using a multi-agent pipeline. Chat with Files answers from documents the user uploads. Both produce cited answers, both refuse when the evidence does not support an answer, and both report measured telemetry rather than assertions."));
+children.push(H2("1.2 Two products, one platform"));
+children.push(P("Cognita is not one tool. It is two separate products, reached from the home page as two separate entry points and running as two separate pages with two separate query boxes. They answer different kinds of question, and the difference between them is worth stating before anything else in this report, because every chapter that follows belongs to one of them or to the platform beneath both."));
+children.push(TBL(["", "Deep Research", "Chat with Files"], [
+  ["Entry point", "/#research", "/#files"],
+  ["What you give it", "A question, typed. Nothing to upload.", "Your documents, uploaded first. No files, nothing to ask."],
+  ["Where the evidence comes from", "The open web — the system goes and finds it", "Your own corpus — you supply it"],
+  ["How it works", "A nine-node agent pipeline that plans, searches, reads, fact-checks and scores", "Ingestion, then hybrid retrieval over your chunks with a grading loop"],
+  ["What you get back", "A cited report with a confidence score", "An answer grounded in your files, with the passages it used"],
+  ["How it fails safely", "Re-searches, then reports low confidence", "Declines to answer"],
+  ["Described in", "Chapters 4 and 7", "Chapter 5"],
+  ["Measured in", "9.2, 9.3, 9.4", "9.1 (SQuAD 2.0)"],
+], [0.26, 0.37, 0.37]));
+children.push(new Paragraph({ spacing: { after: 160 }, children: [] }));
+children.push(...FIGURE("fig1-boundary.png", 6.3, 1, "The two products and the platform they share",
+  "Each product owns its own pipeline and its own source of evidence. Everything in the grey band is shared by both and belongs to neither. The dashed line is the single place the two meet."));
+children.push(P("The two are not hermetically sealed, and it would be dishonest to draw them that way. One connection exists, marked in the figure above: the corpus node in the research pipeline can fold your uploaded documents into the evidence set alongside the web (FR-6). That is Deep Research borrowing the other product's corpus — not evidence that Chat with Files is a component of the research pipeline. It is a product in its own right, with its own page, its own retrieval path and its own benchmark."));
+children.push(P("Below both sits a platform neither of them owns: accounts and quota, tenant isolation enforced in the database, LLM invocation with retry and model fallback, the token ledger, and the schema. Chapters 3, 6 and 8 describe that layer, and apply to both products equally."));
+children.push(EYEBROW("How to read this report"));
+children.push(P("Every chapter opens with a badge saying which of the three it belongs to, so the boundary is visible without having to hold it in mind:"));
+children.push(TAGS("research", "files", "shared"));
 children.push(H2("1.3 What this report covers"));
 children.push(P("Chapters 2 to 8 describe requirements, architecture and implementation. Chapter 9 reports measurements taken from the running system — every figure in it was produced by executing the software, not estimated. Chapter 10 states plainly what remains unproven."));
 children.push(H1("2. Software Requirements Specification"));
+children.push(TAGS("research", "files", "shared"));
 children.push(H2("2.1 Purpose and intended audience"));
 children.push(P("This specification describes a web application delivering verifiable research answers. Its users are researchers, analysts and students who need an answer they can defend, not merely an answer they can read."));
 children.push(H2("2.2 Functional requirements"));
-children.push(TBL(["ID", "Requirement", "Priority", "Status"], [
-  ["FR-1", "Accept a natural-language research question up to 500 characters.", "Must", "Implemented"],
-  ["FR-2", "Decompose a question into 3–5 targeted sub-queries before searching.", "Must", "Implemented"],
-  ["FR-3", "Classify question complexity and scale research depth accordingly.", "Should", "Implemented"],
-  ["FR-4", "Search the open web and extract full text from HTML and PDF sources.", "Must", "Implemented"],
-  ["FR-5", "Disclose when a source degraded to a search snippet rather than full text.", "Must", "Implemented"],
-  ["FR-6", "Search the user's uploaded documents as part of the same evidence set.", "Must", "Implemented"],
-  ["FR-7", "Extract key factual claims and verify each against retrieved evidence.", "Must", "Implemented"],
-  ["FR-8", "Corroborate claims against sources the draft was not written from.", "Must", "Implemented"],
-  ["FR-9", "Re-search when gap analysis finds the evidence insufficient.", "Should", "Implemented"],
-  ["FR-10", "Validate that every citation resolves to a source actually read.", "Must", "Implemented"],
-  ["FR-11", "Report a confidence score with the factors that produced it.", "Must", "Implemented"],
-  ["FR-12", "Stream progress and the report itself as they are produced.", "Should", "Implemented"],
-  ["FR-13", "Upload PDF, DOCX, TXT, MD and images (OCR), up to 15 MB.", "Must", "Implemented"],
-  ["FR-14", "Decline to answer when retrieved evidence is insufficient.", "Must", "Implemented"],
-  ["FR-15", "Export a report as Markdown, BibTeX and PDF.", "Should", "Implemented"],
-  ["FR-16", "Enforce a monthly query allowance, refunding on failure.", "Must", "Implemented"],
-  ["FR-17", "Delete all user data on request (GDPR erasure).", "Must", "Implemented"],
-], [0.09, 0.58, 0.14, 0.19]));
+children.push(TBL(["ID", "Product", "Requirement", "Priority", "Status"], [
+  ["FR-1", "Research", "Accept a natural-language research question up to 500 characters.", "Must", "Implemented"],
+  ["FR-2", "Research", "Decompose a question into 3–5 targeted sub-queries before searching.", "Must", "Implemented"],
+  ["FR-3", "Research", "Classify question complexity and scale research depth accordingly.", "Should", "Implemented"],
+  ["FR-4", "Research", "Search the open web and extract full text from HTML and PDF sources.", "Must", "Implemented"],
+  ["FR-5", "Research", "Disclose when a source degraded to a search snippet rather than full text.", "Must", "Implemented"],
+  ["FR-6", "Research + Files", "Search the user's uploaded documents as part of the same evidence set.", "Must", "Implemented"],
+  ["FR-7", "Research", "Extract key factual claims and verify each against retrieved evidence.", "Must", "Implemented"],
+  ["FR-8", "Research", "Corroborate claims against sources the draft was not written from.", "Must", "Implemented"],
+  ["FR-9", "Research", "Re-search when gap analysis finds the evidence insufficient.", "Should", "Implemented"],
+  ["FR-10", "Research", "Validate that every citation resolves to a source actually read.", "Must", "Implemented"],
+  ["FR-11", "Research", "Report a confidence score with the factors that produced it.", "Must", "Implemented"],
+  ["FR-12", "Research", "Stream progress and the report itself as they are produced.", "Should", "Implemented"],
+  ["FR-13", "Files", "Upload PDF, DOCX, TXT, MD and images (OCR), up to 15 MB.", "Must", "Implemented"],
+  ["FR-14", "Files", "Decline to answer when retrieved evidence is insufficient.", "Must", "Implemented"],
+  ["FR-15", "Research", "Export a report as Markdown, BibTeX and PDF.", "Should", "Implemented"],
+  ["FR-16", "Shared", "Enforce a monthly query allowance, refunding on failure.", "Must", "Implemented"],
+  ["FR-17", "Shared", "Delete all user data on request (GDPR erasure).", "Must", "Implemented"],
+], [0.08, 0.16, 0.47, 0.11, 0.18]));
 
 children.push(H2("2.3 Non-functional requirements"));
 children.push(TBL(["ID", "Category", "Requirement", "Verified by"], [
@@ -281,6 +352,7 @@ children.push(BULLET("Two database roles. An owner role for migrations, a low-pr
 
 /* ---- CH 3 ---- */
 children.push(H1("3. System Architecture"));
+children.push(TAGS("shared"));
 children.push(LEDE("Three tiers: a React single-page application, a FastAPI service hosting a LangGraph state machine, and Postgres with pgvector holding both relational and vector data."));
 children.push(...FIGURE("fig3-architecture.png", 6.3, 3, "System architecture",
   "Request paths are solid; the WebSocket carries streamed progress and report tokens. Every runtime query passes through the low-privilege role so row-level security applies."));
@@ -296,7 +368,8 @@ children.push(TBL(["Layer", "Choice", "Why this rather than the obvious alternat
 
 /* ---- CH 4 ---- */
 children.push(H1("4. The Agent Pipeline"));
-children.push(LEDE("Nine nodes in a directed graph. The important structural feature is not their number but the edge that goes backwards: gap analysis can return the run to search when the evidence gathered so far does not support a confident answer."));
+children.push(TAGS("research"));
+children.push(LEDE("This chapter is the first product, Deep Research — the pipeline that runs when a user types a question at /#research. Nine nodes in a directed graph. The important structural feature is not their number but the edge that goes backwards: gap analysis can return the run to search when the evidence gathered so far does not support a confident answer."));
 children.push(...FIGURE("fig4-pipeline.png", 6.3, 4, "Research pipeline with reflective loop",
   "Triage routes non-research messages straight to the end. The corpus node folds the user's own documents into the same evidence set as the web."));
 children.push(TBL(["Node", "Responsibility", "Model", "Design note"], [
@@ -313,7 +386,8 @@ children.push(TBL(["Node", "Responsibility", "Model", "Design note"], [
 
 /* ---- CH 5 ---- */
 children.push(H1("5. Retrieval-Augmented Generation Subsystem"));
-children.push(LEDE("Retrieval runs two searches and fuses their rankings. Neither is reliable alone: embeddings place Sev-1 and Sev-2 almost on top of each other, which is exactly wrong when the user asked about one of them; keyword search has no notion of synonym or paraphrase."));
+children.push(TAGS("files"));
+children.push(LEDE("This chapter is the second product, Chat with Files — a separate page at /#files with its own query box, which answers only from documents the user has uploaded. It is not a stage of the pipeline in Chapter 4; the two meet at one point only, the corpus node described in 1.2. Retrieval runs two searches and fuses their rankings. Neither is reliable alone: embeddings place Sev-1 and Sev-2 almost on top of each other, which is exactly wrong when the user asked about one of them; keyword search has no notion of synonym or paraphrase."));
 children.push(H2("5.1 Ingestion"));
 children.push(P("A file is validated by magic bytes rather than extension, extracted according to type, sanitised, split into 1,000-character chunks with 150-character overlap, and embedded locally. The HTTP request returns as soon as the record exists; extraction and embedding happen afterwards, so a 200-page PDF cannot exceed a proxy timeout. Documents left mid-ingest by a restart are failed after fifteen minutes."));
 children.push(H2("5.2 Hybrid retrieval"));
@@ -327,6 +401,7 @@ children.push(P("Retrieval is not a single shot. The system grades whether retri
 
 /* ---- CH 6 ---- */
 children.push(H1("6. Data Layer and Security"));
+children.push(TAGS("shared"));
 children.push(H2("6.1 Tenant isolation"));
 children.push(P("Application code filters every query by user. That is necessary and insufficient: it is one forgotten WHERE clause away from a cross-tenant leak. Postgres row-level security provides the second line. Policies are keyed on a session variable set when a connection is checked out of the pool, and current_setting(..., true) returns NULL when unset — so an unscoped session matches nothing and fails closed."));
 children.push(P("Two roles make this work. The owner role runs migrations and the payment webhook path, which has no user context and must read across tenants. The runtime role owns nothing and has no BYPASSRLS, so policies bind to it. If both connection strings name the same role, every policy is inert — and startup says so loudly."));
@@ -346,6 +421,7 @@ children.push(P("Four Alembic revisions replace the earlier pattern of create_al
 
 /* ---- CH 7 ---- */
 children.push(H1("7. Verification and Confidence Scoring"));
+children.push(TAGS("research"));
 children.push(LEDE("This chapter describes the part of the system that most distinguishes it, and the part where a plausible-looking implementation is most likely to be measuring something other than what it claims."));
 children.push(H2("7.1 Why naïve verification fails"));
 children.push(P("The obvious implementation extracts claims from the draft and checks them against the source documents. It is circular. A claim faithfully summarised from a source always agrees with that source, including when the source is wrong. Such a system measures summarisation fidelity while its interface calls the result grounding."));
@@ -368,6 +444,7 @@ children.push(P("Every adjustment is reported alongside the number, and the repo
 
 /* ---- CH 8 ---- */
 children.push(H1("8. Testing and Continuous Integration"));
+children.push(TAGS("shared"));
 children.push(TBL(["Measure", "Value", "Detail"], [
   ["Backend tests", "165", "unit and integration, 5 s"],
   ["Frontend tests", "31", "hooks and components"],
@@ -388,8 +465,10 @@ children.push(BULLET("a closing tag inside an excerpt cannot end the delimiter b
 
 /* ---- CH 9 ---- */
 children.push(H1("9. Results and Measurements"));
+children.push(TAGS("research", "files"));
 children.push(LEDE("Every figure in this chapter was produced by running the system. Nothing here is an estimate, and where a measurement is weaker than it appears, this chapter says so."));
 children.push(H2("9.1 Public benchmark — SQuAD 2.0"));
+children.push(TAGS("files"));
 children.push(P("The project's own golden set is fourteen questions over three documents written by the author. It is a useful regression check and poor evidence: a perfect score on one's own questions demonstrates that the system does what was expected, not that it works. SQuAD 2.0 is a public benchmark of human-written questions over Wikipedia paragraphs, including questions deliberately unanswerable from their source."));
 children.push(TBL(["Metric", "Score", "Detail"], [
   ["Recall @ 4", "1.000", "25/25 questions reached their source paragraph"],
@@ -400,6 +479,7 @@ children.push(TBL(["Metric", "Score", "Detail"], [
 children.push(NOTE("Three qualifications, stated plainly.", "1. The corpus was 31 paragraphs; a perfect recall score over a small haystack is easier than over a realistic one. 2. Answer accuracy is understated — manual review of the three failures found two were correct answers phrased differently. 3. The refusal rate is not yet reliably measured: the first run reported 0.167, which inspection showed was a grader defect, not a system defect. The true figure is approximately 0.667.", "9C2F26"));
 children.push(new Paragraph({ spacing: { after: 200 }, children: [] }));
 children.push(H2("9.2 Internal golden set"));
+children.push(TAGS("research"));
 children.push(P("Run as a build gate on every push. Scores of 1.000 here mean \u201cno regression since the last commit\u201d, and should not be read as evidence of accuracy."));
 children.push(TBL(["Metric", "Score", "Baseline", "Result"], [
   ["Retrieval recall", "1.000", "1.000", "OK"],
@@ -408,12 +488,14 @@ children.push(TBL(["Metric", "Score", "Baseline", "Result"], [
   ["Unanswerable retrieved something", "0.750", "1.000", "OK"],
 ], [0.45, 0.19, 0.19, 0.17]));
 children.push(H2("9.3 Confidence distribution across real runs"));
+children.push(TAGS("research"));
 children.push(P("Five genuine research runs against live web sources. The spread is the point: a system that returns a high score for every question is not measuring anything."));
 children.push(...FIGURE("fig9-confidence.png", 6.2, 9, "Confidence by run, with token cost",
   "Confidence is not correlated with effort. The 18% run consumed more tokens than the 65% run — it searched hard and still found little support."));
 children.push(NOTE("The 18% run is the most informative result in this report.", "Asked how much electricity data centres use worldwide, the system gathered 24 sources, supported one claim of five, corroborated none independently, and reported: “4 claims had no supporting evidence in the sources found”. Data-centre energy figures are widely cited second-hand and poorly sourced. A system that returned 85% here would be worse, not better."));
 children.push(new Paragraph({ spacing: { after: 200 }, children: [] }));
 children.push(H2("9.4 Cost and latency"));
+children.push(TAGS("research"));
 children.push(TBL(["Measure", "Value", "Detail"], [
   ["Mean tokens per run", "15,370", "across five live runs"],
   ["Mean cost per run", "$0.0054", "at published provider rates"],
@@ -436,6 +518,7 @@ children.push(TBL(["Measure", "Before", "After", "Standard"], [
 
 /* ---- CH 10 ---- */
 children.push(H1("10. Evaluation, Limitations and Future Work"));
+children.push(TAGS("research", "files", "shared"));
 children.push(H2("10.1 Defects found and corrected"));
 children.push(P("A structured review found a consistent pattern: several controls were documented in comments and marketing copy but did not exist in the running system. These are recorded because the pattern is more instructive than any individual bug."));
 children.push(TBL(["Defect", "Why it mattered", "Resolution"], [
@@ -467,6 +550,7 @@ children.push(P("What remains unproven is whether the confidence number correspo
 
 /* ---- CH 11: SRS diagrams ---- */
 children.push(H1("11. SRS Diagrams"));
+children.push(TAGS("research", "files", "shared"));
 children.push(LEDE("The nine diagrams a complete specification carries, drawn in the same palette as the rest of this report rather than a tool's defaults. Colour is not decoration here: it separates the system from its data and from everything outside its boundary, which is the distinction most of these figures exist to make."));
 children.push(TBL(["Shape / colour", "Means"], [
   ["Rounded rectangle, bronze", "A process — part of the system under discussion"],
@@ -495,6 +579,7 @@ SRS.forEach(([num, title, file, cap]) => {
 
 /* ---- APPENDIX ---- */
 children.push(H1("Appendix: Environment and Reproduction"));
+children.push(TAGS("shared"));
 children.push(TBL(["Component", "Version / detail"], [
   ["Backend", "Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0"],
   ["Frontend", "React 19, Vite 8, TypeScript, Vitest"],

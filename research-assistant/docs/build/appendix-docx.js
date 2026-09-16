@@ -240,14 +240,18 @@ children.push(
 
 /* ---- Part A ---- */
 children.push(H1(SECTIONS[0]));
-children.push(P("These are extracted from the source files, not retyped, so this document cannot drift from what the system actually sends. Each entry records the model it goes to, the temperature it runs at, and why it is worded the way it is."));
+children.push(P("These are extracted from the source files, not retyped, so this document cannot drift from what the system actually sends. Each entry records which of the two products it belongs to — Deep Research or Chat with Files, as set out in §1.2 of the report — the model it goes to, the temperature it runs at, and why it is worded the way it is. Nine of the fourteen drive the research pipeline; the remaining five drive retrieval and answering over uploaded documents."));
 children.push(NOTE("Why temperature varies.", "Classification and verification run at 0.0 because the same input should give the same verdict — a fact-checker that disagrees with itself between runs is not a fact-checker. Synthesis runs at 0.2–0.3, low enough to stay close to the sources and high enough not to produce stilted prose."));
 children.push(GAP());
 
 ROWS.forEach((r, i) => {
   children.push(H2(`A${String(i + 1).padStart(2, "0")}. ${r.role}`));
+  // Which of the two products the prompt belongs to, derived from where it
+  // lives: everything under agents/ is Deep Research, everything under rag/ is
+  // Chat with Files. Part A otherwise reads as one undifferentiated list.
+  const product = r.file.startsWith("rag/") ? "Chat with Files" : "Deep Research";
   children.push(META({ id: `A${String(i + 1).padStart(2, "0")}`, title: r.role },
-    `${r.model} · temp ${r.temp}`));
+    `${product} · ${r.model} · temp ${r.temp}`));
   children.push(WHY(r.note));
   children.push(WHY(`${r.file} · ${r.name} · ${r.chars} characters`));
   children.push(CODE(r.text));

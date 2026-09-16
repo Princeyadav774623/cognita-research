@@ -67,6 +67,7 @@ blocks = [f"""
 <section class="chapter" id="ch11">
   <div class="chapter__num">Chapter Eleven</div>
   <h2>SRS Diagrams</h2>
+  <div class="chapter__tags"><span class="tag tag--research">Deep Research</span><span class="tag tag--files">Chat with Files</span><span class="tag tag--shared">Shared platform</span></div>
   <p class="lede measure">
     The nine diagrams a complete specification carries, drawn in the same palette as
     the rest of this report rather than a tool's defaults. Colour is not decoration
@@ -95,11 +96,16 @@ marker = '<!-- ============================ APPENDIX ===========================
 assert marker in src, "appendix marker not found"
 src = src.replace(marker, chapter + "\n" + marker)
 
-# Contents entry, inserted before the appendix line.
-toc_marker = '<li><a href="#appendix">Appendix: Environment and Reproduction</a></li>'
-assert toc_marker in src
-src = src.replace(toc_marker,
-                  '<li><a href="#ch11">SRS Diagrams</a></li>\n    ' + toc_marker)
+# Contents entry, inserted before the appendix line. Matched by regex because
+# the entry now carries product badges after the anchor.
+m = re.search(r'<li><a href="#appendix">.*?</li>', src)
+assert m, "appendix contents entry not found"
+ch11_tags = ('<span class="tag tag--research">Deep Research</span>'
+             '<span class="tag tag--files">Chat with Files</span>'
+             '<span class="tag tag--shared">Shared platform</span>')
+src = src.replace(m.group(0),
+                  f'<li><a href="#ch11">SRS Diagrams</a>{ch11_tags}</li>\n    '
+                  + m.group(0), 1)
 
 # The report's .frame rule forces a 560px minimum on inline SVG, which is right
 # for the four charts and wrong for these — they carry their own width now.
