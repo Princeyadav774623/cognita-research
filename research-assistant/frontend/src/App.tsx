@@ -356,7 +356,9 @@ function AuthenticatedApp({
                   <div className="tool-header__eyebrow">
                     <Icon name="spark" size={12} /> Autonomous Epistemic Intelligence
                   </div>
-                  <h2 className="tool-header__title">Deep Research</h2>
+                  <h2 className="tool-header__title">
+                    Ask it, and <em>watch it work</em>.
+                  </h2>
                   <p className="tool-header__subtitle">
                     Five agents plan the question, search the web, read the sources, and
                     check every claim before answering.

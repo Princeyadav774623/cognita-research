@@ -10,10 +10,14 @@ export function RagSection() {
       {/* One page header spanning both columns. It used to live inside the
           chat column only, which pushed that column 83px lower than the
           documents panel beside it and left the row looking misaligned. */}
-      <header className="rag-page__header">
-        <h2 className="rag-page__title">Chat with Documents</h2>
-        <p className="rag-page__subtitle">
-          Every answer is grounded in the documents you upload, with inline citations.
+      <header className="tool-header">
+        <div className="tool-header__eyebrow">Grounded In Your Own Sources</div>
+        <h2 className="tool-header__title">
+          Your documents, <em>answered</em>.
+        </h2>
+        <p className="tool-header__subtitle">
+          Ask questions about the files you upload. Every answer quotes the passage it
+          came from, so you can check it.
         </p>
       </header>
 
