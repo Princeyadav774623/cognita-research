@@ -3345,3 +3345,138 @@ textarea.query-box__input {
   margin: 0;
   line-height: 1.45;
 }
+
+/* ==========================================================================
+   TOOL PAGE HEADER & FILES EMPTY STATE
+   ========================================================================== */
+
+.tool-header {
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* The spaced mono line the hero used to open with. Small, wide-tracked and
+   quiet — it names the section without competing with the title under it. */
+.tool-header__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+.tool-header__title {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  margin: 0 0 var(--space-1);
+}
+
+.tool-header__subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.chat-empty {
+  margin: auto 0;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.chat-empty__mark {
+  font-size: 1.9rem;
+  color: var(--accent-warm);
+  margin-bottom: var(--space-2);
+}
+
+.chat-empty__title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.chat-empty__lead {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  max-width: 46ch;
+  margin: 0 auto var(--space-5);
+}
+
+.chat-empty__label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* Questions are clickable: showing an example and making the reader retype it
+   is a worse version of the same idea. */
+.chat-empty__examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 44ch;
+  margin: 0 auto;
+}
+
+.chat-empty__example {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.chat-empty__example:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+  background: var(--bg-surface-raised);
+}
+
+.chat-empty__types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 46ch;
+  margin: 0 auto;
+}
+
+.chat-empty__type {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.chat-empty__type strong {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.chat-empty__note {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: var(--space-4) 0 0;
+}

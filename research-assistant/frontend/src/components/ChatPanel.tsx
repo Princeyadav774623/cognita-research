@@ -270,16 +270,62 @@ export function ChatPanel({ hasDocuments }: Props) {
         {/* Chat Messages */}
         <div className="chat-messages" ref={listRef}>
           {messages.length === 0 && (
-            <div style={{ textAlign: "center", color: "var(--text-muted)", margin: "auto 0", padding: "2rem" }}>
-              <div style={{ fontSize: "2rem", color: "var(--accent-warm)", marginBottom: "0.5rem" }}>✶</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: "1.35rem", color: "var(--text-primary)", marginBottom: "0.35rem" }}>
-                {hasDocuments ? "Ready to query your knowledge base" : "Upload documents to get started"}
-              </div>
-              <p style={{ fontSize: "0.9rem", maxWidth: "440px", margin: "0 auto", lineHeight: 1.5 }}>
-                {hasDocuments
-                  ? "Ask targeted questions. Answers are ranked by real vector similarity and audited by an LLM-as-a-Judge — open AI Inspector on any reply to see the scores."
-                  : "Upload PDFs, notes, or articles on the left to ground the model with citation verification."}
-              </p>
+            <div className="chat-empty">
+              <div className="chat-empty__mark">✶</div>
+              <h3 className="chat-empty__title">
+                {hasDocuments ? "Ask a question about your documents" : "Upload a document to begin"}
+              </h3>
+
+              {hasDocuments ? (
+                <>
+                  <p className="chat-empty__lead">
+                    Every answer quotes the passage it came from, so you can check it.
+                  </p>
+                  {/* Examples do the explaining. A blank box with an
+                      instruction above it still leaves a new reader guessing
+                      what a good question looks like here. */}
+                  <div className="chat-empty__label">Try asking</div>
+                  <div className="chat-empty__examples">
+                    {[
+                      "What does this document say about pricing?",
+                      "Summarise the main findings in plain language.",
+                      "What limitations do the authors mention?",
+                      "Compare the conclusions across these files.",
+                    ].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className="chat-empty__example"
+                        onClick={() => setInput(q)}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="chat-empty__lead">
+                    Drop a file into the panel on the left. Once it is indexed you can ask
+                    questions about it and every answer will cite the passage it came from.
+                  </p>
+                  <div className="chat-empty__label">Accepted files</div>
+                  <div className="chat-empty__types">
+                    {[
+                      { ext: "PDF", note: "papers, reports" },
+                      { ext: "DOCX", note: "Word documents" },
+                      { ext: "TXT / MD", note: "notes, transcripts" },
+                      { ext: "PNG / JPG", note: "scans, read by OCR" },
+                    ].map((t) => (
+                      <span key={t.ext} className="chat-empty__type">
+                        <strong>{t.ext}</strong>
+                        <span>{t.note}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="chat-empty__note">Up to 15 MB per file.</p>
+                </>
+              )}
             </div>
           )}
 

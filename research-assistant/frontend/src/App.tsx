@@ -348,7 +348,23 @@ function AuthenticatedApp({
         <div className={`app__main-grid ${route === "files" ? "app__main-grid--full" : ""}`}>
           <main className="app__content-column">
             {route === "research" && (
-              <QueryInput disabled={phase === "running"} onSubmit={handleSubmit} />
+              <>
+                {/* The tool page opened straight onto an input box with nothing
+                    naming it. This mirrors the Files page header, and brings
+                    back the spaced mono eyebrow the old hero used. */}
+                <header className="tool-header">
+                  <div className="tool-header__eyebrow">
+                    <Icon name="spark" size={12} /> Autonomous Epistemic Intelligence
+                  </div>
+                  <h2 className="tool-header__title">Deep Research</h2>
+                  <p className="tool-header__subtitle">
+                    Five agents plan the question, search the web, read the sources, and
+                    check every claim before answering.
+                  </p>
+                </header>
+
+                <QueryInput disabled={phase === "running"} onSubmit={handleSubmit} />
+              </>
             )}
 
             {route === "files" && <RagSection />}
