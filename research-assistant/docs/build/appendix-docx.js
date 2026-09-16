@@ -18,6 +18,7 @@ const OUT = process.argv[4];
 
 const INK = "16150F", INK2 = "474338", INK3 = "7C7566";
 const BRONZE = "A06B21", TEAL = "1D5F63", RULE = "DDD6C8", PAPER2 = "FAF7F1", CODEBG = "FBFAF6";
+const PAPER = "F4F1EA";  // the HTML report's --paper, so both documents match
 const PAGE_W = convertInchesToTwip(8.5) - convertInchesToTwip(1.25) * 2;
 
 const SECTIONS = [
@@ -289,6 +290,7 @@ children.push(H2("Keeping them honest"));
 children.push(P("Each specification above names what the figure must show. When the system changes, update the source and re-render — and if the change contradicts the Purpose line, the figure has stopped earning its place and should be rethought rather than patched."));
 
 const doc = new Document({
+  background: { color: PAPER },
   creator: "Prince Yadav",
   title: "Cognita — Technical Appendix",
   description: "Prompt catalogue and SRS figure specifications for the Cognita research assistant.",

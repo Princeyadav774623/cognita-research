@@ -37,6 +37,9 @@ const OUT = process.argv[3];
 /* ---- palette, matching the HTML report ---- */
 const INK = "16150F", INK2 = "474338", INK3 = "7C7566";
 const BRONZE = "A06B21", TEAL = "1D5F63", RULE = "DDD6C8", PAPER2 = "FAF7F1";
+/* The page itself is the HTML report's --paper; anything that is a card in the
+   HTML (tables, figure frames) keeps --card white so it still lifts off it. */
+const PAPER = "F4F1EA", CARD = "FFFFFF";
 
 const PAGE_W = convertInchesToTwip(8.5) - convertInchesToTwip(1.25) * 2; // usable width
 
@@ -116,7 +119,7 @@ function TBL(headers, rows, widths) {
   const cols = widths.map((w) => Math.round(PAGE_W * w));
   const cell = (text, opts = {}) => new TableCell({
     width: { size: opts.w, type: WidthType.DXA },
-    shading: opts.head ? { type: ShadingType.CLEAR, fill: PAPER2 } : undefined,
+    shading: { type: ShadingType.CLEAR, fill: opts.head ? PAPER2 : CARD },
     margins: { top: 90, bottom: 90, left: 120, right: 120 },
     children: [new Paragraph({
       spacing: { after: 0, line: 260 },
@@ -511,6 +514,7 @@ children.push(BULLET("python -m evals.factcheck_accuracy --export claims.jsonl â
 
 /* ====================== ASSEMBLE ====================== */
 const doc = new Document({
+  background: { color: PAPER },
   creator: "Prince Yadav",
   title: "Cognita â€” Project Report",
   description: "Architecture, requirements and measured results for the Cognita multi-agent research assistant.",

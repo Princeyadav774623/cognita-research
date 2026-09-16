@@ -82,6 +82,20 @@ trade for a document that is mostly read on screen.
 
 Do not reintroduce `features: { updateFields: true }`.
 
+## Page background
+
+Both documents set `background: { color: "F4F1EA" }` — the HTML report's
+`--paper` — so the two formats read the same. `docx-js` writes the matching
+`<w:displayBackgroundShape/>` into `settings.xml` for you.
+
+Anything that is a card in the HTML stays white on top of it: table cells take
+an explicit `FFFFFF` fill (previously they had none and would otherwise inherit
+the cream), and the rasterised figures already carry a white plate.
+
+Word shows the background on screen but does **not** print it unless the reader
+turns on *Options → Display → Print background colors and images*. That is
+Word's default, not a defect in the file — printed copies come out on white.
+
 ## Always run fix-bookmarks.py
 
 `docx-js` writes `w:id="1"` on every bookmark it emits. The bookmark *names*
