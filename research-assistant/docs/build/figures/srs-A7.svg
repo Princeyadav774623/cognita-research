@@ -1,0 +1,33 @@
+<svg viewBox="0 0 880 350" width="880" height="350" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
+  <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
+  <marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+</defs>
+<style>
+  .t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
+  .tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
+  .s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
+  .sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
+  .lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
+  .lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
+  .cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
+  .ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#ab) }
+  .lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#at) }
+  .lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#ap) }
+  .dash{ stroke-dasharray:4 3 }
+  .proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
+  .store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
+  .ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
+  .band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
+  .ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
+  .bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
+</style><rect width="880" height="350" fill="#ffffff"/><circle cx="60" cy="60" r="9" fill="#16150f"/><rect class="proc" x="130" y="36" width="130" height="46" rx="8"/><text class="tc" x="195.0" y="56.0">Uploaded</text><text class="sc" x="195.0" y="70.0">POST /upload</text><rect class="proc" x="330" y="36" width="130" height="46" rx="8"/><text class="tc" x="395.0" y="56.0">Validating</text><text class="sc" x="395.0" y="70.0">magic bytes</text><rect class="proc" x="530" y="36" width="150" height="46" rx="8"/><text class="tc" x="605.0" y="56.0">Processing</text><text class="sc" x="605.0" y="70.0">extract · embed</text><rect class="ok" x="530" y="170" width="150" height="46" rx="8"/><text class="tc" x="605.0" y="190.0">Ready</text><text class="sc" x="605.0" y="204.0">queryable</text><rect class="bad" x="330" y="170" width="130" height="46" rx="8"/><text class="tc" x="395.0" y="190.0">Error</text><text class="sc" x="395.0" y="204.0">reason stored</text><rect class="proc" x="530" y="280" width="150" height="46" rx="8"/><text class="tc" x="605.0" y="300.0">Deleted</text><text class="sc" x="605.0" y="314.0">cascade</text><circle cx="760" cy="303" r="9" fill="none" stroke="#16150f" stroke-width="2"/><circle cx="760" cy="303" r="4.5" fill="#16150f"/><path class="lnb" d="M72,60 L126,60"/><path class="lnb" d="M262,60 L326,60"/><path class="lnb" d="M462,60 L526,60"/><text class="lbc" x="494" y="52">record created</text><text class="lbc" x="494" y="76">HTTP 200 returned</text><path class="lnb" d="M605,84 L605,166"/><text class="lb" x="612" y="130">embedded</text><path class="lnb" d="M395,84 L395,166"/><text class="lb" x="288" y="130" fill="#9c2f26">bad signature</text><path class="lnb" d="M526,74 C500,110 470,140 462,168"/><text class="lb" x="470" y="112" fill="#9c2f26">no text</text><path class="lnb dash" d="M560,84 C520,120 480,150 462,176"/><text class="lb" x="330" y="222" fill="#8a6314">stale &gt; 15 min — restart reaper</text><path class="lnb" d="M605,220 L605,276"/><text class="lb" x="612" y="252">user deletes</text><path class="lnb" d="M430,216 C440,260 500,296 526,300"/><path class="lnb" d="M684,303 L752,303"/></svg>

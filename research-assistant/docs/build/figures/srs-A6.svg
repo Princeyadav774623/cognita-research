@@ -1,0 +1,33 @@
+<svg viewBox="0 0 880 440" width="880" height="440" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
+  <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
+  <marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+</defs>
+<style>
+  .t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
+  .tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
+  .s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
+  .sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
+  .lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
+  .lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
+  .cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
+  .ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#ab) }
+  .lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#at) }
+  .lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#ap) }
+  .dash{ stroke-dasharray:4 3 }
+  .proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
+  .store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
+  .ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
+  .band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
+  .ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
+  .bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
+</style><rect width="880" height="440" fill="#ffffff"/><rect class="proc" x="73.71428571428572" y="18" width="104" height="34" rx="7"/><text class="tc" x="125.71428571428572" y="37.0">Browser</text><line x1="125.71428571428572" y1="52" x2="125.71428571428572" y2="420" stroke="#ddd6c8" stroke-width="1.2" stroke-dasharray="3 4"/><rect class="proc" x="230.85714285714283" y="18" width="104" height="34" rx="7"/><text class="tc" x="282.85714285714283" y="37.0">FastAPI</text><line x1="282.85714285714283" y1="52" x2="282.85714285714283" y2="420" stroke="#ddd6c8" stroke-width="1.2" stroke-dasharray="3 4"/><rect class="proc" x="387.99999999999994" y="18" width="104" height="34" rx="7"/><text class="tc" x="439.99999999999994" y="37.0">Retrieval</text><line x1="439.99999999999994" y1="52" x2="439.99999999999994" y2="420" stroke="#ddd6c8" stroke-width="1.2" stroke-dasharray="3 4"/><rect class="store" x="545.1428571428571" y="18" width="104" height="34" rx="7"/><text class="tc" x="597.1428571428571" y="37.0">Postgres</text><line x1="597.1428571428571" y1="52" x2="597.1428571428571" y2="420" stroke="#ddd6c8" stroke-width="1.2" stroke-dasharray="3 4"/><rect class="ext" x="702.2857142857142" y="18" width="104" height="34" rx="7"/><text class="tc" x="754.2857142857142" y="37.0">Groq</text><line x1="754.2857142857142" y1="52" x2="754.2857142857142" y2="420" stroke="#ddd6c8" stroke-width="1.2" stroke-dasharray="3 4"/><path class="lnb" d="M125.71428571428572,78 L282.85714285714283,78"/><text class="lbc" x="204.28571428571428" y="73">POST /api/rag/chat</text><path class="lnp" d="M282.85714285714283,100 L754.2857142857142,100"/><text class="lbc" x="518.5714285714286" y="95">contextualise</text><path class="lnb" d="M282.85714285714283,122 L439.99999999999994,122"/><text class="lbc" x="361.4285714285714" y="117">hybrid retrieve</text><path class="lnt" d="M439.99999999999994,144 L597.1428571428571,144"/><text class="lbc" x="518.5714285714286" y="139">vector (HNSW)</text><path class="lnt" d="M439.99999999999994,166 L597.1428571428571,166"/><text class="lbc" x="518.5714285714286" y="161">keyword (GIN)</text><path class="ln" d="M439.99999999999994,184 h34 v16 h-34"/><text class="lb" x="479.99999999999994" y="192">rank fusion</text><path class="lnp" d="M282.85714285714283,220 L754.2857142857142,220"/><text class="lbc" x="518.5714285714286" y="215">grade sufficiency</text><path class="lnp dash" d="M282.85714285714283,254 L754.2857142857142,254"/><text class="lbc" x="518.5714285714286" y="249">rewrite query</text><path class="lnb dash" d="M282.85714285714283,276 L439.99999999999994,276"/><text class="lbc" x="361.4285714285714" y="271">retrieve again</text><path class="ln" d="M125.71428571428572,300 h34 v16 h-34"/><text class="lb" x="165.71428571428572" y="308">decline</text><path class="lnp" d="M282.85714285714283,340 L754.2857142857142,340"/><text class="lbc" x="518.5714285714286" y="335">answer from &lt;document&gt;</text><path class="lnp" d="M282.85714285714283,362 L754.2857142857142,362"/><text class="lbc" x="518.5714285714286" y="357">judge faithfulness</text><path class="lnt" d="M282.85714285714283,384 L597.1428571428571,384"/><text class="lbc" x="440.0" y="379">persist message</text><path class="lnb" d="M282.85714285714283,406 L125.71428571428572,406"/><text class="lbc" x="204.28571428571428" y="401">answer + telemetry</text><rect x="120" y="236" width="700" height="82" rx="6" fill="none" stroke="#8a6314" stroke-width="1.3" stroke-dasharray="5 4"/><rect x="120" y="236" width="52" height="16" rx="4" fill="#8a6314" opacity="0.15"/><text class="lb" x="128" y="248" fill="#8a6314">alt</text></svg>

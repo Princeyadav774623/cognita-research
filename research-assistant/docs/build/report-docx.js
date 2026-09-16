@@ -26,6 +26,7 @@ const CHAPTERS = [
   "8. Testing and Continuous Integration",
   "9. Results and Measurements",
   "10. Evaluation, Limitations and Future Work",
+  "11. SRS Diagrams",
   "Appendix: Environment and Reproduction",
 ];
 const anchorFor = (t) => "ch" + CHAPTERS.indexOf(t);
@@ -157,7 +158,12 @@ function TBL(headers, rows, widths) {
 function FIGURE(file, widthIn, number, title, caption) {
   const data = fs.readFileSync(path.join(FIG, file));
   const w = Math.round(widthIn * 96);
-  const meta = { 3: [860, 400], 4: [860, 240], 5: [700, 220], 9: [700, 260] };
+  const meta = {
+    3: [860, 400], 4: [860, 240], 5: [700, 220], 9: [700, 260],
+    "11.1": [880, 390], "11.2": [880, 360], "11.3": [880, 330], "11.4": [880, 400],
+    "11.5": [880, 520], "11.6": [880, 440], "11.7": [880, 350], "11.8": [880, 340],
+    "11.9": [880, 545],
+  };
   const [nw, nh] = meta[number];
   return [
     new Paragraph({
@@ -457,6 +463,35 @@ children.push(BULLET("Cross-encoder reranking on the fused candidate set."));
 children.push(H2("10.4 Assessment"));
 children.push(P("The system does what it claims within the limits of what has been measured. Its retrieval is strong on a public benchmark; its refusal behaviour is correct on the cases examined; its confidence scoring is conservative by construction and reports its own reasoning. Its security controls are enforced by the database and verified by the build."));
 children.push(P("What remains unproven is whether the confidence number corresponds to truth. Every metric in Chapter 9 measures internal consistency or retrieval accuracy. None measures whether a claim marked verified is actually correct — and until human labels exist, that question is open. This report states that plainly rather than letting a column of 1.000 scores imply otherwise."));
+
+
+/* ---- CH 11: SRS diagrams ---- */
+children.push(H1("11. SRS Diagrams"));
+children.push(LEDE("The nine diagrams a complete specification carries, drawn in the same palette as the rest of this report rather than a tool's defaults. Colour is not decoration here: it separates the system from its data and from everything outside its boundary, which is the distinction most of these figures exist to make."));
+children.push(TBL(["Shape / colour", "Means"], [
+  ["Rounded rectangle, bronze", "A process — part of the system under discussion"],
+  ["Cylinder, teal", "Data at rest"],
+  ["Slanted parallelogram, plum", "An external service, outside the system boundary"],
+  ["Green fill", "A terminal success state"],
+  ["Red fill", "A terminal failure state"],
+  ["Dashed line", "A conditional or optional path"],
+], [0.34, 0.66]));
+
+const SRS = [
+  ["11.1", "Use Case Diagram", "srs-A1.png", "Who does what, and what every research action must pass through first. The include-relationship shows authentication and quota enforcement standing between the user and every expensive operation."],
+  ["11.2", "Context Diagram — DFD Level 0", "srs-A2.png", "The system as one process with its external entities. Four dependencies, and the user's documents never cross the boundary."],
+  ["11.3", "Data Flow Diagram — Level 1", "srs-A3.png", "The six real processes and the stores each touches. Every store access is tenant-scoped, which is the property row-level security enforces."],
+  ["11.4", "Entity-Relationship Diagram", "srs-A4.png", "The schema as deployed. Colour separates tables carrying user_id directly from those deriving it through a parent — the distinction that decides how each RLS policy is written."],
+  ["11.5", "Sequence — Deep Research run", "srs-A5.png", "One research request end to end. The token travels in the first WebSocket message because browsers cannot set headers on a handshake; quota is reserved before expensive work and refunded if the run fails."],
+  ["11.6", "Sequence — Chat with Files query", "srs-A6.png", "The agentic retrieval loop. The alt block is what produces correct refusals: grade, rewrite, retry once, and only then decline."],
+  ["11.7", "State Diagram — Document lifecycle", "srs-A7.png", "Why the status field exists and the failure it guards. A restart between 'record created' and 'embedded' leaves nothing to advance the row, which is what the fifteen-minute reaper is for."],
+  ["11.8", "Deployment Diagram", "srs-A8.png", "Where each part runs, and the two distinct database connections. That separation is the whole mechanism of row-level security."],
+  ["11.9", "Component Diagram", "srs-A9.png", "The module structure as it exists on disk, layered so dependencies point in one direction only."],
+];
+SRS.forEach(([num, title, file, cap]) => {
+  children.push(H2(`${num} ${title}`));
+  children.push(...FIGURE(file, 6.3, num, title, cap));
+});
 
 /* ---- APPENDIX ---- */
 children.push(H1("Appendix: Environment and Reproduction"));

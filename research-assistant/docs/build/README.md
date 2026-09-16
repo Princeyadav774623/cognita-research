@@ -1,7 +1,42 @@
 # Rebuilding the documents
 
-The HTML files in `docs/` are the source of truth. The `.docx` files are built
-from them and are gitignored — regenerate rather than edit.
+`Cognita-Final-Report.html` is the deliverable: the full project report plus
+Chapter 11 carrying all nine SRS diagrams. The HTML files are the source of
+truth; the `.docx` files are built from them and are gitignored — regenerate
+rather than edit.
+
+## Rebuild the final report (the one to hand in)
+
+```bash
+cd research-assistant/docs
+python3 build/final-html.py                  # report + chapter 11, one file
+cp build/report-docx.js ./_b.js
+node ./_b.js build/figures Cognita-Final-Report.docx
+rm ./_b.js
+python3 build/fix-bookmarks.py Cognita-Final-Report.docx
+```
+
+`final-html.py` splices Chapter 11 into `Cognita-Project-Report.html`, so edit
+the base report for chapters 1–10 and `build/srs-figures.py` for the diagrams —
+never the combined file, which is regenerated each time.
+
+## The SRS diagrams
+
+`build/srs-figures.py` draws all nine as SVG in the report's palette. One
+visual language throughout: bronze is a process, teal is data at rest, plum is
+an external service, green and red are terminal states, dashed is conditional.
+Shape carries meaning too — cylinder for a store, slanted parallelogram for
+something outside the boundary.
+
+Two things that will bite if you edit it:
+
+- **Escape label text.** A label containing `<document>` — and one does, because
+  the RAG prompt wraps excerpts in those tags — produces an SVG that silently
+  fails to parse. Everything goes through `esc()`.
+- **Keep the explicit `width`/`height`.** Without an intrinsic size, a browser
+  rasterising the SVG falls back to its own default and produces an image far
+  smaller than the drawing — the first attempt came out 600px wide instead of
+  1760.
 
 ## Prerequisites
 
