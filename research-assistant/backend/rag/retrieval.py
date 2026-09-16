@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timedelta, timezone
 
 from rag.store import RagDocument, RagChunk, get_tenant_session
 from rag.ingest import extract_text, chunk_text, IngestError
@@ -81,7 +82,51 @@ def ingest_document(user_id: str, filename: str, content: bytes) -> dict:
         return _document_to_dict(doc) if doc else record
 
 
+# A document left mid-ingest for longer than this was almost certainly
+# orphaned by a restart: extraction and embedding take seconds, not minutes.
+STALE_PROCESSING_MINUTES = 15
+
+
+def reap_stale_processing(user_id: str) -> int:
+    """Mark documents abandoned by a restart as failed, instead of leaving them
+    spinning forever.
+
+    Ingestion runs in the web process, so a deploy or crash between "row
+    created" and "embedding finished" leaves a row at processing with nothing
+    left to advance it. The UI polls while anything is processing, so that row
+    span a spinner indefinitely and the user had no way to tell it apart from
+    a slow upload — or to retry it.
+
+    A durable queue is the real fix; this makes the failure visible and
+    recoverable in the meantime.
+    """
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=STALE_PROCESSING_MINUTES)
+    with get_tenant_session(user_id) as db:
+        stale = (
+            db.query(RagDocument)
+            .filter(
+                RagDocument.user_id == user_id,
+                RagDocument.status == "processing",
+                RagDocument.created_at < cutoff,
+            )
+            .all()
+        )
+        for doc in stale:
+            doc.status = "error"
+            doc.error = "Indexing was interrupted before it finished. Upload the file again."
+        if stale:
+            db.commit()
+            logger.warning(
+                f"[RAG] Reaped {len(stale)} document(s) stuck in processing for user {user_id}"
+            )
+        return len(stale)
+
+
 def list_documents(user_id: str) -> list[dict]:
+    # Checked here because this is what the client polls: a stuck row is
+    # noticed the next time anyone looks at the list, with no scheduler needed.
+    reap_stale_processing(user_id)
+
     with get_tenant_session(user_id) as db:
         docs = (
             db.query(RagDocument)

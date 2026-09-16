@@ -1,0 +1,1050 @@
+/* The page container. Everything else positions against this, and the sticky
+   header's negative side margins are calculated to reach exactly its padding
+   edge — so losing this rule widens the header past the viewport. */
+.app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-5) 5rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   FLAWLESS FIXED APPLE LIQUID GLASS HEADER
+   ========================================================================== */
+
+.app__header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border-subtle);
+  margin: 0 -1.5rem 2.5rem;
+  padding: 0.85rem var(--space-6);
+}
+
+.app__header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.app__brand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.65rem;
+  text-decoration: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.app__brand-logo {
+  font-size: 1.65rem;
+  color: var(--accent-warm);
+  line-height: 1;
+  display: inline-block;
+  transform: translateY(-1px);
+  filter: drop-shadow(0 0 10px rgba(212, 98, 56, 0.45));
+}
+
+.app__brand-title {
+  font-family: var(--font-sans);
+  font-size: 1.24rem;
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.app__brand-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem var(--space-2);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+}
+
+.app__nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-1) 0.4rem;
+  border-radius: var(--radius-pill);
+}
+
+@media (max-width: 960px) {
+  .app__nav-links {
+    display: none;
+  }
+}
+
+.app__nav-link,
+.app__nav-btn {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.app__nav-link:hover,
+.app__nav-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+  text-decoration: none;
+}
+
+.app__nav-link--active,
+.app__nav-btn--active {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Shrinks rather than overflowing. This block used to be flex-shrink: 0, so
+   between the brand and a full email address the header was simply wider than
+   the page and the whole document scrolled sideways. Making it fluid means the
+   header fits at every width instead of only at the widths a breakpoint
+   happens to cover. */
+.app__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.app__theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.app__theme-toggle:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.app__account-pill {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.6rem;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  padding: var(--space-1) var(--space-3) var(--space-1) 0.3rem;
+  border-radius: var(--radius-pill);
+}
+
+.app__account-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.app__account-email {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  min-width: 0;
+  flex-shrink: 1;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__signout-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s ease;
+}
+
+.app__signout-btn:hover {
+  color: var(--danger);
+}
+
+/* Secondary In-Header Tabs */
+.app__tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-3);
+}
+
+.app__tab {
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.4rem 1.15rem;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.app__tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-raised);
+}
+
+.app__tab--active {
+  color: var(--text-primary);
+  background: var(--bg-surface-raised);
+  border-color: var(--border-medium);
+  box-shadow: var(--shadow-sm);
+}
+
+.app__tab-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-warm);
+}
+
+/* ==========================================================================
+   WORKSPACE GRID & COMPONENTS
+   ========================================================================== */
+
+.workspace-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-5);
+  padding: var(--space-3) 1.25rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-sm);
+  animation: fade-slide-in 0.25s ease forwards;
+}
+
+.workspace-back-btn {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  transition: all 0.15s ease;
+}
+
+.workspace-back-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+}
+
+.workspace-banner__tag {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.workspace-banner__tag strong {
+  color: var(--text-primary);
+}
+
+.app__main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 2.25rem;
+  align-items: start;
+  margin-bottom: 5rem;
+}
+
+@media (max-width: 960px) {
+  .app__main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.app__content-column {
+  min-width: 0;
+}
+
+.app__sidebar-column {
+  position: sticky;
+  top: 6rem;
+}
+
+/* Search Query Box */
+.query-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) 0.85rem var(--space-3) 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-md), var(--glass-glow);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 1.25rem;
+}
+
+.query-box:focus-within {
+  border-color: var(--accent-warm);
+  box-shadow: 0 0 0 3px var(--accent-subtle), var(--shadow-lg);
+}
+
+.query-box__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  padding: 0.35rem 0;
+}
+
+.query-box__input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.query-box__input::placeholder {
+  color: var(--text-muted);
+}
+
+.query-box__btn {
+  background: var(--accent-warm);
+  color: #ffffff;
+  padding: 0.7rem 1.45rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.92rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px var(--accent-subtle);
+}
+
+.query-box__btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px var(--accent-subtle);
+}
+
+/* Suggestion Chips */
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.suggestion-chip {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-pill);
+  transition: all 0.15s ease;
+}
+
+.suggestion-chip:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+.new-search-btn {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.new-search-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}
+
+/* Agent Progress Stream */
+.agent-stream {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
+}
+
+.agent-stream__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.agent-stream__title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.agent-stream__pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-warm);
+  animation: pulse-ring 1.8s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(212, 98, 56, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(212, 98, 56, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(212, 98, 56, 0); }
+}
+
+.agent-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.agent-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-warm);
+  animation: fade-slide-in 0.3s ease forwards;
+}
+
+@keyframes fade-slide-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.agent-step__node {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  /* Icon + label sit on one optical baseline now that the leading glyph is
+     an SVG rather than an emoji. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem var(--space-2);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.agent-step__msg {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+/* Research Paper Report View */
+.report-paper {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 640px) {
+  .report-paper {
+    padding: var(--space-5);
+  }
+}
+
+.report-paper__header {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.report-paper__query-title {
+  font-family: var(--font-serif);
+  font-size: 1.85rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin-bottom: 0.85rem;
+  letter-spacing: -0.01em;
+}
+
+.report-paper__meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.report-paper__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: var(--space-1) 0.65rem;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.meta-badge--confidence-high {
+  background: var(--success-subtle);
+  color: var(--success);
+  border: 1px solid rgba(56, 161, 105, 0.25);
+}
+
+.meta-badge--confidence-mod {
+  background: var(--warning-subtle);
+  color: var(--warning);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.meta-badge--confidence-low {
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid rgba(229, 62, 62, 0.25);
+}
+
+.meta-badge--sources {
+  background: var(--bg-surface-raised);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.report-paper__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.paper-action-btn {
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.paper-action-btn:hover, .paper-action-btn--active {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+}
+
+/* Verified Claims Section */
+.claims-card {
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: var(--space-6);
+}
+
+.claims-card__title {
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.claims-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.claim-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+}
+
+.claim-item__icon {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.claim-item__icon--verified {
+  color: var(--success);
+}
+
+.claim-item__icon--unverified {
+  color: var(--warning);
+}
+
+.claim-item__text {
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.claim-item__source {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Report Prose Markdown */
+.report-prose {
+  font-family: var(--font-sans);
+  font-size: 1.02rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+.report-prose h1, .report-prose h2 {
+  font-family: var(--font-serif);
+  font-size: 1.55rem;
+  font-weight: 500;
+  margin: 2.25rem 0 var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--space-2);
+}
+
+.report-prose h3 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin: 1.75rem 0 var(--space-3);
+}
+
+.report-prose ul, .report-prose ol {
+  padding-left: var(--space-5);
+  margin: var(--space-4) 0 1.25rem;
+}
+
+.report-prose li {
+  margin-bottom: var(--space-2);
+}
+
+.report-prose blockquote {
+  margin: var(--space-5) 0;
+  padding: 0.85rem 1.25rem;
+  background: var(--bg-surface-raised);
+  border-left: 3px solid var(--accent-warm);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.report-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-5) 0;
+  font-size: 0.92rem;
+}
+
+.report-prose th, .report-prose td {
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.report-prose th {
+  background: var(--bg-surface-raised);
+  font-weight: 600;
+}
+
+.report-prose hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: var(--space-6) 0;
+}
+
+/* Citations Drawer */
+.sources-card {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sources-card__title {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.sources-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.source-pill {
+  display: block;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.85rem;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.source-pill:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--accent-border);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.source-pill__title {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.2rem;
+}
+
+.source-pill__url {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* History Sidebar */
+.history-panel {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.history-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.history-panel__title {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+
+.history-item {
+  padding: var(--space-3) 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+  width: 100%;
+}
+
+.history-item:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+}
+
+.history-item__query {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.history-item__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.history-item__date {
+  font-family: var(--font-mono);
+}
+
+.history-item__delete {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: var(--radius-sm);
+}
+
+.history-item__delete:hover {
+  color: var(--danger);
+}
+
+/* ==========================================================================
+   PHASE 1 — ACCESSIBILITY & NARROW-VIEWPORT CORRECTIONS
+   ========================================================================== */
+
+/* Keyboard focus was entirely invisible: only inputs picked up a ring from
+   index.css, so every button, tab, chip and link left a keyboard user with no
+   idea where they were on the page. One rule covers the whole app. */
+:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* The account pill never collapsed, so at 375px the header alone was 285px of
+   unshrinkable content and the whole document scrolled sideways by 265px.
+   Below this width the email is dropped (it is already shown in the account
+   menu's title attribute) and the remaining controls become real tap targets.
+   700px rather than a smaller value because the email is what overflows first. */
+@media (max-width: 640px) {
+  .app__header {
+    padding-inline: var(--space-4);
+    margin-inline: -1rem;
+  }
+
+  .app__header-top {
+    gap: 0.6rem;
+  }
+
+  .app__brand,
+  .app__brand-title {
+    min-width: 0;
+  }
+
+  .app__brand-title {
+    font-size: 1.05rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app__brand-badge {
+    display: none;
+  }
+
+  .app__header-actions {
+    gap: 0.35rem;
+  }
+
+  .app__account-email {
+    display: none;
+  }
+
+  .app__account-pill {
+    padding: 0.2rem var(--space-1);
+    gap: 0.3rem;
+  }
+}
+
+/* Apple's HIG floor is 44pt and 15 of 29 controls sat under it — "Sign out"
+   at 19px tall, and the history delete button at 18x24px, which is a
+   destructive action at roughly a third of the minimum. Padding grows the hit
+   area without changing how any of these look. */
+@media (pointer: coarse), (max-width: 640px) {
+  .app__theme-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .app__signout-btn,
+  .app__tab,
+  .app__nav-btn,
+  .app__nav-link,
+  .suggestion-chip,
+  .paper-action-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Introduced when the nested-button row was split into siblings, and missed
+     by the original touch-target pass. */
+  .history-item__open {
+    min-height: 44px;
+  }
+
+  .history-item__delete {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .query-box__input,
+  .query-box__btn {
+    min-height: 44px;
+  }
+
+  /* Footer links sat at 17px — the smallest targets in the app. Padding
+     rather than min-height so the row still reads as a line of links. */
+  .app-footer__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: var(--space-1);
+  }
+
+  .app__brand {
+    min-height: 44px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Small utilities, extracted from inline styles
+
+   These patterns were written out by hand at every call site, which is how the
+   same "small muted label" ended up at three different sizes and two different
+   weights across the chat panel. Genuinely dynamic values (a rotation that
+   depends on state, a computed opacity) stay inline — those are not design
+   decisions and do not belong in a stylesheet.
+   -------------------------------------------------------------------------- */
+
+/* Icon followed by a word, kept on one baseline. */
+.u-icon-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The small bold label above a block: "Sources", "Retrieved passages". */
+.u-field-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.u-muted { color: var(--text-muted); }
+.u-muted-sm { font-size: 0.78rem; color: var(--text-muted); }
+.u-note { color: var(--text-muted); font-style: italic; }
+
+/* Visible to a screen reader, not to the eye. For labels on controls whose
+   purpose is obvious visually from context but has no accessible name. */
+.u-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The dropzone label is the control; give it a real focus ring and make it
+   look clickable. */
+.rag-dropzone {
+  display: block;
+  cursor: pointer;
+}

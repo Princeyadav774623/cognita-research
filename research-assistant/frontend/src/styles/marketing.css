@@ -1,0 +1,748 @@
+/* ==========================================================================
+   MARKETING & EXPANDED WEBSITE SECTIONS
+   Architecture, Benchmarks, Pricing, FAQ, and Footer
+   ========================================================================== */
+
+.website-section {
+  padding: var(--space-9) 0 var(--space-8);
+  border-top: 1px solid var(--border-medium);
+}
+
+.section-header {
+  /* Left-aligned rather than centred: centred headings read as marketing,
+     left-aligned reads as editorial, which is the register this design wants. */
+  text-align: left;
+  max-width: 760px;
+  margin: 0 0 var(--space-7);
+}
+
+.section-header__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.section-header__title {
+  /* Type roles are inverted from the old scheme: the geometric sans now
+     carries the headings and the serif carries running text. That single
+     swap is what makes the page read editorial rather than generic-SaaS. */
+  font-family: var(--font-sans);
+  font-size: clamp(2rem, 3.8vw, 2.85rem);
+  font-weight: 700;
+  letter-spacing: -0.032em;
+  line-height: 1.08;
+  margin-bottom: 0.9rem;
+  text-wrap: balance;
+}
+
+.section-header__subtitle {
+  font-family: var(--font-serif);
+  color: var(--text-secondary);
+  font-size: 1.12rem;
+  line-height: 1.6;
+  max-width: 62ch;
+}
+
+/* Architecture Showcase Grid */
+.architecture-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.35rem;
+}
+
+/* Five agents across a full-width row leaves each card too narrow to hold a
+   readable measure. Three up (3 + 2) gives each card the generous proportions
+   the rest of the page is set at. */
+@media (min-width: 1080px) {
+  .architecture-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.arch-card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-edge);
+  box-shadow: var(--card-shadow);
+  border-radius: 18px;
+  padding: var(--space-6) 1.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.arch-card:hover {
+  transform: translateY(-2px);
+  background: var(--bg-card-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.arch-card__icon {
+  color: var(--accent-warm);
+  margin-bottom: 1.15rem;
+}
+
+.arch-card__name {
+  font-family: var(--font-sans);
+  font-size: 1.42rem;
+  font-weight: 680;
+  letter-spacing: -0.026em;
+  line-height: 1.15;
+  margin-bottom: var(--space-2);
+}
+
+.arch-card__role {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: var(--space-4);
+}
+
+.arch-card__desc {
+  font-family: var(--font-serif);
+  font-size: 1.04rem;
+  line-height: 1.58;
+  color: var(--text-secondary);
+  margin-bottom: 1.35rem;
+  flex: 1;
+}
+
+.arch-card__badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border-medium);
+  padding-top: 0.85rem;
+  margin-top: auto;
+  align-self: stretch;
+}
+
+/* Benchmarks Metrics Cards */
+.benchmarks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-edge);
+  box-shadow: var(--card-shadow);
+  border-radius: 18px;
+  padding: 2.25rem 1.75rem;
+  text-align: center;
+}
+
+.stat-card__number {
+  font-family: var(--font-serif);
+  font-size: 2.8rem;
+  font-weight: 500;
+  color: var(--accent-warm);
+  line-height: 1;
+  margin-bottom: var(--space-2);
+}
+
+.stat-card__label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.stat-card__subtext {
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Pricing Grid */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.75rem;
+  max-width: 1060px;
+  margin: 0 auto;
+}
+
+.pricing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-edge);
+  box-shadow: var(--card-shadow);
+  border-radius: 18px;
+  padding: 2.35rem 2.1rem;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pricing-card--popular {
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-lg), var(--glass-glow);
+}
+
+.pricing-card__pill {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-warm);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.2rem 0.85rem;
+  border-radius: var(--radius-pill);
+}
+
+.pricing-card__name {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 680;
+  letter-spacing: -0.028em;
+  margin-bottom: 0.4rem;
+}
+
+.pricing-card__desc {
+  font-family: var(--font-serif);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+.pricing-card__price {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 500;
+  margin-bottom: var(--space-5);
+  color: var(--text-primary);
+}
+
+.pricing-card__price span {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+}
+
+.pricing-feature {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.pricing-feature__icon {
+  color: var(--accent-warm);
+  font-weight: bold;
+}
+
+.pricing-card__btn {
+  padding: 0.8rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-align: center;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+}
+
+.pricing-card__btn:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+.pricing-card__btn--primary {
+  /* Solid ink rather than the accent: reserving the terracotta for small
+     marks and letting the primary action carry the page's darkest value is
+     what gives the reference layout its weight. */
+  background: var(--ink-solid);
+  border-color: var(--ink-solid);
+  color: var(--bg-app);
+}
+
+.pricing-card__btn--primary:hover {
+  background: var(--text-secondary);
+  border-color: var(--text-secondary);
+}
+
+/* FAQ Section Accordion */
+.faq-grid {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.faq-item {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem var(--space-5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.faq-item:hover {
+  border-color: var(--border-medium);
+}
+
+.faq-item__question {
+  font-family: var(--font-sans);
+  font-size: 1.02rem;
+  font-weight: 640;
+  letter-spacing: -0.015em;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+  color: var(--text-primary);
+}
+
+.faq-item__toggle {
+  font-size: 1.2rem;
+  color: var(--accent-warm);
+  transition: transform 0.2s ease;
+}
+
+.faq-item__answer {
+  font-family: var(--font-serif);
+  font-size: 1.04rem;
+  line-height: 1.62;
+  color: var(--text-secondary);
+  margin-top: 0.85rem;
+}
+
+/* Editorial Footer */
+.app-footer {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-7) 0 var(--space-6);
+}
+
+.app-footer__grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 2.5rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 960px) {
+  .app-footer__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-footer__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.app-footer__brand-p {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  max-width: 320px;
+  line-height: 1.55;
+}
+
+.app-footer__col-title {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.app-footer__links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.app-footer__link {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.app-footer__link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.app-footer__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--space-5);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.app-footer__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.status-beacon {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  display: inline-block;
+}
+
+/* Auth screen */
+.auth-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90vh;
+  padding: var(--space-5);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xl);
+  padding: 2.75rem 2.25rem;
+  box-shadow: var(--shadow-lg), var(--glass-glow);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  text-align: center;
+}
+
+.auth-card__logo {
+  font-size: 2.2rem;
+  color: var(--accent-warm);
+  margin-bottom: var(--space-1);
+  filter: drop-shadow(0 0 10px rgba(212, 98, 56, 0.4));
+}
+
+.auth-card h1 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.auth-card__subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 var(--space-4);
+}
+
+.auth-card input {
+  padding: 0.85rem var(--space-4);
+  font-size: 0.95rem;
+}
+
+.auth-card__btn {
+  background: var(--accent-warm);
+  color: #ffffff;
+  padding: 0.85rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-top: var(--space-2);
+  box-shadow: 0 2px 8px var(--accent-subtle);
+}
+
+.auth-card__btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.auth-card__switch {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: var(--space-2);
+}
+
+.auth-card__switch:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.auth-card__error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  background: var(--danger-subtle);
+  padding: var(--space-2) 0.65rem;
+  border-radius: var(--radius-sm);
+  /* Keeps the leading alert icon on the text's optical baseline. */
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.auth-card__info {
+  color: var(--success);
+  font-size: 0.85rem;
+  background: var(--success-subtle);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   SCROLL REVEAL + EDITORIAL MEDIA
+   Apple-style: content settles into place as it enters the viewport, and
+   full-bleed media bands break up the reading rhythm.
+   ========================================================================== */
+
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+[data-reveal][data-revealed="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Anyone who asked for less motion gets the finished state with no travel. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Full-bleed band: escapes the .app container's max-width to run edge to edge,
+   which is what gives the page an Apple-like change of scale between
+   reading sections. */
+/* Full-bleed band. 100vw includes the scrollbar, so on any page tall enough to
+   scroll this ran a few pixels wider than the visible viewport and the whole
+   document scrolled sideways. The gutter is subtracted via a variable the app
+   sets from the real client width, so the band is exactly as wide as what the
+   reader can see. */
+.bleed {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: var(--viewport-width, 100vw);
+  margin-left: calc(var(--viewport-width, 100vw) / -2);
+  margin-right: calc(var(--viewport-width, 100vw) / -2);
+  overflow: hidden;
+}
+
+.showcase {
+  padding: var(--space-9) 0 5rem;
+  text-align: center;
+}
+
+.showcase__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-bottom: 1.1rem;
+}
+
+.showcase__title {
+  font-family: var(--font-sans);
+  font-size: clamp(2.1rem, 4.4vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.06;
+  max-width: 18ch;
+  margin: 0 auto 1.1rem;
+  text-wrap: balance;
+}
+
+.showcase__sub {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  max-width: 56ch;
+  margin: 0 auto var(--space-7);
+}
+
+/* Media frame — generous radius and a hairline, so the artwork reads as a
+   deliberate plate rather than a raw <img> dropped on the page. */
+.media-frame {
+  position: relative;
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  max-width: 1080px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+}
+
+.media-frame {
+  background: transparent;
+  border: 0;
+}
+
+.media-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  transform: scale(1.02);
+  transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
+/* Feather the plate's edges to transparent rather than overlaying a vignette.
+   The generated artwork's paper tone is close to the page ground but not
+   identical, so a mask dissolves the seam instead of trying to colour-match
+   it — and it keeps working in both themes. */
+
+.media-frame:hover img {
+  transform: scale(1.045);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-frame img,
+  .media-frame:hover img {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Soft vignette so the plate's edges melt into the page ground instead of
+   ending in a hard rectangle. */
+
+/* Retrieval reasoning trace — the agent's own steps, shown in the Inspector */
+.retrieval-trace {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.retrieval-trace__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  border-left: 2px solid var(--border-medium);
+  background: var(--bg-app);
+  border-radius: 0 8px 8px 0;
+}
+
+.retrieval-trace__item--rewrite { border-left-color: var(--accent-warm); }
+.retrieval-trace__item--contextualize { border-left-color: var(--accent-warm); }
+.retrieval-trace__item--give_up { border-left-color: var(--danger); }
+.retrieval-trace__item--best_effort { border-left-color: var(--warning); }
+
+.retrieval-trace__label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.retrieval-trace__query {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-primary);
+}
+
+.retrieval-trace__meta {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.chip-selfcorrect {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-subtle);
+  color: var(--accent-warm);
+  border: 1px solid var(--accent-border);
+}
+
+/* Report streaming in, before the saved session is fetched */
+.streaming-report {
+  margin-bottom: var(--space-5);
+}
+
+.streaming-report__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 1.1rem;
+}
+
+/* A caret on the last line, so it reads as actively being written rather
+   than as a page that failed to finish loading. */
+.streaming-report .report-prose > *:last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 0.12em;
+  vertical-align: -0.12em;
+  background: var(--accent-warm);
+  animation: caret-blink 1.05s steps(2, start) infinite;
+}
+
+@keyframes caret-blink {
+  to { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streaming-report .report-prose > *:last-child::after {
+    animation: none;
+  }
+}

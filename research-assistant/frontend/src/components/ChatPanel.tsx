@@ -268,7 +268,14 @@ export function ChatPanel({ hasDocuments }: Props) {
         )}
 
         {/* Chat Messages */}
-        <div className="chat-messages" ref={listRef}>
+        <div
+          className="chat-messages"
+          ref={listRef}
+          role="log"
+          aria-live="polite"
+          aria-label="Conversation"
+          aria-busy={sending}
+        >
           {messages.length === 0 && (
             <div className="chat-empty">
               <div className="chat-empty__mark">✶</div>
@@ -334,7 +341,7 @@ export function ChatPanel({ hasDocuments }: Props) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
                 <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)" }}>
                   {msg.role === "user" ? "You" : (
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                    <span className="u-icon-row">
                       <Icon name="spark" size={13} /> Cognita RAG Agent
                     </span>
                   )}
@@ -377,14 +384,14 @@ export function ChatPanel({ hasDocuments }: Props) {
                 return (
                   <div className="engineering-inspector">
                     <div className="inspector-header">
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "0.4rem" }}>
+                      <span className="u-icon-row">
                         <Icon name="inspector" size={14} /> How this answer was reached
                       </span>
                       <span className={`judge-badge judge-badge--${badge.tone}`}>{badge.text}</span>
                     </div>
 
                     {t?.llm_judge?.reasoning && (
-                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "0.6rem", fontStyle: "italic" }}>
+                      <div className="u-note u-muted-sm">
                         “{t.llm_judge.reasoning}”
                       </div>
                     )}
@@ -416,7 +423,7 @@ export function ChatPanel({ hasDocuments }: Props) {
                         of an agentic loop is the reasoning, not just the result. */}
                     {t?.retrieval_trace && t.retrieval_trace.length > 0 && (
                       <div style={{ marginTop: "0.9rem" }}>
-                        <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                        <div className="u-field-label">
                           <Icon name="gap" size={13} />
                           Retrieval reasoning
                           {t.self_corrected && (
@@ -442,7 +449,7 @@ export function ChatPanel({ hasDocuments }: Props) {
 
                     {/* Retrieval Ranking Breakdown */}
                     <div style={{ marginTop: "0.85rem" }}>
-                      <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: "0.4rem" }}>
+                      <div className="u-field-label">
                         {wasReranked ? "Cross-Encoder Re-Ranking Telemetry:" : "pgvector Cosine Similarity (no cross-encoder configured):"}
                       </div>
                       <div className="rerank-list">
@@ -482,12 +489,12 @@ export function ChatPanel({ hasDocuments }: Props) {
 
           {sending && (
             <div className="chat-bubble chat-bubble--assistant liquid-glass">
-              <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: "0.3rem" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+              <div className="u-field-label">
+                <span className="u-icon-row">
                   <Icon name="spark" size={13} /> Cognita RAG Agent
                 </span>
               </div>
-              <div style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
+              <div className="u-note">
                 Vector retrieval → similarity ranking → LLM-as-a-Judge synthesis...
               </div>
             </div>
@@ -502,16 +509,26 @@ export function ChatPanel({ hasDocuments }: Props) {
 
         {/* Input Bar */}
         <div className="chat-input-bar">
+          <label className="u-sr-only" htmlFor="rag-question">
+            Ask a question about your uploaded documents
+          </label>
           <input
+            id="rag-question"
             type="text"
             placeholder={hasDocuments ? "Ask a grounded question about your uploaded documents…" : "Upload files on the left to ask questions…"}
             value={input}
             maxLength={1000}
             disabled={sending}
+            aria-disabled={sending}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
           />
-          <button type="button" onClick={send} disabled={sending || !input.trim()}>
+          <button
+            type="button"
+            onClick={send}
+            disabled={sending || !input.trim()}
+            aria-label={sending ? "Sending your question" : "Send question"}
+          >
             {sending ? "..." : <><Icon name="send" size={15} /> Send</>}
           </button>
         </div>

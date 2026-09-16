@@ -1,0 +1,551 @@
+/* ==========================================================================
+   CHAT WITH FILES & ADVANCED AI ENGINEERING INSPECTOR (RAG)
+   ========================================================================== */
+
+.rag-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.75rem;
+  align-items: start;
+  margin-bottom: 5rem;
+}
+
+@media (max-width: 960px) {
+  .rag-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rag-sidebar {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+}
+
+.rag-chat-container {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 1.25rem;
+  /* Height now comes from .rag-chat-main's definite height below; the
+     sidebar stretches to match it. A min-height here instead left the
+     grid row unstretched and the chat panel shorter than the container. */
+  align-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .rag-chat-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rag-chat-history {
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+}
+
+.rag-chat-history__header {
+  margin-bottom: 0.85rem;
+}
+
+.new-chat-btn {
+  width: 100%;
+  padding: 0.55rem;
+  background: var(--accent-warm);
+  color: #ffffff;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  box-shadow: 0 2px 6px var(--accent-subtle);
+}
+
+.new-chat-btn:hover {
+  background: var(--accent-hover);
+}
+
+.rag-chat-history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 520px;
+}
+
+.rag-chat-history__item {
+  padding: 0.6rem var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-raised);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rag-chat-history__item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.rag-chat-history__item--active {
+  border-color: var(--accent-border);
+  background: var(--bg-surface-hover);
+}
+
+.rag-chat-history__item-title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0.2rem;
+}
+
+.rag-chat-history__item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.rag-chat-main {
+  background: var(--bg-surface);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  /* A *definite* height (not just max-height) so .chat-messages becomes the
+     scroll container. Without one the message list grows to fit its content,
+     its overflow-y never engages, and the page itself ends up being the
+     scroller — which is why opening the settings drawer or starting a new
+     conversation visibly shifted the whole window. The clamp keeps the panel
+     usable on short viewports without running away on tall ones. */
+  height: clamp(480px, calc(100vh - 13rem), 880px);
+  /* Opening the settings drawer shrinks the message list inside this fixed
+     panel. Chrome's scroll anchoring notices an anchor node inside that
+     list move and "helpfully" adjusts window scroll to compensate, which
+     shoved the whole page up ~105px. Nothing here changes the page's own
+     height, so that compensation is never wanted. */
+  overflow-anchor: none;
+}
+
+.rag-chat-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-4);
+}
+
+.rag-params-drawer {
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border-medium);
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.param-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.param-item label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.param-item input[type="range"] {
+  accent-color: var(--accent-warm);
+}
+
+.chat-messages {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+  margin-bottom: 1.25rem;
+  padding-right: var(--space-2);
+  /* Must be 0, not a pixel floor: a flex item refuses to shrink below its
+     content height unless min-height is explicitly cleared, which silently
+     defeats the overflow-y above. */
+  min-height: 0;
+  /* Keep the drawer/inspector from yanking the page when they expand. */
+  overscroll-behavior: contain;
+}
+
+.chat-bubble {
+  max-width: 90%;
+  padding: 1.15rem 1.35rem;
+  border-radius: var(--radius-xl);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.chat-bubble--user {
+  align-self: flex-end;
+  background: var(--bg-surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.chat-bubble--assistant {
+  align-self: flex-start;
+  background: var(--bg-surface-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.inspector-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 620;
+  letter-spacing: -0.005em;
+  padding: 0.34rem 0.8rem;
+  border-radius: var(--radius-pill);
+  color: var(--accent-warm);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-border);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.inspector-toggle-btn:hover {
+  background: var(--accent-warm);
+  border-color: var(--accent-warm);
+  color: #fff;
+}
+
+/* Open state reads as engaged, so it is obvious which message is expanded. */
+.inspector-toggle-btn--open {
+  background: var(--accent-warm);
+  border-color: var(--accent-warm);
+  color: #fff;
+}
+
+
+.inspector-toggle-btn:hover {
+  background: var(--accent-border);
+  color: #ffffff;
+}
+
+.chat-citation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 0.6rem;
+}
+
+.citation-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.55rem;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--accent-warm);
+}
+
+/* AI Engineering Inspector */
+.engineering-inspector {
+  margin-top: var(--space-4);
+  padding: 1.15rem 1.25rem;
+  border-radius: 14px;
+  /* Same tonal step the architecture and pricing cards use, instead of a
+     translucent white panel that fought the cream ground in light mode and
+     became a flat dark slab in dark mode. */
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+
+.judge-badge {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-weight: 600;
+  padding: 0.22rem 0.6rem;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* Tone follows the verdict. Previously every state — including "not
+   evaluated" and an outright FAIL — rendered on the same green. */
+.judge-badge--pass  { color: var(--success); background: var(--success-subtle); border: 1px solid var(--success-subtle); }
+.judge-badge--warn  { color: var(--warning); background: var(--warning-subtle); border: 1px solid var(--warning-subtle); }
+.judge-badge--fail  { color: var(--danger);  background: var(--danger-subtle);  border: 1px solid var(--danger-subtle); }
+.judge-badge--muted { color: var(--text-muted); background: var(--bg-surface-raised); border: 1px solid var(--border-subtle); }
+
+
+.judge-scorecard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .judge-scorecard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.judge-score {
+  text-align: center;
+  padding: 0.7rem var(--space-2);
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+}
+
+
+.judge-score__val {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent-warm);
+  line-height: 1;
+  margin-bottom: var(--space-1);
+}
+
+.judge-score__lbl {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rerank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rerank-item {
+  padding: var(--space-2) 0.7rem;
+  border-radius: 8px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+}
+
+
+.rerank-bars {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.pipeline-trace {
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.pipeline-trace span {
+  color: var(--text-secondary);
+}
+
+.rag-dropzone {
+  border: 2px dashed var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+  background: var(--bg-surface-raised);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 1.25rem;
+}
+
+.rag-dropzone:hover, .rag-dropzone--active {
+  border-color: var(--accent-warm);
+  background: var(--accent-subtle);
+}
+
+.rag-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rag-doc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.85rem;
+}
+
+.chat-input-bar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.chat-input-bar input {
+  flex: 1;
+  padding: 0.85rem 1.15rem;
+}
+
+.chat-input-bar button {
+  background: var(--accent-warm);
+  color: #ffffff;
+  padding: 0.85rem 1.45rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 0.92rem;
+  box-shadow: 0 2px 8px var(--accent-subtle);
+}
+
+.chat-input-bar button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+/* ==========================================================================
+   CHAT WITH FILES — column alignment
+   ========================================================================== */
+
+/* With research history gone from this page, the tools get the full width
+   instead of sharing it with a column of unrelated content. */
+.app__main-grid--full {
+  grid-template-columns: 1fr;
+}
+
+/* The three panels (documents, conversations, chat) were each sized by their
+   own content, so a short document list sat beside a tall chat panel and the
+   page read as three unrelated boxes at three different heights. They now
+   share one height and scroll internally, which is what makes the row look
+   deliberate rather than stacked by accident. */
+.rag-layout {
+  align-items: stretch;
+}
+
+.rag-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: clamp(480px, calc(100vh - 13rem), 880px);
+  overflow: hidden;
+}
+
+/* The document list is the part that grows, so it takes the leftover space
+   and scrolls; the heading and dropzone above it stay put. */
+.rag-sidebar .doc-upload,
+.rag-sidebar .document-upload {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rag-doc-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 960px) {
+  /* Stacked, so a fixed height would just crop each panel in turn. */
+  .rag-sidebar {
+    height: auto;
+    overflow: visible;
+  }
+
+  .rag-doc-list {
+    max-height: 320px;
+  }
+}
+
+/* One header for the page, so both columns below start at the same line. */
+.rag-page__header {
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.rag-page__title {
+  font-family: var(--font-serif);
+  font-size: 1.45rem;
+  margin: 0 0 var(--space-1);
+}
+
+.rag-page__subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Panel headings share one treatment, rather than each card inventing its own
+   inline styles — which is why the two columns previously disagreed on type
+   size, spacing and rule weight. */
+.rag-panel__header {
+  padding-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.rag-panel__title {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  margin: 0 0 var(--space-1);
+}
+
+.rag-panel__subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.45;
+}

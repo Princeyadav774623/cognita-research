@@ -537,3 +537,59 @@ class TestCredentialRedaction:
     def test_malformed_url_does_not_raise(self):
         from db import _safe_url
         assert _safe_url("not a url") == "not a url"
+
+
+class TestStaleProcessingReaper:
+    """Ingestion runs in the web process, so a restart between "row created"
+    and "embedding finished" leaves a document processing forever. The UI polls
+    while anything is processing, so that row spins indefinitely."""
+
+    def _doc(self, minutes_old, status="processing"):
+        from datetime import datetime, timedelta, timezone
+        doc = MagicMock()
+        doc.status = status
+        doc.error = None
+        doc.created_at = datetime.now(timezone.utc) - timedelta(minutes=minutes_old)
+        return doc
+
+    def test_marks_an_abandoned_document_as_failed(self):
+        from rag.retrieval import reap_stale_processing
+
+        stale = self._doc(30)
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.all.return_value = [stale]
+
+        with patch("rag.retrieval.get_tenant_session", side_effect=_fake_tenant_session(mock_db)):
+            reaped = reap_stale_processing("user-1")
+
+        assert reaped == 1
+        assert stale.status == "error"
+        # The message has to tell the user what to do, not just that it broke.
+        assert "again" in stale.error.lower()
+        mock_db.commit.assert_called_once()
+
+    def test_leaves_a_recent_upload_alone(self):
+        """A large PDF genuinely takes a while; reaping it mid-flight would be
+        worse than the bug."""
+        from rag.retrieval import reap_stale_processing
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
+        with patch("rag.retrieval.get_tenant_session", side_effect=_fake_tenant_session(mock_db)):
+            assert reap_stale_processing("user-1") == 0
+        mock_db.commit.assert_not_called()
+
+    def test_listing_documents_reaps_first(self):
+        """No scheduler: a stuck row is noticed the next time anyone looks."""
+        from rag.retrieval import list_documents
+
+        mock_db = MagicMock()
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+        mock_db.query.return_value.filter.return_value.order_by.return_value.all.return_value = []
+
+        with patch("rag.retrieval.reap_stale_processing") as reaper, \
+             patch("rag.retrieval.get_tenant_session", side_effect=_fake_tenant_session(mock_db)):
+            list_documents("user-1")
+
+        reaper.assert_called_once_with("user-1")

@@ -141,13 +141,25 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
+  /* Left at the browser's own size on purpose. A px value here discards the
+     reader's font-size setting — which is how people with low vision enlarge
+     every site at once — and since the rest of this stylesheet is in rem, it
+     silently scaled the whole app down from whatever they had chosen. */
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-app);
+}
+
+body {
   margin: 0;
   padding: 0;
   background-color: var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 15px;
+  /* Only on body. Setting it on html as well made it compound — html scaled
+     to 0.9375 of the reader's size, then body scaled to 0.9375 of that. */
+  font-size: 0.9375rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

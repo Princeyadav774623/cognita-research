@@ -1,0 +1,263 @@
+/* ==========================================================================
+   MARKDOWN — tables and diagrams
+   ========================================================================== */
+
+/* A wide table scrolls inside its own box; the page body never scrolls
+   sideways because of one comparison table. */
+.md-table-wrap {
+  overflow-x: auto;
+  margin: 1.4rem 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-subtle);
+}
+
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.md-table th {
+  text-align: left;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-medium);
+  white-space: nowrap;
+}
+
+.md-table td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.md-table tr:last-child td { border-bottom: none; }
+.md-table tbody tr:hover { background: var(--bg-surface-raised); }
+
+/* Code inside a cell is usually an identifier, so let it wrap rather than
+   force the column wide enough to hold it on one line. */
+.md-table code {
+  font-size: 0.82em;
+  word-break: break-word;
+}
+
+.md-diagram {
+  margin: 1.6rem 0;
+  padding: 1.25rem;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  text-align: center;
+}
+
+.md-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.md-code {
+  overflow-x: auto;
+  padding: 0.9rem var(--space-4);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+}
+
+@media print {
+  .md-table-wrap, .md-diagram { break-inside: avoid; }
+}
+
+/* ==========================================================================
+   CHARTS & SOURCE IMAGES
+   ========================================================================== */
+
+.chart {
+  margin: 1.6rem 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.chart__title {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-4);
+}
+
+.chart-svg { width: 100%; height: auto; display: block; }
+.chart-svg--pie { max-width: 190px; flex-shrink: 0; }
+
+.chart-bars { display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* Label column sized so bars share a baseline and are comparable at a glance —
+   the only thing a bar chart is actually for. */
+.chart-bar {
+  display: grid;
+  grid-template-columns: minmax(70px, 22%) 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.chart-bar__label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-bar__track {
+  height: 20px;
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.chart-bar__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-warm);
+  border-radius: var(--radius-sm);
+}
+
+.chart-bar__value {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-pie { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
+
+.chart-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.chart-legend li { display: flex; align-items: center; gap: 0.55rem; font-size: 0.83rem; }
+
+.chart-legend__swatch {
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  background: var(--accent-warm);
+  flex-shrink: 0;
+}
+
+.chart-legend__label {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-legend__value {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.chart-legend__pct { color: var(--text-muted); margin-left: 0.4rem; }
+
+/* Figures published by the sources, not generated ones. */
+.figures-card { margin-top: 2rem; }
+
+.figures-card__title {
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.9rem;
+}
+
+.figures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.figure-tile {
+  display: block;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-surface-raised);
+}
+
+.figure-tile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--bg-surface-subtle);
+}
+
+.figure-tile__caption {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  padding: var(--space-2) 0.6rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .chart-bar { grid-template-columns: minmax(60px, 30%) 1fr auto; gap: 0.5rem; }
+  .figures-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+}
+
+@media print {
+  .chart, .figure-tile { break-inside: avoid; }
+  .figures-card { display: none !important; }
+}
+
+/* Marketing is a route now, not a band under the workspace. */
+.marketing-back {
+  /* .app is a flex column, so an inline-flex child still stretches to full
+     width unless it opts out. */
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin-bottom: var(--space-5);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+}
+
+.marketing-back:hover {
+  color: var(--text-primary);
+  border-color: var(--border-medium);
+}

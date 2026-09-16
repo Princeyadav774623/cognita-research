@@ -1,0 +1,85 @@
+/* ==========================================================================
+   PRINT — the PDF export is the browser's own print engine
+   ========================================================================== */
+
+@media print {
+  /* Everything that isn't the paper: navigation, the query box, the agent
+     stream, history, the marketing sections, the buttons that produced this
+     file. A printed report should look like a report. */
+  .app__header,
+  .app__tabs,
+  .hero,
+  .query-box,
+  .suggestion-chips,
+  .query-box__counter,
+  .agent-stream,
+  .app__sidebar-column,
+  .new-search-btn,
+  .stop-notice,
+  .bleed,
+  .website-section,
+  .app-footer,
+  .report-paper__actions {
+    display: none !important;
+  }
+
+  /* Print on white regardless of the viewer's theme: the dark palette wastes
+     an entire cartridge and reads badly on paper. */
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"] {
+    --bg-app: #ffffff;
+    --bg-card: #ffffff;
+    --bg-surface: #ffffff;
+    --bg-surface-raised: #ffffff;
+    --bg-surface-subtle: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #222222;
+    --text-muted: #555555;
+    --border-subtle: #cccccc;
+    --border-medium: #999999;
+  }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  .app,
+  .app__main-grid,
+  .app__content-column {
+    display: block !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .report-paper {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  /* Keep a claim and its verdict together, and never strand a heading at the
+     foot of a page. */
+  .claim-item,
+  .source-pill { break-inside: avoid; }
+
+  .report-prose h1,
+  .report-prose h2,
+  .report-prose h3 { break-after: avoid; }
+
+  /* A citation is useless on paper without its target. */
+  .report-prose a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #555;
+    word-break: break-all;
+  }
+
+  .sources-grid { display: block !important; }
+  .source-pill { display: block; border: none !important; padding: 0.15rem 0 !important; }
+
+  @page { margin: 18mm 16mm; }
+}

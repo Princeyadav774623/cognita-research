@@ -26,3 +26,8 @@ frontend/build/
 # Editor / OS
 .DS_Store
 .vscode/
+
+# Labelling exports from evals/factcheck_accuracy.py — these contain claim
+# text and session ids pulled from the database, not source code.
+backend/claims*.jsonl
+backend/*.labels.jsonl

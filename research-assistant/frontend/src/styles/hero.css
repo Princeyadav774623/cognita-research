@@ -1,0 +1,371 @@
+/* ==========================================================================
+   ANTHROPIC / COGNITA EDITORIAL HERO
+   ========================================================================== */
+
+.hero {
+  padding: var(--space-8) 0 4.5rem;
+  margin-bottom: var(--space-6);
+  text-align: left;
+  display: grid;
+  gap: var(--space-7);
+  align-items: center;
+}
+
+@media (min-width: 1080px) {
+  .hero {
+    /* Copy holds the left column; the plate sits right, where its open
+       negative space faces outward and the linework reads inboard. */
+    grid-template-columns: 1.05fr 0.95fr;
+    grid-template-areas:
+      "eyebrow plate"
+      "headline plate"
+      "desc plate";
+    gap: 0 3.5rem;
+    align-content: center;
+  }
+  .hero__eyebrow { grid-area: eyebrow; align-self: end; }
+  .hero__headline { grid-area: headline; }
+  .hero__description { grid-area: desc; align-self: start; margin-bottom: 0; }
+  .hero__plate { grid-area: plate; }
+}
+
+.hero__plate {
+  margin: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  /* Transparent, not a tinted card: the plate is drawn on the same cream as
+     the page, so multiply-blending it straight onto the ground keeps the
+     paper continuous instead of stamping it into a darker beige box. */
+  background: transparent;
+  aspect-ratio: 16 / 11;
+}
+
+.hero__plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* The generated plate is drawn on the same cream as the page, so a mix
+     blend keeps it sitting *on* the ground rather than in a pale box that
+     doesn't quite match in either theme. */
+}
+
+
+
+
+.hero__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-bottom: 1.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.hero__headline {
+  font-family: var(--font-sans);
+  font-size: clamp(2.6rem, 5.4vw, 4.1rem);
+  font-weight: 700;
+  line-height: 1.04;
+  color: var(--text-primary);
+  margin-bottom: 1.35rem;
+  letter-spacing: -0.038em;
+  max-width: 16ch;
+  text-wrap: balance;
+}
+
+.hero__headline em {
+  /* The serif italic now works as a deliberate accent inside an otherwise
+     sans headline, instead of being the default voice of every heading. */
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--accent-warm);
+}
+
+.hero__description {
+  font-family: var(--font-serif);
+  font-size: 1.24rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin-bottom: 2.25rem;
+  max-width: 760px;
+}
+
+.hero-cta-row {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.hero-cta-btn {
+  background: var(--accent-warm);
+  color: #ffffff;
+  padding: 0.85rem 1.8rem;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: 0 4px 14px var(--accent-subtle);
+  transition: all 0.2s ease;
+}
+
+.hero-cta-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px var(--accent-subtle);
+}
+
+.hero-cta-btn--secondary {
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-medium);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.hero-cta-btn--secondary:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-strong);
+}
+
+/* Launch Action Cards Grid */
+.launch-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .launch-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.launch-card {
+  padding: 1.75rem var(--space-5);
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.launch-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-warm), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.launch-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow-lg), var(--glass-glow);
+}
+
+.launch-card:hover::before {
+  opacity: 1;
+}
+
+.launch-card__icon {
+  font-size: 2rem;
+  margin-bottom: var(--space-3);
+}
+
+.launch-card__title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  color: var(--text-primary);
+}
+
+.launch-card__desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+  flex: 1;
+}
+
+.launch-card__cta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-warm);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ==========================================================================
+   TOOL PAGE HEADER & FILES EMPTY STATE
+   ========================================================================== */
+
+.tool-header {
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* The spaced mono line the hero used to open with. Small, wide-tracked and
+   quiet — it names the section without competing with the title under it. */
+.tool-header__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* Same voice as the home page headline: a bold sans line with one serif
+   italic accent, just set smaller because a tool page is somewhere you work
+   rather than somewhere you land. */
+.tool-header__title {
+  font-family: var(--font-sans);
+  font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3);
+  max-width: 18ch;
+  text-wrap: balance;
+}
+
+.tool-header__title em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: var(--accent-warm);
+}
+
+.tool-header__subtitle {
+  font-family: var(--font-serif);
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.chat-empty {
+  margin: auto 0;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.chat-empty__mark {
+  font-size: 1.9rem;
+  color: var(--accent-warm);
+  margin-bottom: var(--space-2);
+}
+
+.chat-empty__title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.chat-empty__lead {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  max-width: 46ch;
+  margin: 0 auto var(--space-5);
+}
+
+.chat-empty__label {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* Questions are clickable: showing an example and making the reader retype it
+   is a worse version of the same idea. */
+.chat-empty__examples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 44ch;
+  margin: 0 auto;
+}
+
+.chat-empty__example {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.chat-empty__example:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-border);
+  background: var(--bg-surface-raised);
+}
+
+.chat-empty__types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 46ch;
+  margin: 0 auto;
+}
+
+.chat-empty__type {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.chat-empty__type strong {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.chat-empty__note {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin: var(--space-4) 0 0;
+}

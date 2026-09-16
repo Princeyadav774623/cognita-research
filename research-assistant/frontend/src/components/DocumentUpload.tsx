@@ -83,10 +83,17 @@ export function DocumentUpload({ onDocumentsChange }: Props) {
 
   return (
     <div>
-      <label className={`rag-dropzone ${uploading ? "rag-dropzone--active" : ""}`} style={{ display: "block" }}>
+      {/* A label wrapping a hidden file input is reachable by keyboard only if
+          it is focusable and says what it does. */}
+      <label
+        className={`rag-dropzone ${uploading ? "rag-dropzone--active" : ""}`}
+        aria-label="Choose a document to upload: PDF, DOCX, TXT, Markdown or an image"
+        aria-busy={uploading}
+      >
         <input
           ref={inputRef}
           type="file"
+          aria-label="Document file"
           accept=".pdf,.docx,.txt,.md,.png,.jpg,.jpeg"
           disabled={uploading}
           style={{ display: "none" }}

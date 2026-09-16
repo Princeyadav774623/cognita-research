@@ -494,9 +494,9 @@ function AuthenticatedApp({
           <div>
             <div className="app-footer__col-title">Security & Tech</div>
             <ul className="app-footer__links">
-              <li><span className="app-footer__link" style={{ color: "var(--text-muted)" }}>Supabase JWT Auth</span></li>
-              <li><span className="app-footer__link" style={{ color: "var(--text-muted)" }}>Postgres Row Security</span></li>
-              <li><span className="app-footer__link" style={{ color: "var(--text-muted)" }}>GDPR Session Purge</span></li>
+              <li><span className="app-footer__link u-muted">Supabase JWT Auth</span></li>
+              <li><span className="app-footer__link u-muted">Postgres Row Security</span></li>
+              <li><span className="app-footer__link u-muted">GDPR Session Purge</span></li>
             </ul>
           </div>
         </div>
