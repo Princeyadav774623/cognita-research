@@ -1,0 +1,25 @@
+<svg width="700" height="220" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart comparing vector and keyword retrieval ranks"><rect width="100%" height="100%" fill="#ffffff"/>
+        <style>
+          .ax{stroke:#ddd6c8;stroke-width:1}
+          .bv{fill:#a06b21}.bk{fill:#1d5f63}
+          .q{font-family:'JetBrains Mono',monospace;font-size:10px;fill:#474338}
+          .v{font-family:'JetBrains Mono',monospace;font-size:10px;fill:#16150f;font-weight:500}
+          .lg{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;fill:#474338}
+        </style>
+        <rect class="bv" x="500" y="16" width="10" height="10" rx="2"/><text class="lg" x="516" y="25">vector rank</text>
+        <rect class="bk" x="596" y="16" width="10" height="10" rx="2"/><text class="lg" x="612" y="25">keyword rank</text>
+
+        <text class="q" x="14" y="66">PN-88213-B</text>
+        <rect class="bv" x="150" y="54" width="22" height="14" rx="2"/><text class="v" x="178" y="66">1</text>
+        <rect class="bk" x="150" y="72" width="22" height="14" rx="2"/><text class="v" x="178" y="84">1</text>
+
+        <text class="q" x="14" y="126">E-4490</text>
+        <rect class="bv" x="150" y="114" width="22" height="14" rx="2"/><text class="v" x="178" y="126">1</text>
+        <rect class="bk" x="150" y="132" width="22" height="14" rx="2"/><text class="v" x="178" y="144">1</text>
+
+        <text class="q" x="14" y="186">build 7.2.14-rc3</text>
+        <rect class="bv" x="150" y="174" width="286" height="14" rx="2"/><text class="v" x="442" y="186">13 — buried</text>
+        <rect class="bk" x="150" y="192" width="22" height="14" rx="2"/><text class="v" x="178" y="204">1 — found</text>
+
+        <line class="ax" x1="148" y1="44" x2="148" y2="210"/>
+      </svg>

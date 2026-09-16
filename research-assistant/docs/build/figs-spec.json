@@ -1,0 +1,83 @@
+[
+ {
+  "id": "A.1",
+  "title": "Use Case Diagram",
+  "purpose": "The standard SRS view of who does what. Shows that every use case except sign-up passes through authentication, and that quota enforcement sits between the user and the expensive operations.",
+  "actors": "Guest (dev only), Registered User, Stripe (external), Groq / Tavily / Supabase (external services)",
+  "elements": "11 use cases across two subsystems plus account management. Include-relationships from every research action to <<Authenticate>> and <<Consume quota>>.",
+  "layout": "Actors on the left and right edges; use cases in a rounded boundary box labelled 'Cognita'. Group Deep Research cases top, Chat with Files middle, Account bottom.",
+  "src": "flowchart LR\n  U([Registered User]):::actor\n  G([Guest - dev only]):::actor\n  S([Stripe]):::actor\n\n  subgraph Cognita\n    direction TB\n    UC1(Run deep research)\n    UC2(Stream live progress)\n    UC3(View past reports)\n    UC4(Export report)\n    UC5(Upload document)\n    UC6(Chat with documents)\n    UC7(Tune retrieval parameters)\n    UC8(Delete document)\n    UC9(Sign in / sign up)\n    UC10(View quota)\n    UC11(Erase all my data)\n    AUTH{{Authenticate}}\n    QUOTA{{Consume quota}}\n  end\n\n  U --> UC1 & UC3 & UC5 & UC6 & UC9 & UC10 & UC11\n  G --> UC1 & UC6\n  S --> UC10\n  UC1 -.->|include| AUTH\n  UC1 -.->|include| QUOTA\n  UC6 -.->|include| AUTH\n  UC1 --> UC2\n  UC3 --> UC4\n  UC6 --> UC7\n  UC5 --> UC8\n  classDef actor fill:#fff,stroke:#A06B21,stroke-width:2px;"
+ },
+ {
+  "id": "A.2",
+  "title": "Context Diagram (DFD Level 0)",
+  "purpose": "The system as a single process with its external entities. The point it makes: four external dependencies, and user documents never leave the system boundary.",
+  "actors": "User, Supabase (identity), Tavily (search), Groq (inference), Cohere (optional rerank)",
+  "elements": "One process 'Cognita', four external entities, one data store. Label every flow with what actually crosses it.",
+  "layout": "Process centred; entities arranged around it; data store beneath. Bidirectional arrows labelled on both directions.",
+  "src": "flowchart TB\n  USER([User])\n  SB[/Supabase\\nidentity/]\n  TV[/Tavily\\nweb search/]\n  GQ[/Groq\\ninference/]\n  CH[/Cohere\\nrerank, optional/]\n  P((Cognita))\n  DB[(PostgreSQL + pgvector)]\n\n  USER -->|question, uploaded file, JWT| P\n  P -->|cited report, confidence, telemetry| USER\n  P -->|verify JWT via public JWKS| SB\n  P -->|sub-queries, claim corroboration| TV\n  TV -->|results, snippets, figures| P\n  P -->|prompts| GQ\n  GQ -->|completions, token usage| P\n  P -->|chunks to rerank| CH\n  P <-->|sessions, documents, vectors| DB"
+ },
+ {
+  "id": "A.3",
+  "title": "Data Flow Diagram (Level 1)",
+  "purpose": "Decomposes the system into its six real processes and shows which data store each touches. Makes the two-role database access visible.",
+  "actors": "\u2014",
+  "elements": "Processes 1.0 Authenticate, 2.0 Enforce quota, 3.0 Research pipeline, 4.0 Ingest document, 5.0 Answer from documents, 6.0 Persist session. Stores D1 sessions, D2 documents, D3 chunks+vectors, D4 subscriptions.",
+  "layout": "Left-to-right flow; stores along the bottom edge; annotate which database role each process uses.",
+  "src": "flowchart LR\n  U([User])\n  P1[1.0 Authenticate\\nverify JWT]\n  P2[2.0 Enforce quota\\nreserve / refund]\n  P3[3.0 Research pipeline\\n9-node graph]\n  P4[4.0 Ingest document\\nextract, chunk, embed]\n  P5[5.0 Answer from documents\\nhybrid retrieve + judge]\n  P6[6.0 Persist session\\ntenant-scoped write]\n\n  D1[(D1 research_sessions)]\n  D2[(D2 rag_documents)]\n  D3[(D3 rag_chunks + vectors)]\n  D4[(D4 user_subscriptions)]\n\n  U -->|JWT| P1\n  P1 -->|user_id| P2\n  P2 <-->|usage| D4\n  P2 -->|approved| P3\n  P2 -->|approved| P5\n  U -->|file| P4\n  P4 -->|record| D2\n  P4 -->|chunks + embeddings| D3\n  P5 <-->|top-k chunks| D3\n  P3 -->|corpus evidence| D3\n  P3 -->|final state| P6\n  P6 -->|row| D1\n  P6 -->|report| U\n  P5 -->|grounded answer| U"
+ },
+ {
+  "id": "A.4",
+  "title": "Entity-Relationship Diagram",
+  "purpose": "The real schema, including the columns that carry evidence quality. Every table carries or derives a tenant key \u2014 that is what makes row-level security expressible.",
+  "actors": "\u2014",
+  "elements": "Six tables. Note which carry user_id directly and which derive it through a parent, because the RLS policies differ accordingly.",
+  "layout": "user_subscriptions and research_sessions on the left; the rag_* cluster on the right. Mark cascade deletes.",
+  "src": "erDiagram\n  USER_SUBSCRIPTIONS {\n    string user_id PK\n    string stripe_customer_id\n    string plan_tier\n    int monthly_queries_used\n    datetime usage_period_start\n  }\n  RESEARCH_SESSIONS {\n    string id PK\n    string user_id \"RLS key\"\n    string query\n    string final_report\n    json sources\n    json verified_claims\n    json images\n    float confidence\n    int total_tokens\n    float estimated_cost_usd\n    datetime created_at\n  }\n  RAG_DOCUMENTS {\n    string id PK\n    string user_id \"RLS key\"\n    string filename\n    string status \"processing|ready|error\"\n    int chunk_count\n  }\n  RAG_CHUNKS {\n    string id PK\n    string document_id FK\n    int chunk_index\n    text content\n    vector embedding \"384-dim, HNSW\"\n    tsvector content_tsv \"GIN, generated\"\n  }\n  RAG_CONVERSATIONS {\n    string id PK\n    string user_id \"RLS key\"\n  }\n  RAG_MESSAGES {\n    string id PK\n    string conversation_id FK\n    string role\n    text content\n    text sources\n  }\n  RAG_DOCUMENTS ||--o{ RAG_CHUNKS : \"cascade delete\"\n  RAG_CONVERSATIONS ||--o{ RAG_MESSAGES : \"cascade delete\"\n  USER_SUBSCRIPTIONS ||--o{ RESEARCH_SESSIONS : \"same user_id\" "
+ },
+ {
+  "id": "A.5",
+  "title": "Sequence Diagram \u2014 Deep Research run",
+  "purpose": "The lifetime of one research request, including the quota refund on failure and the point at which the reflective loop can fire. This is the figure that explains why a run takes minutes.",
+  "actors": "Browser, FastAPI, LangGraph, Tavily, Groq, Postgres",
+  "elements": "WebSocket handshake with the token in the first message (browsers cannot set headers on a WS handshake), quota reservation before expensive work, streamed progress, persistence, then the completion frame.",
+  "layout": "Six lifelines. Use alt/opt blocks for the reflective loop and the refund path.",
+  "src": "sequenceDiagram\n  participant B as Browser\n  participant API as FastAPI\n  participant G as LangGraph\n  participant T as Tavily\n  participant Q as Groq\n  participant DB as Postgres\n\n  B->>API: WS connect, then {query, token}\n  API->>API: verify JWT (public JWKS)\n  API->>DB: consume_quota(user)\n  DB-->>API: reserved\n  API->>G: stream_research(query, user_id)\n\n  G->>Q: triage - classify effort\n  G->>Q: plan - 3-5 sub-queries\n  G->>T: search each sub-query\n  T-->>G: results + figures\n  G->>G: read pages concurrently\n  G->>DB: corpus retrieval (tenant-scoped)\n  G->>Q: analyse - draft answer\n  G->>T: corroborate each claim\n  G->>Q: verify claims (batched)\n  G->>Q: gap analysis\n\n  alt evidence insufficient and iterations remain\n    G->>T: follow-up searches\n    G->>Q: re-verify new claims\n  end\n\n  G->>Q: write report (streamed)\n  G-->>API: token events\n  API-->>B: progress + report tokens\n  API->>DB: save_session(+ tokens, cost)\n  API-->>B: complete\n\n  opt pipeline failed or client disconnected\n    API->>DB: refund_quota(user)\n  end"
+ },
+ {
+  "id": "A.6",
+  "title": "Sequence Diagram \u2014 Chat with Files query",
+  "purpose": "The agentic retrieval loop, which is what produces correct refusals. Shows the grade-rewrite-retry cycle and the independent judge.",
+  "actors": "Browser, FastAPI, Retrieval, Postgres, Groq",
+  "elements": "Contextualise, hybrid retrieve, grade, conditional rewrite-and-retry, answer, judge. Show the decline branch explicitly.",
+  "layout": "Five lifelines; an alt block for the insufficient-evidence path with its two outcomes.",
+  "src": "sequenceDiagram\n  participant B as Browser\n  participant API as FastAPI\n  participant R as Retrieval\n  participant DB as Postgres\n  participant Q as Groq\n\n  B->>API: POST /api/rag/chat {message}\n  API->>Q: contextualise against history\n  Q-->>API: standalone query\n  API->>R: hybrid retrieve\n  R->>DB: vector search (HNSW)\n  R->>DB: keyword search (GIN tsvector)\n  R->>R: reciprocal rank fusion\n  R-->>API: top-k chunks\n\n  API->>Q: grade - do these answer it?\n  alt insufficient\n    API->>Q: rewrite query\n    API->>R: retrieve again\n    R-->>API: new chunks\n    API->>Q: grade again\n    alt still insufficient\n      API-->>B: decline, no sources\n    end\n  end\n\n  API->>Q: answer from delimited excerpts\n  Q-->>API: grounded answer\n  API->>Q: judge - faithfulness + relevance\n  Q-->>API: PASS / PARTIAL / FAIL\n  API->>DB: persist message + sources\n  API-->>B: answer + telemetry"
+ },
+ {
+  "id": "A.7",
+  "title": "State Diagram \u2014 Document lifecycle",
+  "purpose": "Explains the status field and the failure mode it exists for. A restart between 'created' and 'embedded' leaves nothing to advance the record, which is why the reaper exists.",
+  "actors": "\u2014",
+  "elements": "States: Uploaded, Validating, Processing, Ready, Error, Deleted. Transitions labelled with the trigger.",
+  "layout": "Vertical flow with Error as a sink reachable from three states.",
+  "src": "stateDiagram-v2\n  [*] --> Uploaded : POST /api/rag/upload\n  Uploaded --> Validating : magic-byte check\n  Validating --> Error : wrong signature / too large / empty\n  Validating --> Processing : record created, HTTP 200 returned\n  Processing --> Ready : extracted, chunked, embedded\n  Processing --> Error : no extractable text\n  Processing --> Error : stale > 15 min (restart reaper)\n  Ready --> Deleted : user deletes\n  Error --> Deleted : user deletes\n  Ready --> [*]\n  Deleted --> [*]"
+ },
+ {
+  "id": "A.8",
+  "title": "Deployment Diagram",
+  "purpose": "Where things run and which database role each path uses \u2014 the distinction row-level security depends on.",
+  "actors": "\u2014",
+  "elements": "Browser node, application node (uvicorn + embedding model in-process), database node, external service nodes. Two labelled connections to the database.",
+  "layout": "Stacked nodes; annotate the two DB connections distinctly.",
+  "src": "flowchart TB\n  subgraph Client\n    BR[Browser\\nReact SPA bundle]\n  end\n  subgraph AppServer[Application server]\n    UV[uvicorn / FastAPI]\n    EMB[fastembed\\nbge-small-en-v1.5\\nin-process]\n    UV --- EMB\n  end\n  subgraph Data[Database server]\n    PG[(PostgreSQL 16\\npgvector + FTS)]\n  end\n  subgraph External\n    GQ[Groq API]\n    TV[Tavily API]\n    SB[Supabase Auth]\n  end\n\n  BR -->|HTTPS + WSS| UV\n  UV -->|owner role\\nmigrations + webhooks| PG\n  UV -->|cognita_app role\\nRLS applies| PG\n  UV --> GQ\n  UV --> TV\n  UV -->|JWKS fetch| SB"
+ },
+ {
+  "id": "A.9",
+  "title": "Component Diagram",
+  "purpose": "The module structure as it exists on disk, so a reader can map the architecture onto the repository.",
+  "actors": "\u2014",
+  "elements": "Frontend components, API layer, agent package, RAG package, shared infrastructure. Show the dependency direction.",
+  "layout": "Layered, dependencies pointing downward. No upward arrows \u2014 that would indicate a cycle.",
+  "src": "flowchart TB\n  subgraph FE[frontend/src]\n    APP[App.tsx - routing]\n    MD[Markdown + Chart + AgentGraph]\n    RAGUI[RagSection + ChatPanel]\n    HOOK[useResearch - WS state]\n  end\n  subgraph API[backend/api]\n    MAIN[main.py - REST + WS]\n    RR[rag_routes.py]\n    BR[billing_routes.py]\n  end\n  subgraph AG[backend/agents]\n    GRAPH[graph/research_graph.py]\n    NODES[9 agent modules]\n    EV[evidence.py]\n  end\n  subgraph RAGP[backend/rag]\n    CHAT[chat_agent.py]\n    RET[retrieval.py - hybrid]\n    ING[ingest.py]\n    EMBM[embeddings.py]\n  end\n  subgraph INF[backend infrastructure]\n    DB[db.py + rls.py]\n    CONF[confidence.py]\n    UTIL[utils.py - retry, tokens]\n  end\n\n  APP --> HOOK --> MAIN\n  APP --> MD\n  RAGUI --> RR\n  MAIN --> GRAPH --> NODES --> EV\n  NODES --> CONF\n  RR --> CHAT --> RET --> EMBM\n  RR --> ING\n  NODES --> UTIL\n  CHAT --> UTIL\n  RET --> DB\n  GRAPH --> DB\n  BR --> DB"
+ }
+]

@@ -1,0 +1,33 @@
+<svg width="860" height="240" viewBox="0 0 860 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nine-node research pipeline diagram"><rect width="100%" height="100%" fill="#ffffff"/>
+        <style>
+          .n{fill:#fff;stroke:#a06b21;stroke-width:1.6}
+          .nl{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;fill:#16150f;font-weight:600;text-anchor:middle}
+          .e{stroke:#7c7566;stroke-width:1.4;fill:none;marker-end:url(#ar2)}
+          .loop{stroke:#1d5f63;stroke-width:1.6;fill:none;stroke-dasharray:5 4;marker-end:url(#ar3)}
+          .lt{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#1d5f63;letter-spacing:.06em;text-anchor:middle}
+        </style>
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+        </defs>
+
+        <path class="loop" d="M700 108 C640 46, 260 46, 200 108"/>
+        <text class="lt" x="450" y="40">loops back when evidence is insufficient</text>
+
+        <path class="e" d="M74 130 L128 130"/><path class="e" d="M174 130 L228 130"/>
+        <path class="e" d="M274 130 L328 130"/><path class="e" d="M374 130 L428 130"/>
+        <path class="e" d="M474 130 L528 130"/><path class="e" d="M574 130 L628 130"/>
+        <path class="e" d="M674 130 L728 130"/><path class="e" d="M774 130 L820 130"/>
+        <path class="e" d="M350 156 L350 176"/><path class="e" d="M374 190 L450 156"/>
+
+        <circle class="n" cx="50" cy="130" r="24"/><text class="nl" x="50" y="134">Triage</text>
+        <circle class="n" cx="150" cy="130" r="24"/><text class="nl" x="150" y="134">Plan</text>
+        <circle class="n" cx="250" cy="130" r="24"/><text class="nl" x="250" y="134">Search</text>
+        <circle class="n" cx="350" cy="130" r="24"/><text class="nl" x="350" y="134">Read</text>
+        <circle class="n" cx="350" cy="196" r="22" style="stroke:#1d5f63"/><text class="nl" x="350" y="200">Files</text>
+        <circle class="n" cx="450" cy="130" r="24"/><text class="nl" x="450" y="134">Analyse</text>
+        <circle class="n" cx="550" cy="130" r="24"/><text class="nl" x="550" y="134">Verify</text>
+        <circle class="n" cx="650" cy="130" r="24"/><text class="nl" x="650" y="134">Gaps</text>
+        <circle class="n" cx="750" cy="130" r="24"/><text class="nl" x="750" y="134">Report</text>
+        <text class="nl" x="833" y="134" style="fill:#7c7566">END</text>
+      </svg>
