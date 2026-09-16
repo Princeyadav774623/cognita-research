@@ -114,7 +114,9 @@ def r3():
     b += arrow(148, 295, 186, 303, "lnp")
     b += elbow([(148, 282), (172, 282), (172, 215), (186, 215)], "lnp")
 
-    b += elbow([(735, 170), (735, 20), (86, 20), (86, 56)], "ln", dash=True)
+    # Routed outside the D2 cylinder (x 650-820, y 48-100) rather than up
+    # through the middle of it.
+    b += elbow([(820, 199), (842, 199), (842, 20), (86, 20), (86, 56)], "ln", dash=True)
     b += note(330, 14, ["cited report, streamed back to the browser"])
 
     b += legend(24, 404, [(BRONZE, "pipeline node"), (TEAL, "store"),
@@ -220,7 +222,7 @@ def r6():
     b += e1 + e2
 
     b += elbow([(230, 78), (265, 78), (265, 80), (296, 80)], "lnt")
-    b += note(238, 66, ["1 : N"], TEAL)
+    b += note(238, 98, ["1 : N"], TEAL)
     # Routed over the top rather than straight across: at any y between the two
     # boxes this line would pass through research_sessions.
     b += elbow([(230, 66), (265, 66), (265, 22), (735, 22), (735, 40)], "lnt")
@@ -274,9 +276,11 @@ def r7():
     b += note(596, 176, ["evidence", "sufficient"], BRONZE)
     b += arrow(765, 88, 765, 164, "lnt")
     b += elbow([(600, 326), (626, 326), (626, 294), (676, 294)], "lnb", dash=True,
-               label="ceiling reached", lx=600, ly=350)
-    b += elbow([(410, 352), (300, 352), (300, 394), (676, 394)], "lnb", dash=True)
-    b += note(310, 386, ["any state, on unrecoverable provider failure"], RED)
+               label="ceiling reached", lx=652, ly=350)
+    # Turns down at x=350, clear of the reading box (x 140-330) whose bottom edge
+    # this line used to run along for thirty pixels.
+    b += elbow([(410, 352), (350, 352), (350, 394), (676, 394)], "lnb", dash=True)
+    b += note(392, 386, ["any state, on unrecoverable provider failure"], RED)
 
     b += elbow([(410, 326), (378, 326), (378, 440), (235, 440), (235, 352)],
                "lnb", dash=True, label="insufficient and iterations remain", lx=306, ly=458)

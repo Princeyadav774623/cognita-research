@@ -26,9 +26,12 @@ def f1():
 
     b += arrow(148, 170, 226, 170, "lnb", "upload a file", ly=162)
     b += arrow(148, 196, 226, 196, "lnb", "ask a question", ly=214)
-    b += elbow([(226, 220), (190, 220), (190, 274), (100, 274), (100, 216)],
-               "ln", dash=True)
-    b += note(128, 292, ["answer with the passages it used — or a refusal"])
+    # Routed round the outside: every inner lane is occupied by a forward arrow
+    # or its label, and the actor's caption sits at y 216-227.
+    b += elbow([(300, 232), (300, 268), (14, 268), (14, 190), (56, 190)],
+               "ln", dash=True,
+               label="answer with the passages it used, or a refusal",
+               lx=176, ly=262)
 
     for _, y, _, _ in ext:
         b += arrow(470, 189, 596, y + 27, "lnp")
@@ -61,7 +64,7 @@ def f2():
 
     b += para(676, 210, 168, 54, "Groq", "inference")
     b += arrow(552, 240, 672, 238, "lnp")
-    b += note(580, 230, ["prompts"])
+    b += note(580, 224, ["prompts"])
 
     b += cyl(624, 50, 200, 58, "D1  rag_documents", "status + metadata")
     b += cyl(624, 128, 200, 58, "D2  rag_chunks", "text + 384-d vector")

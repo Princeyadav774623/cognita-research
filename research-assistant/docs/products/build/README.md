@@ -74,6 +74,29 @@ leaves Word showing the old drawing until the PNGs are regenerated.
 browser rasterising the SVG to a canvas falls back to its own default and
 produces an image far smaller than the drawing.
 
+## The geometry check
+
+The figures are verified in a browser, not by eye. `collide.html` renders all
+eighteen and four assertions run against real measured geometry:
+
+1. no connector passes through a filled shape (`isPointInFill`, sampled every
+   1.5 units, endpoints excluded — a connector is *supposed* to land on its
+   source and target);
+2. no connector strikes a label **that was painted before it** — notes carry a
+   knockout plate, so a line drawn first is hidden beneath it and only paint
+   order decides whether a crossing is visible;
+3. no label straddles a shape edge (half on, half off);
+4. no two labels overlap.
+
+The current state is 18 figures, 166 connectors, 15,526 sample points, 492
+labels, all four clean.
+
+Each check was added because the previous one missed something real. Text-vs-text
+missed a connector running up through a cylinder. Bounding boxes reported a
+false positive on a diamond, which is why the shape test uses `isPointInFill`.
+Ignoring paint order reported eight crossings that the knockout plates already
+hid. Run all four after touching any figure.
+
 ## Regenerating the figure PNGs
 
 Word needs raster images. There is no SVG rasteriser on this machine —

@@ -269,11 +269,21 @@ def elbow(pts, cls="ln", label="", dash=False, lx=None, ly=None):
 
 
 def note(x, y, text, colour=INK3):
-    """A short annotation. Sans rather than mono: these are read, not scanned."""
+    """A short annotation, on a knockout plate.
+
+    Notes sit next to connectors, and a connector that happens to pass beneath
+    one would otherwise strike the words through. The plate is the card colour,
+    so over a card it is invisible and over a line it is the point.
+    """
     lines = text if isinstance(text, (list, tuple)) else [text]
-    return "".join(
-        f'<text class="note" x="{x}" y="{y + i*13.5}" fill="{colour}">{esc(ln)}</text>'
-        for i, ln in enumerate(lines))
+    out = ""
+    for i, ln in enumerate(lines):
+        ty = y + i * 13.5
+        w = len(str(ln)) * 5.15 + 8
+        out += (f'<rect x="{x-4}" y="{ty-8.5}" width="{w:.0f}" height="12.5" rx="3" '
+                f'fill="{BG_CARD}" fill-opacity=".88"/>')
+        out += f'<text class="note" x="{x}" y="{ty}" fill="{colour}">{esc(ln)}</text>'
+    return out
 
 
 # ------------------------------------------------------------------ sequence
