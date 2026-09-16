@@ -285,7 +285,7 @@
        "DN-7",
        "Reliability",
        "A failed run must refund the quota it consumed.",
-       "Integration test"
+       "Code path only \u2014 untested"
       ],
       [
        "DN-8",
@@ -934,12 +934,14 @@
     {
      "k": "ul",
      "items": [
-      "an unsupported claim cannot be averaged away by four good ones;",
-      "perfect claims over two sources are still capped at 60%;",
-      "a corroborating hit on a page the draft already used is not counted as independent;",
-      "a run with no claims scores 0.0, not an invented 0.5;",
-      "a tracking parameter on a URL does not make a real citation look fabricated;",
-      "a failed run refunds the quota it consumed."
+      "an unsupported claim cannot be averaged away by four good ones (test_one_unsupported_claim_is_not_averaged_away);",
+      "perfect claims over two sources are still capped (test_thin_evidence_caps_the_score);",
+      "a corroborating hit on a page the draft already used is not counted as independent (test_sources_the_draft_already_used_are_not_counted_as_independent);",
+      "a run with no claims scores 0.0, not an invented 0.5 (test_no_claims_scores_zero_not_a_default);",
+      "a tracking parameter on a URL does not make a real citation look fabricated (test_tracking_params_do_not_cause_false_mismatches);",
+      "the reflective loop stops at its ceiling rather than running on (test_gap_analysis_stops_at_max_iterations);",
+      "corpus chunks are not crowded out by a flood of web sources (test_corpus_chunks_survive_a_flood_of_web_documents);",
+      "triage fails open to deep when every classification path breaks (test_fails_open_to_deep_when_everything_breaks)."
      ]
     },
     {
@@ -1208,6 +1210,7 @@
     {
      "k": "ul",
      "items": [
+      "Quota refunding is implemented and uncovered. refund_quota() is called on the failure path in api/main.py, and no test asserts that it runs \u2014 so a regression there would charge a user for a run that failed, silently.",
       "The confidence score is unvalidated against human judgement. A harness exists to measure whether \"verified\" correlates with \"true\", but it requires human labels that have not yet been collected. This is the single largest gap in this product's evidence, and nothing else on this list comes close.",
       "Five runs is a small sample. The spread is encouraging but it is not a distribution.",
       "The pipeline runs in the web process. A restart mid-run loses the run; the quota is refunded but the work is not recoverable.",

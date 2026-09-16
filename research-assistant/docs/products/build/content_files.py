@@ -112,7 +112,7 @@ CHAPTERS = [
        TBL(["ID", "Category", "Requirement", "Verified by"], [
            ["CN-1", "Security", "One tenant's documents must be unreachable by another, enforced at the database.", "CI gate, verify_rls.py"],
            ["CN-2", "Security", "Uploaded documents must not be able to alter system behaviour.", "Live injection test"],
-           ["CN-3", "Security", "A chunk must be visible only if its parent document is.", "Derived RLS policy"],
+           ["CN-3", "Security", "A chunk must be visible only if its parent document is.", "Policy installed — not live-checked"],
            ["CN-4", "Performance", "Answer latency under 5 s at p50.", "Measured: 2.0 s"],
            ["CN-5", "Performance", "Retrieval must not degrade linearly with corpus size.", "HNSW index"],
            ["CN-6", "Performance", "Retrieval must cost nothing per query, so evaluation is unbounded.", "Local embeddings, 0.3 s / 25 q"],
@@ -223,7 +223,8 @@ CHAPTERS = [
        P("The model is asymmetric: it expects a query to carry an instruction prefix that a "
          "passage does not. Getting this backwards — or omitting it — degrades retrieval "
          "silently, because the system still returns results and they are still plausible. The "
-         "prefix is applied at query time only, and there is a test that asserts it."),
+         "prefix is applied at query time only. Nothing in the suite asserts that, which §10.2 "
+         "records as a gap rather than leaving implied."),
        NOTE("Local embedding is why this report has measurements in it.",
             "Retrieval costs nothing per query, so evaluating twenty-five questions takes 0.3 "
             "seconds and zero budget. A per-query embedding fee would have made the benchmark in "
@@ -367,12 +368,18 @@ CHAPTERS = [
          "if and only if its conversation is. That is one fewer column to forget on insert, and "
          "it removes any possibility of a chunk and its document disagreeing about who owns "
          "them."),
-       TBL(["Check", "Expected", "Result"], [
-           ["Owner reads their own documents", "Visible", "Pass"],
-           ["Unfiltered SELECT of chunks by another tenant", "Zero rows", "Pass"],
-           ["Session with no tenant set", "Zero rows (fail closed)", "Pass"],
-           ["Insert a chunk under another tenant's document", "Refused by WITH CHECK", "Pass"],
-       ], [0.48, 0.32, 0.20]),
+       TBL(["Check", "Expected", "Result", "Run against"], [
+           ["Owner reads their own rows", "Visible", "Pass", "research_sessions"],
+           ["Unfiltered SELECT by another tenant", "Zero rows", "Pass", "research_sessions"],
+           ["Session with no tenant set", "Zero rows (fail closed)", "Pass", "research_sessions"],
+           ["Insert under another tenant's id", "Refused by WITH CHECK", "Pass", "research_sessions"],
+           ["The same four, against documents and chunks", "Zero rows", "Not run", "—"],
+       ], [0.40, 0.22, 0.14, 0.24]),
+       P("The last row is the honest one. RLS is enabled and policied on rag_documents and "
+         "rag_chunks — all six tables report relrowsecurity = true — but the live verifier that "
+         "gates the build queries research_sessions only. The policies protecting this product's "
+         "data are therefore asserted by their existence, not by a test that watches Postgres "
+         "refuse a read. §10.2 carries that as a limitation."),
 
        H3("7.2 Untrusted document content"),
        P("An uploaded file is the easiest path into a model's context for anyone who wants to "
@@ -426,12 +433,29 @@ CHAPTERS = [
          "by a user."),
 
        H3("8.2 Tests that encode defects"),
-       UL("a closing tag inside an excerpt cannot end the delimiter block early;",
-          "the query instruction prefix is applied at query time and not at index time;",
-          "keyword search failing to parse a query degrades to vectors rather than erroring;",
-          "a chunk is invisible when its parent document belongs to another tenant;",
-          "a document stuck in processing past the threshold is failed by the reaper;",
-          "an unanswerable question produces a refusal rather than a composed answer.")),
+       UL("a closing tag inside an excerpt cannot end the delimiter block early "
+          "(test_a_closing_tag_inside_content_cannot_end_the_block);",
+          "the system prompt states that excerpts are data "
+          "(test_system_prompt_states_excerpts_are_data);",
+          "an override attempt in an uploaded file is sanitised at ingest "
+          "(test_ingest_sanitises_override_attempts);",
+          "keyword search failing to parse a query degrades to vectors rather than erroring "
+          "(test_keyword_failure_degrades_to_vectors_instead_of_erroring);",
+          "a spoofed file whose magic bytes contradict its extension is rejected "
+          "(test_rejects_spoofed_file_magic_bytes);",
+          "a document stuck in processing past the threshold is failed by the reaper "
+          "(test_marks_an_abandoned_document_as_failed);",
+          "an insufficient first retrieval is rewritten and retried "
+          "(test_rewrites_and_retries_when_first_attempt_is_insufficient);",
+          "chunk windows overlap so an answer is not lost at a boundary "
+          "(test_windows_overlap_so_boundaries_are_not_lost)."),
+       NOTE("What the suite does not cover.",
+            "Two things this report would like to claim and cannot. Nothing asserts that the "
+            "embedding query prefix is applied at query time and not at index time — getting "
+            "that wrong degrades retrieval silently, which is exactly the case a test exists "
+            "for. And scripts/verify_rls.py exercises research_sessions only: the policies on "
+            "rag_documents and rag_chunks are installed and enabled, but no live check proves "
+            "they refuse a cross-tenant read.", "bad")),
 
     # ------------------------------------------------------------------ 9
     CH(9, "Results and Measurements",
@@ -514,7 +538,15 @@ CHAPTERS = [
        ], [0.22, 0.44, 0.34]),
 
        H3("10.2 Current limitations"),
-       UL("RAG citations are not validated against the retrieved chunks, the way the research "
+       UL("The RLS verifier does not cover this product's tables. scripts/verify_rls.py "
+          "gates the build on four checks against research_sessions; the equivalent checks "
+          "against rag_documents and rag_chunks are not written. The policies exist and are "
+          "enabled — but 'the policies exist' is precisely the claim that turned out to be "
+          "false the last time it was assumed, so it is recorded here rather than trusted.",
+          "Nothing asserts the embedding query prefix is applied at query time only. It is, "
+          "in rag/embeddings.py, and a regression would degrade retrieval without failing "
+          "anything.",
+          "RAG citations are not validated against the retrieved chunks, the way the research "
           "path validates its own. An answer could cite a passage it did not use and nothing "
           "would catch it. This is the largest correctness gap in this product.",
           "The benchmark corpus is 31 paragraphs. Recall should be expected to fall on a "
@@ -532,7 +564,9 @@ CHAPTERS = [
           "next step and is not implemented."),
 
        H3("10.3 Future work, in priority order"),
-       UL("Validate every citation against the chunks actually retrieved, as the research path "
+       UL("Extend scripts/verify_rls.py to rag_documents and rag_chunks, so the checks that "
+          "gate the build cover this product's data and not only the other product's.",
+          "Validate every citation against the chunks actually retrieved, as the research path "
           "already does. This closes the one gap where the product can be confidently wrong.",
           "Expand the benchmark to 200 or more questions over a larger corpus, and track scores "
           "across runs so regressions are visible rather than discovered.",

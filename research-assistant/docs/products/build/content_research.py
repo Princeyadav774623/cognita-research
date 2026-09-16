@@ -126,7 +126,7 @@ CHAPTERS = [
            ["DN-4", "Correctness", "A run with no extractable claims must score 0.0, not a default.", "Unit test"],
            ["DN-5", "Correctness", "An unsupported claim must not be averaged away by supported ones.", "Unit test"],
            ["DN-6", "Reliability", "Transient provider failures must be retried; permanent ones must not.", "26 unit tests"],
-           ["DN-7", "Reliability", "A failed run must refund the quota it consumed.", "Integration test"],
+           ["DN-7", "Reliability", "A failed run must refund the quota it consumed.", "Code path only — untested"],
            ["DN-8", "Performance", "Claim verification must not dominate run time.", "Batched: 257 s → one call"],
            ["DN-9", "Accessibility", "WCAG 2.1 AA contrast; visible keyboard focus; 44 px touch targets.", "Measured in browser"],
            ["DN-10", "Observability", "Token usage and cost must be recorded per research run.", "Persisted per session"],
@@ -459,12 +459,22 @@ CHAPTERS = [
        H3("8.2 Tests that encode defects"),
        P("Several tests assert the specific failure rather than the happy path, so a regression "
          "reads as the thing that went wrong rather than as a number that moved:"),
-       UL("an unsupported claim cannot be averaged away by four good ones;",
-          "perfect claims over two sources are still capped at 60%;",
-          "a corroborating hit on a page the draft already used is not counted as independent;",
-          "a run with no claims scores 0.0, not an invented 0.5;",
-          "a tracking parameter on a URL does not make a real citation look fabricated;",
-          "a failed run refunds the quota it consumed."),
+       UL("an unsupported claim cannot be averaged away by four good ones "
+          "(test_one_unsupported_claim_is_not_averaged_away);",
+          "perfect claims over two sources are still capped "
+          "(test_thin_evidence_caps_the_score);",
+          "a corroborating hit on a page the draft already used is not counted as independent "
+          "(test_sources_the_draft_already_used_are_not_counted_as_independent);",
+          "a run with no claims scores 0.0, not an invented 0.5 "
+          "(test_no_claims_scores_zero_not_a_default);",
+          "a tracking parameter on a URL does not make a real citation look fabricated "
+          "(test_tracking_params_do_not_cause_false_mismatches);",
+          "the reflective loop stops at its ceiling rather than running on "
+          "(test_gap_analysis_stops_at_max_iterations);",
+          "corpus chunks are not crowded out by a flood of web sources "
+          "(test_corpus_chunks_survive_a_flood_of_web_documents);",
+          "triage fails open to deep when every classification path breaks "
+          "(test_fails_open_to_deep_when_everything_breaks)."),
        NOTE("The workflow had never run.",
             "For most of this project's life the CI badge was green because no workflow had ever "
             "executed: the file sat one directory below the repository root, where GitHub Actions "
@@ -549,7 +559,10 @@ CHAPTERS = [
        ], [0.20, 0.44, 0.36]),
 
        H3("10.2 Current limitations"),
-       UL("The confidence score is unvalidated against human judgement. A harness exists to "
+       UL("Quota refunding is implemented and uncovered. refund_quota() is called on the "
+          "failure path in api/main.py, and no test asserts that it runs — so a regression "
+          "there would charge a user for a run that failed, silently.",
+          "The confidence score is unvalidated against human judgement. A harness exists to "
           "measure whether \"verified\" correlates with \"true\", but it requires human labels "
           "that have not yet been collected. This is the single largest gap in this product's "
           "evidence, and nothing else on this list comes close.",
