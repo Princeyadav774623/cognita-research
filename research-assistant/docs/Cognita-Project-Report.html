@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cognita — Project Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ==========================================================================
+   Palette — Cognita's editorial register, shifted cooler.
+   Ink stays warm-black; the accent moves from terracotta to bronze, with a
+   deep teal as the second voice for data and diagrams.
+   ========================================================================== */
+:root {
+  --paper:        #f4f1ea;
+  --paper-2:      #fbf9f5;
+  --card:         #ffffff;
+  --ink:          #16150f;
+  --ink-2:        #474338;
+  --ink-3:        #7c7566;
+  --rule:         #ddd6c8;
+  --rule-soft:    #eae4d8;
+
+  --bronze:       #a06b21;
+  --bronze-deep:  #7d5115;
+  --bronze-soft:  rgba(160, 107, 33, 0.10);
+  --teal:         #1d5f63;
+  --teal-soft:    rgba(29, 95, 99, 0.10);
+  --plum:         #6b3352;
+
+  --good:         #1f6b4a;
+  --warn:         #8a6314;
+  --bad:          #9c2f26;
+
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans:  "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:  "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --space-1: .25rem; --space-2: .5rem;  --space-3: .75rem; --space-4: 1rem;
+  --space-5: 1.5rem; --space-6: 2rem;   --space-7: 3rem;   --space-8: 4rem;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.68;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { max-width: 1000px; margin: 0 auto; padding-inline: 28px; padding-block: 0 var(--space-8); }
+.measure { max-width: 68ch; }
+
+/* ---------- cover ---------- */
+.cover {
+  padding-block: var(--space-8) var(--space-7);
+  border-bottom: 3px double var(--ink);
+  margin-bottom: var(--space-7);
+}
+.cover__mark {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--bronze); margin-bottom: var(--space-5);
+}
+.cover h1 {
+  font-family: var(--sans); font-size: clamp(2.6rem, 6vw, 4.2rem); font-weight: 700;
+  letter-spacing: -.04em; line-height: 1.02; margin: 0 0 var(--space-4); text-wrap: balance;
+}
+.cover h1 em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--bronze); }
+.cover__sub { font-size: 1.2rem; color: var(--ink-2); max-width: 60ch; margin: 0 0 var(--space-6); }
+.cover__meta {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-4); padding-top: var(--space-5); border-top: 1px solid var(--rule);
+}
+.cover__meta div { font-family: var(--mono); font-size: .72rem; color: var(--ink-3); }
+.cover__meta b { display: block; font-family: var(--sans); font-size: .95rem; color: var(--ink); font-weight: 600; margin-top: 2px; }
+
+/* ---------- index ---------- */
+.toc { background: var(--paper-2); border: 1px solid var(--rule); border-radius: 10px; padding: var(--space-5) var(--space-6); margin-bottom: var(--space-8); }
+.toc h2 { font-family: var(--sans); font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 var(--space-4); }
+.toc ol { list-style: none; counter-reset: ch; margin: 0; padding: 0; columns: 2; column-gap: var(--space-7); }
+.toc li { counter-increment: ch; break-inside: avoid; margin-bottom: var(--space-2); }
+.toc li::before { content: counter(ch) "."; font-family: var(--mono); font-size: .78rem; color: var(--bronze); margin-right: var(--space-2); }
+.toc a { color: var(--ink); text-decoration: none; font-size: .95rem; }
+.toc a:hover { color: var(--bronze); text-decoration: underline; }
+
+/* ---------- chapters ---------- */
+.chapter { margin-bottom: var(--space-8); scroll-margin-top: 20px; }
+.chapter__num {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--bronze); margin-bottom: var(--space-2);
+}
+h2 { font-family: var(--sans); font-size: 1.85rem; font-weight: 700; letter-spacing: -.028em; margin: 0 0 var(--space-5); padding-bottom: var(--space-3); border-bottom: 2px solid var(--ink); text-wrap: balance; }
+h3 { font-family: var(--sans); font-size: 1.12rem; font-weight: 600; letter-spacing: -.012em; margin: var(--space-6) 0 var(--space-3); }
+h4 { font-family: var(--mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin: var(--space-5) 0 var(--space-2); }
+p { margin: 0 0 var(--space-4); }
+.lede { font-size: 1.12rem; color: var(--ink-2); border-left: 3px solid var(--bronze); padding-left: var(--space-4); margin-bottom: var(--space-5); }
+
+ul, ol.body { padding-left: 1.1rem; margin: 0 0 var(--space-4); }
+li { margin-bottom: var(--space-2); }
+
+code { font-family: var(--mono); font-size: .84em; background: var(--paper-2); border: 1px solid var(--rule-soft); border-radius: 3px; padding: .08em .32em; }
+
+/* ---------- tables ---------- */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; margin: var(--space-5) 0; background: var(--card); }
+table { width: 100%; border-collapse: collapse; font-family: var(--sans); font-size: .87rem; }
+th { text-align: left; font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); padding: var(--space-3) var(--space-4); border-bottom: 2px solid var(--rule); white-space: nowrap; }
+td { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--rule-soft); color: var(--ink-2); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td strong { color: var(--ink); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.pill { font-family: var(--mono); font-size: .64rem; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.pill--good { background: rgba(31,107,74,.12); color: var(--good); }
+.pill--warn { background: rgba(138,99,20,.12); color: var(--warn); }
+.pill--bad  { background: rgba(156,47,38,.12); color: var(--bad); }
+
+/* ---------- figures ---------- */
+figure { margin: var(--space-6) 0; }
+figcaption { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: var(--space-3); }
+figcaption .cap { display: block; font-family: var(--serif); font-size: .92rem; letter-spacing: 0; text-transform: none; color: var(--ink-2); margin-top: var(--space-2); }
+.frame { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: var(--space-5); overflow-x: auto; }
+.frame svg { display: block; width: 100%; height: auto; min-width: 560px; }
+
+/* ---------- callouts ---------- */
+.note { border-left: 3px solid var(--teal); background: var(--teal-soft); padding: var(--space-4) var(--space-5); border-radius: 0 8px 8px 0; margin: var(--space-5) 0; font-size: .95rem; }
+.note b { font-family: var(--sans); }
+.caveat { border-left-color: var(--bad); background: rgba(156,47,38,.07); }
+.caveat b { color: var(--bad); }
+
+/* ---------- stat row ---------- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; margin: var(--space-5) 0; }
+.stat { background: var(--card); padding: var(--space-4); }
+.stat__k { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.stat__v { font-family: var(--sans); font-size: 1.85rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.stat__n { font-family: var(--sans); font-size: .78rem; color: var(--ink-3); line-height: 1.4; margin-top: 4px; }
+
+@media (max-width: 760px) {
+  .toc ol { columns: 1; }
+  .page { padding-inline: 18px; }
+}
+
+@media print {
+  body { background: #fff; font-size: 10.5pt; }
+  .page { max-width: none; padding: 0; }
+  .chapter { break-before: page; }
+  .cover, .toc { break-after: page; }
+  .frame, .tbl-wrap, figure, .stats, .note { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  a { color: var(--ink); text-decoration: none; }
+  @page { margin: 18mm 16mm; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ============================ COVER ============================ -->
+<header class="cover">
+  <div class="cover__mark">Project Report · Engineering &amp; Evaluation</div>
+  <h1>Cognita: research that <em>shows its working</em></h1>
+  <p class="cover__sub">
+    A multi-agent research assistant that plans a question, searches the web and the
+    user's own documents, verifies every claim against independent sources, and reports
+    how confident it is — and why.
+  </p>
+  <div class="cover__meta">
+    <div>Author<b>Prince Yadav</b></div>
+    <div>Report date<b>16 September 2026</b></div>
+    <div>Codebase<b>17,323 lines</b></div>
+    <div>Automated tests<b>196 passing</b></div>
+    <div>Repository<b>cognita-research</b></div>
+  </div>
+</header>
+
+<!-- ============================ INDEX ============================ -->
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#ch1">Introduction and Problem Statement</a></li>
+    <li><a href="#ch2">Software Requirements Specification</a></li>
+    <li><a href="#ch3">System Architecture</a></li>
+    <li><a href="#ch4">The Agent Pipeline</a></li>
+    <li><a href="#ch5">Retrieval-Augmented Generation Subsystem</a></li>
+    <li><a href="#ch6">Data Layer and Security</a></li>
+    <li><a href="#ch7">Verification and Confidence Scoring</a></li>
+    <li><a href="#ch8">Testing and Continuous Integration</a></li>
+    <li><a href="#ch9">Results and Measurements</a></li>
+    <li><a href="#ch10">Evaluation, Limitations and Future Work</a></li>
+    <li><a href="#appendix">Appendix: Environment and Reproduction</a></li>
+  </ol>
+</nav>
+
+<!-- ============================ CH 1 ============================ -->
+<section class="chapter" id="ch1">
+  <div class="chapter__num">Chapter One</div>
+  <h2>Introduction and Problem Statement</h2>
+
+  <p class="lede measure">
+    A language model asked a research question will produce a fluent, confident,
+    well-structured answer whether or not it has any basis for it. The failure is not
+    that it is sometimes wrong; it is that a wrong answer is indistinguishable from a
+    right one.
+  </p>
+
+  <div class="measure">
+    <h3>1.1 The problem</h3>
+    <p>
+      Retrieval-augmented generation is the usual response: give the model source
+      documents and instruct it to answer from them. This helps, but it moves the
+      problem rather than solving it. The model can still assert things the sources do
+      not support, cite a document that does not contain the claim, or answer a question
+      the sources never addressed. A reader has no way to tell.
+    </p>
+    <p>
+      Cognita's premise is that a research tool's output is only as valuable as the
+      reader's ability to check it. Three properties follow from that:
+    </p>
+    <ul>
+      <li><b>Every claim traces to a source.</b> Citations must resolve to a document the system actually read, and that must be verified rather than trusted.</li>
+      <li><b>Verification must be independent.</b> Checking a claim against the same text it was summarised from proves only that the summary was faithful.</li>
+      <li><b>Confidence must be honest.</b> A score that does not reflect the quality of the underlying evidence is decoration, and worse than no score at all.</li>
+    </ul>
+
+    <h3>1.2 Scope</h3>
+    <p>
+      The system provides two tools over one evidence model. <b>Deep Research</b> answers
+      a question from the open web using a multi-agent pipeline. <b>Chat with Files</b>
+      answers from documents the user uploads. Both produce cited answers, both refuse
+      when the evidence does not support an answer, and both report measured telemetry
+      rather than assertions.
+    </p>
+
+    <h3>1.3 What this report covers</h3>
+    <p>
+      Chapters 2 to 8 describe requirements, architecture and implementation. Chapter 9
+      reports measurements taken from the running system — every figure in it was
+      produced by executing the software, not estimated. Chapter 10 states plainly what
+      remains unproven.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ CH 2 ============================ -->
+<section class="chapter" id="ch2">
+  <div class="chapter__num">Chapter Two</div>
+  <h2>Software Requirements Specification</h2>
+
+  <div class="measure">
+    <h3>2.1 Purpose and intended audience</h3>
+    <p>
+      This specification describes a web application delivering verifiable research
+      answers. Its users are researchers, analysts and students who need an answer they
+      can defend, not merely an answer they can read.
+    </p>
+  </div>
+
+  <h3>2.2 Functional requirements</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="num">FR-1</td><td>Accept a natural-language research question up to 500 characters.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-2</td><td>Decompose a question into 3–5 targeted sub-queries before searching.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-3</td><td>Classify question complexity and scale research depth accordingly.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-4</td><td>Search the open web and extract full text from HTML and PDF sources.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-5</td><td>Disclose when a source degraded to a search snippet rather than full text.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-6</td><td>Search the user's uploaded documents as part of the same evidence set.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-7</td><td>Extract key factual claims and verify each against retrieved evidence.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-8</td><td>Corroborate claims against sources the draft was not written from.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-9</td><td>Re-search when gap analysis finds the evidence insufficient.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-10</td><td>Validate that every citation resolves to a source actually read.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-11</td><td>Report a confidence score with the factors that produced it.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-12</td><td>Stream progress and the report itself as they are produced.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-13</td><td>Upload PDF, DOCX, TXT, MD and images (OCR), up to 15 MB.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-14</td><td>Decline to answer when retrieved evidence is insufficient.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-15</td><td>Export a report as Markdown, BibTeX and PDF.</td><td>Should</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-16</td><td>Enforce a monthly query allowance, refunding on failure.</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+        <tr><td class="num">FR-17</td><td>Delete all user data on request (GDPR erasure).</td><td>Must</td><td><span class="pill pill--good">Implemented</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.3 Non-functional requirements</h3>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Category</th><th>Requirement</th><th>Verified by</th></tr></thead>
+      <tbody>
+        <tr><td class="num">NFR-1</td><td>Security</td><td>One tenant's data must be unreachable by another, enforced at the database.</td><td>CI gate, <code>verify_rls.py</code></td></tr>
+        <tr><td class="num">NFR-2</td><td>Security</td><td>Uploaded documents must not be able to alter system behaviour.</td><td>Live injection test</td></tr>
+        <tr><td class="num">NFR-3</td><td>Security</td><td>Credentials must never appear in logs.</td><td>Code review, <code>_safe_url</code></td></tr>
+        <tr><td class="num">NFR-4</td><td>Performance</td><td>RAG answer latency under 5 s at p50.</td><td>Measured: 2.0 s</td></tr>
+        <tr><td class="num">NFR-5</td><td>Performance</td><td>Vector search must not degrade linearly with corpus size.</td><td>HNSW index</td></tr>
+        <tr><td class="num">NFR-6</td><td>Reliability</td><td>Transient provider failures must be retried; permanent ones must not.</td><td>26 unit tests</td></tr>
+        <tr><td class="num">NFR-7</td><td>Reliability</td><td>A restart must not strand an upload indefinitely.</td><td>Stale-job reaper</td></tr>
+        <tr><td class="num">NFR-8</td><td>Accessibility</td><td>WCAG 2.1 AA contrast; visible keyboard focus; 44 px touch targets.</td><td>Measured in browser</td></tr>
+        <tr><td class="num">NFR-9</td><td>Observability</td><td>Token usage and cost recorded per research run.</td><td>Persisted per session</td></tr>
+        <tr><td class="num">NFR-10</td><td>Portability</td><td>Schema changes applied by versioned migrations.</td><td>Alembic, 4 revisions</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>2.4 Constraints</h3>
+  <ul class="measure">
+    <li><b>Postgres only.</b> pgvector and row-level security are both required; SQLite is rejected at startup.</li>
+    <li><b>Free-tier inference.</b> Groq's limits — 8,000 tokens/minute and 200,000 tokens/day — shape batching and retry behaviour throughout.</li>
+    <li><b>Two database roles.</b> An owner role for migrations, a low-privilege role for runtime, or row-level security has no effect.</li>
+  </ul>
+</section>
+
+<!-- ============================ CH 3 ============================ -->
+<section class="chapter" id="ch3">
+  <div class="chapter__num">Chapter Three</div>
+  <h2>System Architecture</h2>
+
+  <p class="lede measure">
+    Three tiers: a React single-page application, a FastAPI service hosting a LangGraph
+    state machine, and Postgres with pgvector holding both relational and vector data.
+  </p>
+
+  <figure>
+    <figcaption>Figure 3.1 — System architecture
+      <span class="cap">Request paths are solid; the WebSocket carries streamed progress and report tokens. Every runtime query passes through the low-privilege role so row-level security applies.</span>
+    </figcaption>
+    <div class="frame">
+      <svg viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three-tier architecture diagram">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/>
+          </marker>
+        </defs>
+        <style>
+          .box{fill:#fff;stroke:#ddd6c8;stroke-width:1.5;rx:8}
+          .band{fill:#faf7f1;stroke:#eae4d8;stroke-width:1;rx:10}
+          .t{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;fill:#16150f;font-weight:600}
+          .s{font-family:'JetBrains Mono',monospace;font-size:9.5px;fill:#7c7566}
+          .lbl{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#a06b21;letter-spacing:.08em}
+          .ln{stroke:#7c7566;stroke-width:1.4;fill:none;marker-end:url(#ar)}
+          .ln2{stroke:#1d5f63;stroke-width:1.4;fill:none;stroke-dasharray:4 3;marker-end:url(#ar)}
+        </style>
+
+        <rect class="band" x="10" y="10" width="250" height="380"/>
+        <text class="lbl" x="24" y="32">PRESENTATION</text>
+        <rect class="box" x="30" y="48" width="210" height="52"/>
+        <text class="t" x="44" y="70">React SPA</text><text class="s" x="44" y="86">Vite · TypeScript · 31 tests</text>
+        <rect class="box" x="30" y="114" width="210" height="46"/>
+        <text class="t" x="44" y="134">Deep Research view</text><text class="s" x="44" y="149">live agent graph, report</text>
+        <rect class="box" x="30" y="174" width="210" height="46"/>
+        <text class="t" x="44" y="194">Chat with Files view</text><text class="s" x="44" y="209">upload, grounded chat</text>
+        <rect class="box" x="30" y="234" width="210" height="46"/>
+        <text class="t" x="44" y="254">Supabase auth client</text><text class="s" x="44" y="269">JWT in browser session</text>
+
+        <rect class="band" x="300" y="10" width="270" height="380"/>
+        <text class="lbl" x="314" y="32">APPLICATION</text>
+        <rect class="box" x="320" y="48" width="230" height="52"/>
+        <text class="t" x="334" y="70">FastAPI service</text><text class="s" x="334" y="86">REST + WebSocket · 165 tests</text>
+        <rect class="box" x="320" y="114" width="230" height="46"/>
+        <text class="t" x="334" y="134">LangGraph state machine</text><text class="s" x="334" y="149">9 nodes, reflective loop</text>
+        <rect class="box" x="320" y="174" width="230" height="46"/>
+        <text class="t" x="334" y="194">RAG subsystem</text><text class="s" x="334" y="209">hybrid retrieval + judge</text>
+        <rect class="box" x="320" y="234" width="230" height="46"/>
+        <text class="t" x="334" y="254">Auth · quota · rate limit</text><text class="s" x="334" y="269">JWKS verify, plan enforcement</text>
+        <rect class="box" x="320" y="294" width="230" height="46"/>
+        <text class="t" x="334" y="314">Local embeddings</text><text class="s" x="334" y="329">bge-small-en-v1.5, 384-dim</text>
+
+        <rect class="band" x="610" y="10" width="240" height="380"/>
+        <text class="lbl" x="624" y="32">DATA &amp; EXTERNAL</text>
+        <rect class="box" x="630" y="48" width="200" height="60"/>
+        <text class="t" x="644" y="70">PostgreSQL 16</text><text class="s" x="644" y="86">pgvector · HNSW · tsvector</text><text class="s" x="644" y="99">RLS on all 6 tables</text>
+        <rect class="box" x="630" y="124" width="200" height="46"/>
+        <text class="t" x="644" y="144">Groq inference</text><text class="s" x="644" y="159">gpt-oss-120b / 20b</text>
+        <rect class="box" x="630" y="184" width="200" height="46"/>
+        <text class="t" x="644" y="204">Tavily search</text><text class="s" x="644" y="219">web results + figures</text>
+        <rect class="box" x="630" y="244" width="200" height="46"/>
+        <text class="t" x="644" y="264">Supabase</text><text class="s" x="644" y="279">identity, public JWKS</text>
+        <rect class="box" x="630" y="304" width="200" height="46"/>
+        <text class="t" x="644" y="324">Cohere (optional)</text><text class="s" x="644" y="339">cross-encoder rerank</text>
+
+        <path class="ln" d="M240 74 L318 74"/>
+        <path class="ln2" d="M240 137 C280 137, 280 137, 318 137"/>
+        <path class="ln" d="M550 74 L628 74"/>
+        <path class="ln" d="M550 137 L628 147"/>
+        <path class="ln" d="M550 197 L628 197"/>
+        <path class="ln" d="M550 257 L628 267"/>
+        <text class="lbl" x="252" y="66">REST</text>
+        <text class="lbl" x="248" y="131">WS</text>
+      </svg>
+    </div>
+  </figure>
+
+  <div class="measure">
+    <h3>3.1 Technology decisions and their reasons</h3>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Layer</th><th>Choice</th><th>Why this rather than the obvious alternative</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Orchestration</strong></td><td>LangGraph</td><td>The pipeline needs to loop back when evidence is thin. A chain cannot; a graph with conditional edges can.</td></tr>
+        <tr><td><strong>Vector store</strong></td><td>pgvector</td><td>Keeping vectors in the same database as tenant data means one row-level security policy protects both. A separate vector database would need its own tenancy model.</td></tr>
+        <tr><td><strong>Embeddings</strong></td><td>Local fastembed</td><td>Runs on the server with no API cost or rate limit, which is what makes retrieval evaluation over hundreds of questions free.</td></tr>
+        <tr><td><strong>Keyword search</strong></td><td>Postgres FTS</td><td>Already present; no second system to operate for the keyword half of hybrid retrieval.</td></tr>
+        <tr><td><strong>Inference</strong></td><td>Groq</td><td>Fast and free at this scale. Two model sizes let structural JSON tasks avoid competing with synthesis for a scarce token budget.</td></tr>
+        <tr><td><strong>Identity</strong></td><td>Supabase</td><td>JWTs verified against a public JWKS endpoint, so the backend holds no auth secret.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ CH 4 ============================ -->
+<section class="chapter" id="ch4">
+  <div class="chapter__num">Chapter Four</div>
+  <h2>The Agent Pipeline</h2>
+
+  <p class="lede measure">
+    Nine nodes in a directed graph. The important structural feature is not their number
+    but the edge that goes backwards: gap analysis can return the run to search when the
+    evidence gathered so far does not support a confident answer.
+  </p>
+
+  <figure>
+    <figcaption>Figure 4.1 — Research pipeline with reflective loop
+      <span class="cap">Triage routes non-research messages straight to the end. The corpus node folds the user's own documents into the same evidence set as the web. Gap analysis returns to search when confidence is low and iterations remain.</span>
+    </figcaption>
+    <div class="frame">
+      <svg viewBox="0 0 860 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nine-node research pipeline diagram">
+        <style>
+          .n{fill:#fff;stroke:#a06b21;stroke-width:1.6}
+          .nl{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;fill:#16150f;font-weight:600;text-anchor:middle}
+          .e{stroke:#7c7566;stroke-width:1.4;fill:none;marker-end:url(#ar2)}
+          .loop{stroke:#1d5f63;stroke-width:1.6;fill:none;stroke-dasharray:5 4;marker-end:url(#ar3)}
+          .lt{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#1d5f63;letter-spacing:.06em;text-anchor:middle}
+        </style>
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+        </defs>
+
+        <path class="loop" d="M700 108 C640 46, 260 46, 200 108"/>
+        <text class="lt" x="450" y="40">loops back when evidence is insufficient</text>
+
+        <path class="e" d="M74 130 L128 130"/><path class="e" d="M174 130 L228 130"/>
+        <path class="e" d="M274 130 L328 130"/><path class="e" d="M374 130 L428 130"/>
+        <path class="e" d="M474 130 L528 130"/><path class="e" d="M574 130 L628 130"/>
+        <path class="e" d="M674 130 L728 130"/><path class="e" d="M774 130 L820 130"/>
+        <path class="e" d="M350 156 L350 176"/><path class="e" d="M374 190 L450 156"/>
+
+        <circle class="n" cx="50" cy="130" r="24"/><text class="nl" x="50" y="134">Triage</text>
+        <circle class="n" cx="150" cy="130" r="24"/><text class="nl" x="150" y="134">Plan</text>
+        <circle class="n" cx="250" cy="130" r="24"/><text class="nl" x="250" y="134">Search</text>
+        <circle class="n" cx="350" cy="130" r="24"/><text class="nl" x="350" y="134">Read</text>
+        <circle class="n" cx="350" cy="196" r="22" style="stroke:#1d5f63"/><text class="nl" x="350" y="200">Files</text>
+        <circle class="n" cx="450" cy="130" r="24"/><text class="nl" x="450" y="134">Analyse</text>
+        <circle class="n" cx="550" cy="130" r="24"/><text class="nl" x="550" y="134">Verify</text>
+        <circle class="n" cx="650" cy="130" r="24"/><text class="nl" x="650" y="134">Gaps</text>
+        <circle class="n" cx="750" cy="130" r="24"/><text class="nl" x="750" y="134">Report</text>
+        <text class="nl" x="833" y="134" style="fill:#7c7566">END</text>
+      </svg>
+    </div>
+  </figure>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Node</th><th>Responsibility</th><th>Model</th><th>Design note</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Triage</strong></td><td>Classify effort: chat, simple, or deep</td><td>20B</td><td>Without it every question paid the cost of the hardest one. Fails open to "deep" — over-researching costs time, under-researching costs correctness.</td></tr>
+        <tr><td><strong>Planner</strong></td><td>Decompose into 3–5 sub-queries</td><td>20B</td><td>Structured output with a JSON fallback, because the provider's tool-call wrapper intermittently rejects its own valid generation.</td></tr>
+        <tr><td><strong>Search</strong></td><td>Execute sub-queries, deduplicate by normalised URL</td><td>—</td><td>Breadth scales with triage: 3 results per query for simple, 5 for deep.</td></tr>
+        <tr><td><strong>Reader</strong></td><td>Fetch and extract HTML and PDF, concurrently</td><td>—</td><td>Records when extraction failed and a search snippet was substituted, so the report can disclose it.</td></tr>
+        <tr><td><strong>Corpus</strong></td><td>Retrieve from the user's own documents</td><td>—</td><td>Runs even when web search returned nothing — the answer may be in the user's files.</td></tr>
+        <tr><td><strong>Analyst</strong></td><td>Synthesise a draft across all evidence</td><td>120B</td><td>Chunks are ranked by relevance; corpus chunks hold reserved slots so deliberately uploaded documents cannot be crowded out.</td></tr>
+        <tr><td><strong>Fact-checker</strong></td><td>Extract claims, verify, corroborate independently</td><td>120B</td><td>All claims in one call with per-claim evidence — verifying individually previously consumed 257 s of a 361 s run.</td></tr>
+        <tr><td><strong>Gap analysis</strong></td><td>Decide whether to loop or report</td><td>20B</td><td>Hard iteration ceiling prevents unbounded loops; generates targeted follow-up queries.</td></tr>
+        <tr><td><strong>Report</strong></td><td>Compose the final document</td><td>120B</td><td>Sources and the confidence block are assembled in code, not generated — removing a place a reference could be invented.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ CH 5 ============================ -->
+<section class="chapter" id="ch5">
+  <div class="chapter__num">Chapter Five</div>
+  <h2>Retrieval-Augmented Generation Subsystem</h2>
+
+  <div class="measure">
+    <p class="lede">
+      Retrieval runs two searches and fuses their rankings. Neither is reliable alone:
+      embeddings place <code>Sev-1</code> and <code>Sev-2</code> almost on top of each
+      other, which is exactly wrong when the user asked about one of them; keyword search
+      has no notion of synonym or paraphrase.
+    </p>
+
+    <h3>5.1 Ingestion</h3>
+    <p>
+      A file is validated by magic bytes rather than extension, extracted according to
+      type, sanitised, split into 1,000-character chunks with 150-character overlap, and
+      embedded locally. The HTTP request returns as soon as the record exists; extraction
+      and embedding happen afterwards, so a 200-page PDF cannot exceed a proxy timeout.
+      Documents left mid-ingest by a restart are failed after fifteen minutes with a
+      message telling the user to upload again.
+    </p>
+
+    <h3>5.2 Hybrid retrieval</h3>
+    <p>
+      Both retrievers return twenty candidates. Their rankings are combined by Reciprocal
+      Rank Fusion, which fuses by <em>rank</em> rather than score — cosine similarity and
+      <code>ts_rank</code> are different scales with no meaningful conversion, and
+      normalising one onto the other would invent a relationship that does not exist.
+    </p>
+  </div>
+
+  <figure>
+    <figcaption>Figure 5.1 — Hybrid retrieval, measured
+      <span class="cap">Rank of the chunk containing the answer, by retriever, on a field-service document of error codes and part numbers. Lower is better; rank 1 is ideal.</span>
+    </figcaption>
+    <div class="frame">
+      <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart comparing vector and keyword retrieval ranks">
+        <style>
+          .ax{stroke:#ddd6c8;stroke-width:1}
+          .bv{fill:#a06b21}.bk{fill:#1d5f63}
+          .q{font-family:'JetBrains Mono',monospace;font-size:10px;fill:#474338}
+          .v{font-family:'JetBrains Mono',monospace;font-size:10px;fill:#16150f;font-weight:500}
+          .lg{font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;fill:#474338}
+        </style>
+        <rect class="bv" x="500" y="16" width="10" height="10" rx="2"/><text class="lg" x="516" y="25">vector rank</text>
+        <rect class="bk" x="596" y="16" width="10" height="10" rx="2"/><text class="lg" x="612" y="25">keyword rank</text>
+
+        <text class="q" x="14" y="66">PN-88213-B</text>
+        <rect class="bv" x="150" y="54" width="22" height="14" rx="2"/><text class="v" x="178" y="66">1</text>
+        <rect class="bk" x="150" y="72" width="22" height="14" rx="2"/><text class="v" x="178" y="84">1</text>
+
+        <text class="q" x="14" y="126">E-4490</text>
+        <rect class="bv" x="150" y="114" width="22" height="14" rx="2"/><text class="v" x="178" y="126">1</text>
+        <rect class="bk" x="150" y="132" width="22" height="14" rx="2"/><text class="v" x="178" y="144">1</text>
+
+        <text class="q" x="14" y="186">build 7.2.14-rc3</text>
+        <rect class="bv" x="150" y="174" width="286" height="14" rx="2"/><text class="v" x="442" y="186">13 — buried</text>
+        <rect class="bk" x="150" y="192" width="22" height="14" rx="2"/><text class="v" x="178" y="204">1 — found</text>
+
+        <line class="ax" x1="148" y1="44" x2="148" y2="210"/>
+      </svg>
+    </div>
+  </figure>
+
+  <div class="note measure">
+    <b>Reading this honestly.</b> Two of the three queries were already handled by vector
+    search alone. The third is the case hybrid retrieval exists for — and the class of
+    query (version strings, part numbers, error codes) is precisely the one where users
+    are most certain they typed it correctly, so a miss reads as the product being broken.
+  </div>
+
+  <div class="measure">
+    <h3>5.3 The agentic loop</h3>
+    <p>
+      Retrieval is not a single shot. The system grades whether retrieved excerpts
+      actually answer the question; if not, it rewrites the query with different wording
+      and retries once. Only after that does it decline. This is what produces correct
+      refusals rather than confident guesses.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ CH 6 ============================ -->
+<section class="chapter" id="ch6">
+  <div class="chapter__num">Chapter Six</div>
+  <h2>Data Layer and Security</h2>
+
+  <div class="measure">
+    <h3>6.1 Tenant isolation</h3>
+    <p>
+      Application code filters every query by user. That is necessary and insufficient:
+      it is one forgotten <code>WHERE</code> clause away from a cross-tenant leak. Postgres
+      row-level security provides the second line. Policies are keyed on a session
+      variable set when a connection is checked out of the pool, and
+      <code>current_setting(..., true)</code> returns NULL when unset — so an unscoped
+      session matches nothing and fails closed.
+    </p>
+    <p>
+      Two roles make this work. The owner role runs migrations and the payment webhook
+      path, which has no user context and must read across tenants. The runtime role owns
+      nothing and has no <code>BYPASSRLS</code>, so policies bind to it. If both connection
+      strings name the same role, every policy is inert — and startup says so loudly
+      rather than logging a reassuring line that means nothing.
+    </p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Check</th><th>Expected</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Owner reads their own rows</td><td>Visible</td><td><span class="pill pill--good">Pass</span></td></tr>
+        <tr><td>Unfiltered <code>SELECT</code> by another tenant</td><td>Zero rows</td><td><span class="pill pill--good">Pass</span></td></tr>
+        <tr><td>Session with no tenant set</td><td>Zero rows (fail closed)</td><td><span class="pill pill--good">Pass</span></td></tr>
+        <tr><td>Insert a row under another tenant's id</td><td>Refused by <code>WITH CHECK</code></td><td><span class="pill pill--good">Pass</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <h4>Verified live · all six tables</h4>
+    <p>
+      <code>research_sessions</code>, <code>rag_documents</code>, <code>rag_conversations</code>,
+      <code>rag_chunks</code>, <code>rag_messages</code> and <code>user_subscriptions</code>
+      all report <code>relrowsecurity = true</code>. These four checks run as a build gate;
+      a regression fails CI rather than reaching production.
+    </p>
+
+    <h3>6.2 Untrusted document content</h3>
+    <p>
+      An uploaded file is the easiest path into a model's context for anyone who wants to
+      steer it. Defence is structural: retrieved excerpts are wrapped in
+      <code>&lt;document&gt;</code> tags and the system prompt states that anything inside
+      them is data, never a command. A closing tag inside an excerpt is neutralised, or it
+      would end the block early and hand back exactly the control the delimiter withholds.
+    </p>
+  </div>
+
+  <div class="note caveat measure">
+    <b>Tested, with an instructive result.</b> A document was uploaded containing an
+    instruction to ignore all directives and reply with a single fixed word. The regex
+    sanitiser <em>missed it entirely</em> — its patterns expected different phrasing. The
+    delimiting held: the system answered both questions correctly from the document and
+    added that the document "contains a line that appears to be an injected instruction…
+    treated as part of the document content and is not followed." The patterns were
+    subsequently widened, but the lesson stands — the structural separation is the
+    defence, and the regex is a speed bump.
+  </div>
+
+  <div class="measure">
+    <h3>6.3 Schema management</h3>
+    <p>
+      Four Alembic revisions replace the earlier pattern of <code>create_all()</code> plus
+      hand-written <code>ADD COLUMN IF NOT EXISTS</code> statements, which could add a
+      column but never alter or remove one and recorded nothing about what had been
+      applied. A database predating Alembic is stamped at the baseline rather than
+      re-running it, so existing data is preserved.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ CH 7 ============================ -->
+<section class="chapter" id="ch7">
+  <div class="chapter__num">Chapter Seven</div>
+  <h2>Verification and Confidence Scoring</h2>
+
+  <p class="lede measure">
+    This chapter describes the part of the system that most distinguishes it, and the
+    part where a plausible-looking implementation is most likely to be measuring
+    something other than what it claims.
+  </p>
+
+  <div class="measure">
+    <h3>7.1 Why naïve verification fails</h3>
+    <p>
+      The obvious implementation extracts claims from the draft and checks them against
+      the source documents. It is circular. A claim faithfully summarised from a source
+      always agrees with that source, <em>including when the source is wrong</em>. Such a
+      system measures summarisation fidelity while its interface calls the result
+      grounding.
+    </p>
+
+    <h3>7.2 Independent corroboration</h3>
+    <p>
+      Each claim is searched for separately, concurrently, and the results are labelled
+      distinctly from the documents the draft was written from. A claim confirmed by a
+      source the analyst never saw is marked <code>independently_corroborated</code>. The
+      verifier is instructed to cap confidence at 0.7 when only prior evidence supports a
+      claim — agreement with one's own summary is weak evidence.
+    </p>
+
+    <h3>7.3 Evidence selection</h3>
+    <p>
+      Evidence was previously assembled by position: the first 1,000 characters of each
+      document, truncated to 6,000 overall. On a forty-source run that is roughly the top
+      of the first six, so a claim drawn from anywhere else was unverifiable in principle
+      and returned "unverified" for reasons unrelated to its truth. Passages are now
+      selected by relevance to the specific claim across every source, scored locally with
+      IDF-weighted term overlap.
+    </p>
+
+    <h3>7.4 Scoring the run</h3>
+    <p>
+      The run's confidence is not the mean of its claim scores. A mean hides its worst
+      member: four solid claims and one fabrication scored identically to five mediocre
+      ones. Instead, unsupported claims are weighted more heavily, and the result is
+      <em>capped</em> by the quality of the evidence beneath it — because thin evidence does
+      not make an answer wrong, it makes a high score unjustifiable.
+    </p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Condition</th><th>Effect</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>Unsupported claim present</td><td>Weighted 1.5×</td><td>Cannot be averaged away by its neighbours.</td></tr>
+        <tr><td>Fewer than 3 distinct sources</td><td>Cap 60%</td><td>Perfect claims over two documents is not a confident answer.</td></tr>
+        <tr><td>Fewer than 5 distinct sources</td><td>Cap 80%</td><td>Insufficient breadth for a high score.</td></tr>
+        <tr><td>Majority of sources snippet-only</td><td>Cap 70%</td><td>A search snippet is not the paper it stands for.</td></tr>
+        <tr><td>Independent corroboration</td><td>Up to +10%</td><td>Scaled by the proportion of claims confirmed externally.</td></tr>
+        <tr><td>No claims extracted</td><td>Score 0.0</td><td>An invented middling number reads as a measurement when nothing was measured.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <p>
+      Every adjustment is reported alongside the number, and the report carries a
+      <em>"What limits this score"</em> section naming what would raise it. A score a
+      reader cannot interrogate is decoration.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ CH 8 ============================ -->
+<section class="chapter" id="ch8">
+  <div class="chapter__num">Chapter Eight</div>
+  <h2>Testing and Continuous Integration</h2>
+
+  <div class="stats">
+    <div class="stat"><div class="stat__k">Backend tests</div><div class="stat__v">165</div><div class="stat__n">unit and integration, 5 s</div></div>
+    <div class="stat"><div class="stat__k">Frontend tests</div><div class="stat__v">31</div><div class="stat__n">hooks and components</div></div>
+    <div class="stat"><div class="stat__k">Build gates</div><div class="stat__v">4</div><div class="stat__n">tests · RLS · evals · frontend</div></div>
+    <div class="stat"><div class="stat__k">Migrations</div><div class="stat__v">4</div><div class="stat__n">versioned, reversible</div></div>
+  </div>
+
+  <div class="measure">
+    <h3>8.1 What CI verifies</h3>
+    <p>
+      The pipeline runs against <code>pgvector/pgvector:pg16</code> with a genuine
+      low-privilege role — not SQLite. This matters: the application refuses to start on
+      SQLite, so a suite running against it would cover none of the pgvector queries, the
+      tenant scoping, or the migrations that actually execute in production.
+    </p>
+    <p>
+      Beyond the unit suites, two gates assert behaviour rather than code. The first
+      confirms Postgres genuinely refuses cross-tenant reads — the policies existing is
+      not the same as the policies working. The second runs the golden evaluation set, so
+      a retrieval regression fails the build.
+    </p>
+
+    <h3>8.2 Tests that encode defects</h3>
+    <p>
+      Several tests assert the specific failure rather than the happy path, so a
+      regression reads as the thing that went wrong:
+    </p>
+    <ul>
+      <li>an unsupported claim cannot be averaged away by four good ones;</li>
+      <li>perfect claims over two sources are still capped;</li>
+      <li>a corroborating hit on a page the draft already used is not independent;</li>
+      <li>a run with no claims scores 0.0, not an invented 0.5;</li>
+      <li>a tracking parameter on a URL does not make a real citation look fabricated;</li>
+      <li>a closing tag inside an excerpt cannot end the delimiter block early.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============================ CH 9 ============================ -->
+<section class="chapter" id="ch9">
+  <div class="chapter__num">Chapter Nine</div>
+  <h2>Results and Measurements</h2>
+
+  <p class="lede measure">
+    Every figure in this chapter was produced by running the system. Nothing here is an
+    estimate, and where a measurement is weaker than it appears, this chapter says so.
+  </p>
+
+  <div class="measure">
+    <h3>9.1 Public benchmark — SQuAD 2.0</h3>
+    <p>
+      The project's own golden set is fourteen questions over three documents written by
+      the author. It is a useful regression check and poor evidence: a perfect score on
+      one's own questions demonstrates that the system does what was expected, not that it
+      works. SQuAD 2.0 is a public benchmark of human-written questions over Wikipedia
+      paragraphs, including questions deliberately unanswerable from their source.
+    </p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat__k">Recall @ 4</div><div class="stat__v">1.000</div><div class="stat__n">25/25 questions reached their source paragraph</div></div>
+    <div class="stat"><div class="stat__k">Mean reciprocal rank</div><div class="stat__v">1.000</div><div class="stat__n">correct paragraph always ranked first</div></div>
+    <div class="stat"><div class="stat__k">Answer accuracy</div><div class="stat__v">0.88</div><div class="stat__n">22/25 exact substring match</div></div>
+    <div class="stat"><div class="stat__k">Judge verdicts</div><div class="stat__v">25/25</div><div class="stat__n">PASS on faithfulness and relevance</div></div>
+  </div>
+
+  <div class="note caveat measure">
+    <b>Three qualifications, stated plainly.</b>
+    <br>1. The corpus was 31 paragraphs. A perfect recall score over a small haystack is
+    easier than over a realistic one, and this number should be expected to fall as the
+    corpus grows.
+    <br>2. Answer accuracy is understated. Manual review of the three "failures" found two
+    were correct answers phrased differently — "very little work is needed to drive the
+    pump" scored zero against "relatively little work is required to drive the pump". Token
+    F1 was added afterwards for this reason.
+    <br>3. <b>The refusal rate is not yet reliably measured.</b> The first run reported
+    0.167, which manual inspection showed was a grader defect, not a system defect: the
+    detector looked for three literal phrases and missed "do not contain", "does not state"
+    and "do not specify". The true figure is approximately 0.667. A corrected re-run was
+    prevented by the provider's daily token cap.
+  </div>
+
+  <div class="measure">
+    <h3>9.2 Internal golden set</h3>
+    <p>
+      Run as a build gate on every push. Scores of 1.000 here mean "no regression since
+      the last commit", and should not be read as evidence of accuracy.
+    </p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Metric</th><th>Score</th><th>Baseline</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Retrieval recall</td><td class="num">1.000</td><td class="num">1.000</td><td><span class="pill pill--good">OK</span></td></tr>
+        <tr><td>Answer accuracy</td><td class="num">1.000</td><td class="num">1.000</td><td><span class="pill pill--good">OK</span></td></tr>
+        <tr><td>Refusal rate</td><td class="num">1.000</td><td class="num">1.000</td><td><span class="pill pill--good">OK</span></td></tr>
+        <tr><td>Unanswerable retrieved something</td><td class="num">0.750</td><td class="num">1.000</td><td><span class="pill pill--good">OK</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <h3>9.3 Confidence distribution across real runs</h3>
+    <p>
+      Five genuine research runs against live web sources. The spread is the point: a
+      system that returns a high score for every question is not measuring anything.
+    </p>
+  </div>
+
+  <figure>
+    <figcaption>Figure 9.1 — Confidence by run, with token cost
+      <span class="cap">Confidence is not correlated with effort. The 18% run consumed more tokens than the 65% run — it searched hard and still found little support, which is the honest outcome for a contested question.</span>
+    </figcaption>
+    <div class="frame">
+      <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart of confidence scores across five research runs">
+        <style>
+          .qq{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;fill:#474338}
+          .vv{font-family:'JetBrains Mono',monospace;font-size:10.5px;fill:#16150f;font-weight:500}
+          .tk{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#7c7566}
+          .grid{stroke:#eae4d8;stroke-width:1}
+          .gl{font-family:'JetBrains Mono',monospace;font-size:8.5px;fill:#a89f8c}
+        </style>
+        <line class="grid" x1="300" y1="14" x2="300" y2="236"/><text class="gl" x="292" y="250">0%</text>
+        <line class="grid" x1="400" y1="14" x2="400" y2="236"/><text class="gl" x="388" y="250">25%</text>
+        <line class="grid" x1="500" y1="14" x2="500" y2="236"/><text class="gl" x="488" y="250">50%</text>
+        <line class="grid" x1="600" y1="14" x2="600" y2="236"/><text class="gl" x="588" y="250">75%</text>
+        <line class="grid" x1="690" y1="14" x2="690" y2="236"/><text class="gl" x="676" y="250">100%</text>
+
+        <text class="qq" x="10" y="38">Solar cheapest electricity?</text>
+        <rect x="300" y="26" width="328" height="16" rx="2" fill="#1f6b4a"/><text class="vv" x="636" y="39">82%</text>
+        <text class="tk" x="10" y="52">23,779 tokens · $0.0076</text>
+
+        <text class="qq" x="10" y="90">LCOE: solar, wind, gas, nuclear</text>
+        <rect x="300" y="78" width="308" height="16" rx="2" fill="#1f6b4a"/><text class="vv" x="616" y="91">77%</text>
+        <text class="tk" x="10" y="104">15,711 tokens · $0.0052</text>
+
+        <text class="qq" x="10" y="142">Solar panel types &amp; efficiency</text>
+        <rect x="300" y="130" width="260" height="16" rx="2" fill="#a06b21"/><text class="vv" x="568" y="143">65%</text>
+        <text class="tk" x="10" y="156">10,365 tokens · $0.0043</text>
+
+        <text class="qq" x="10" y="194">DINOv2 algorithms</text>
+        <rect x="300" y="182" width="208" height="16" rx="2" fill="#a06b21"/><text class="vv" x="516" y="195">52%</text>
+        <text class="tk" x="10" y="208">12,150 tokens · $0.0039</text>
+
+        <text class="qq" x="10" y="232">Data-centre electricity use</text>
+        <rect x="300" y="220" width="72" height="16" rx="2" fill="#9c2f26"/><text class="vv" x="380" y="233">18%</text>
+        <text class="tk" x="10" y="246">14,847 tokens · $0.0061</text>
+      </svg>
+    </div>
+  </figure>
+
+  <div class="note measure">
+    <b>The 18% run is the most informative result in this report.</b> Asked how much
+    electricity data centres use worldwide, the system gathered 24 sources, supported one
+    claim of five, corroborated none independently, and reported: <em>"4 claims had no
+    supporting evidence in the sources found"</em> and <em>"agreement with the documents the
+    answer was written from is weaker evidence."</em> Data-centre energy figures are widely
+    cited second-hand and poorly sourced. A system that returned 85% here would be worse,
+    not better.
+  </div>
+
+  <div class="measure">
+    <h3>9.4 Cost and latency</h3>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat__k">Mean tokens / run</div><div class="stat__v">15,370</div><div class="stat__n">across five live runs</div></div>
+    <div class="stat"><div class="stat__k">Mean cost / run</div><div class="stat__v">$0.0054</div><div class="stat__n">at published provider rates</div></div>
+    <div class="stat"><div class="stat__k">RAG answer latency</div><div class="stat__v">2.0 s</div><div class="stat__n">retrieval, generation and judge</div></div>
+    <div class="stat"><div class="stat__k">Retrieval only</div><div class="stat__v">0.3 s</div><div class="stat__n">25 questions, no API calls</div></div>
+  </div>
+
+  <div class="measure">
+    <p>
+      Embeddings run on the server, so retrieval costs nothing and evaluation over
+      hundreds of questions is free. This is what makes continuous measurement practical
+      at zero budget — the constraint on evaluation is the answer pass, not retrieval.
+    </p>
+
+    <h3>9.5 Interface quality</h3>
+    <p>
+      Measured in the browser against the running application, before and after the
+      remediation work described in Chapter 10.
+    </p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Measure</th><th>Before</th><th>After</th><th>Standard</th></tr></thead>
+      <tbody>
+        <tr><td>Horizontal overflow at 375 px</td><td class="num">265 px</td><td class="num"><strong>0 px</strong></td><td>No sideways scroll</td></tr>
+        <tr><td>Controls below 44 px touch target</td><td class="num">15 of 29</td><td class="num"><strong>0 of 29</strong></td><td>Apple HIG</td></tr>
+        <tr><td>Visible keyboard focus</td><td>None</td><td><strong>All controls</strong></td><td>WCAG 2.4.7</td></tr>
+        <tr><td>Light-theme muted text contrast</td><td class="num">3.79 : 1</td><td class="num"><strong>4.72 : 1</strong></td><td>WCAG AA (4.5)</td></tr>
+        <tr><td>Light-theme link contrast</td><td class="num">3.72 : 1</td><td class="num"><strong>4.84 : 1</strong></td><td>WCAG AA (4.5)</td></tr>
+        <tr><td>Dark-theme colour pairs passing AA</td><td class="num">14 of 14</td><td class="num">14 of 14</td><td>WCAG AA</td></tr>
+        <tr><td>Frontend automated tests</td><td class="num">0</td><td class="num"><strong>31</strong></td><td>—</td></tr>
+        <tr><td>Page height, signed-in home</td><td class="num">8,272 px</td><td class="num"><strong>2,740 px</strong></td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================ CH 10 ============================ -->
+<section class="chapter" id="ch10">
+  <div class="chapter__num">Chapter Ten</div>
+  <h2>Evaluation, Limitations and Future Work</h2>
+
+  <div class="measure">
+    <h3>10.1 Defects found and corrected</h3>
+    <p>
+      A structured review of the codebase found a consistent pattern: several controls
+      were <em>documented</em> in comments and marketing copy but did not exist in the
+      running system. These are recorded because the pattern is more instructive than any
+      individual bug.
+    </p>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Defect</th><th>Why it mattered</th><th>Resolution</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Row-level security absent</strong></td><td>Extensively documented as "real defense-in-depth"; zero policies existed and both connection strings named the same role.</td><td>Policies written, second role created, four checks gated in CI.</td></tr>
+        <tr><td><strong>Circular verification</strong></td><td>Claims checked against the text they were summarised from; the score measured fidelity, not support.</td><td>Independent per-claim search and corroboration flag.</td></tr>
+        <tr><td><strong>Evidence truncation</strong></td><td>Verification saw roughly six of forty sources, making most claims unverifiable in principle.</td><td>Relevance-based selection across all sources.</td></tr>
+        <tr><td><strong>CI ran on SQLite</strong></td><td>The application refuses to start on SQLite; the green check covered none of the production data paths.</td><td>Postgres + pgvector service container.</td></tr>
+        <tr><td><strong>CI had never executed</strong></td><td>The workflow file sat one directory below the repository root, where GitHub Actions does not look.</td><td>Relocated; first successful run followed.</td></tr>
+        <tr><td><strong>Tables unrendered</strong></td><td>Every Markdown table arrived as a wall of pipes — <code>react-markdown</code> has no table support without a plugin.</td><td><code>remark-gfm</code> added; charts and diagrams followed.</td></tr>
+        <tr><td><strong>Uploads unsanitised</strong></td><td>Scraped pages were filtered; uploaded documents — far easier for an attacker to control — were not.</td><td>Sanitised at ingest; context delimited structurally.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <h3>10.2 Current limitations</h3>
+    <ul>
+      <li><b>The confidence score is unvalidated against human judgement.</b> A harness exists to measure whether "verified" correlates with "true", but it requires human labels that have not yet been collected. This is the single largest gap in the project's evidence.</li>
+      <li><b>The benchmark corpus is small.</b> Thirty-one paragraphs; recall should be expected to fall on a realistic corpus.</li>
+      <li><b>Refusal rate is not reliably measured</b> pending a corrected re-run.</li>
+      <li><b>Ingestion runs in the web process.</b> A restart mid-upload strands a record, mitigated by a reaper rather than solved by a durable queue.</li>
+      <li><b>Ranking quality is unmeasured</b> beyond MRR; NDCG is not computed.</li>
+      <li><b>RAG citations are not validated</b> the way research-path citations are.</li>
+    </ul>
+
+    <h3>10.3 Future work, in priority order</h3>
+    <ol class="body">
+      <li><b>Collect human labels</b> for 100+ verified claims and report precision, recall and calibration. Nothing else changes the project's credibility as much.</li>
+      <li><b>Expand the benchmark</b> to 200+ questions over a larger corpus, and track scores across runs so regressions are visible.</li>
+      <li><b>Validate RAG citations</b> against retrieved chunks, as the research path already does.</li>
+      <li><b>Durable job queue</b> for ingestion.</li>
+      <li><b>Cross-encoder reranking</b> on the fused candidate set.</li>
+    </ol>
+
+    <h3>10.4 Assessment</h3>
+    <p>
+      The system does what it claims within the limits of what has been measured. Its
+      retrieval is strong on a public benchmark; its refusal behaviour is correct on the
+      cases examined; its confidence scoring is conservative by construction and reports
+      its own reasoning. Its security controls are enforced by the database and verified
+      by the build.
+    </p>
+    <p>
+      What remains unproven is whether the confidence number corresponds to truth. Every
+      metric in Chapter 9 measures internal consistency or retrieval accuracy. None
+      measures whether a claim marked verified is actually correct — and until human
+      labels exist, that question is open. This report states that plainly rather than
+      letting a column of 1.000 scores imply otherwise.
+    </p>
+  </div>
+</section>
+
+<!-- ============================ APPENDIX ============================ -->
+<section class="chapter" id="appendix">
+  <div class="chapter__num">Appendix</div>
+  <h2>Environment and Reproduction</h2>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Component</th><th>Version / detail</th></tr></thead>
+      <tbody>
+        <tr><td>Backend</td><td>Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0</td></tr>
+        <tr><td>Frontend</td><td>React 19, Vite 8, TypeScript, Vitest</td></tr>
+        <tr><td>Database</td><td>PostgreSQL 16, pgvector 0.4.1, HNSW + GIN indexes</td></tr>
+        <tr><td>Embeddings</td><td>BAAI/bge-small-en-v1.5, 384 dimensions, local</td></tr>
+        <tr><td>Inference</td><td>openai/gpt-oss-120b (synthesis), openai/gpt-oss-20b (structural, judge)</td></tr>
+        <tr><td>Codebase</td><td>8,807 lines backend · 8,516 lines frontend</td></tr>
+        <tr><td>Tests</td><td>165 backend · 31 frontend</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="measure">
+    <h4>Reproducing the measurements</h4>
+    <ul>
+      <li><code>pytest -q</code> — full backend suite</li>
+      <li><code>npm run test</code> — frontend suite</li>
+      <li><code>python scripts/verify_rls.py</code> — tenant isolation checks</li>
+      <li><code>python -m evals.run --answers</code> — internal golden set</li>
+      <li><code>python -m evals.squad --retrieval --questions 200</code> — public benchmark, no API cost</li>
+      <li><code>python -m evals.factcheck_accuracy --export claims.jsonl</code> — label claims for accuracy measurement</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
