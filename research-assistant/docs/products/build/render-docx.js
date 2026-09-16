@@ -19,21 +19,22 @@ const [PAYLOAD, FIGDIR, OUT] = process.argv.slice(2);
 const D = JSON.parse(fs.readFileSync(PAYLOAD, "utf8"));
 const META = D.meta;
 
-/* ---- palettes, matching the two HTML reports ---- */
-const PALETTES = {
-  "deep-research": {
-    paper: "F4F1EA", paper2: "FBF9F5", card: "FFFFFF", rule: "DDD6C8",
-    accent: "A06B21", accentDeep: "7D5115", accentSoft: "FAF2E6",
-    second: "1D5F63", secondSoft: "EDF3F3",
-  },
-  "chat-with-files": {
-    paper: "EDF1F0", paper2: "F7FAF9", card: "FFFFFF", rule: "CCDAD7",
-    accent: "1D5F63", accentDeep: "12464A", accentSoft: "E4EEED",
-    second: "A06B21", secondSoft: "F7F0E4",
-  },
+/* ---- Cognita's own light theme, token for token from frontend/src/index.css.
+   One palette for both reports: the components and the accent have to mean the
+   same thing in either document. ---- */
+const C = {
+  paper: "F0EEE6",        // --bg-app
+  paper2: "F5F2EA",
+  card: "FBFAF7",         // --bg-card
+  rule: "E2DDD2",         // --card-edge, flattened
+  ruleSoft: "EBE7DE",
+  accent: "A94B2F",       // --accent
+  accentDeep: "8F3D25",   // --accent-hover
+  accentSoft: "F7EDE9",
+  second: "1D5F63",
+  secondSoft: "EAF1F1",
 };
-const C = PALETTES[META.key];
-const INK = "16150F", INK2 = "474338", INK3 = "7C7566", BAD = "9C2F26";
+const INK = "141413", INK2 = "4D4C48", INK3 = "6B6965", BAD = "B3402F";
 const PAGE_W = convertInchesToTwip(8.5) - convertInchesToTwip(1.25) * 2;
 
 const WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight",
@@ -116,8 +117,9 @@ const CODE = (text) => new Table({
 });
 
 const NOTE = (label, text, tone) => {
-  const accent = tone === "bad" ? BAD : tone === "bronze" || tone === "teal"
-    ? (tone === "bronze" ? "A06B21" : "1D5F63") : C.second;
+  const accent = tone === "bad" ? BAD
+    : tone === "bronze" ? C.accent
+    : C.second;
   const fill = tone === "bad" ? "FBF0EF" : C.secondSoft;
   return new Table({
     width: { size: PAGE_W, type: WidthType.DXA }, columnWidths: [PAGE_W],

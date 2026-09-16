@@ -9,7 +9,7 @@ each, so a reader interested in only one never has to read around the other.
 | Report | `Cognita-Deep-Research-Report.{html,docx}` | `Cognita-Chat-with-Files-Report.{html,docx}` |
 | Content | `build/content_research.py` | `build/content_files.py` |
 | Diagrams | `build/figures_research.py` (R.1–R.9) | `build/figures_files.py` (F.1–F.9) |
-| Palette | warm, bronze-led (`#f4f1ea` / `#a06b21`) | cool, teal-led (`#edf1f0` / `#1d5f63`) |
+| Palette | Cognita's own light theme — shared | Cognita's own light theme — shared |
 
 ## Rebuild both
 
@@ -20,6 +20,23 @@ docs/products/build/build.sh
 That runs `render_html.py` (which writes both HTML files *and* a JSON payload
 per product) and then `render-docx.js` twice against those payloads, and
 renumbers bookmarks. Nothing else needs running.
+
+## One theme, from the application's own tokens
+
+`draw.py` and the stylesheet in `render_html.py` both take their palette from
+`frontend/src/index.css` rather than inventing one: ground `#f0eee6`, card
+`#fbfaf7`, accent `#a94b2f`, the card shadow, the radius scale, and the three
+faces. A figure in the report and a card in the running product are the same
+object.
+
+Both reports share it. An earlier pass gave each document its own accent; that
+was wrong — the legend says "process", "data store", "external", and those
+meanings must not change colour depending on which document you opened. The two
+are told apart by their titles and by the "one of two" / "two of two" eyebrow,
+not by their palette.
+
+`figures_research.py` and `figures_files.py` still import `BRONZE`; it is an
+alias for the accent, kept rather than renamed through eighteen figures.
 
 ## Deliberate duplication
 
@@ -48,6 +65,10 @@ figures on one page otherwise fight over `.t`, `.s`, `.ln`, `.band` and
 restyling every earlier figure. `namespace_svg()` rewrites each figure into its
 own prefix at render time. Pass it **only** an `<svg>` element: given
 surrounding HTML it will happily rewrite `class="frame"` too and break the page.
+
+**Re-rasterise after any change to `draw.py`.** The `.docx` figures are PNGs
+baked from the SVGs; changing a primitive updates the HTML immediately and
+leaves Word showing the old drawing until the PNGs are regenerated.
 
 **Keep the explicit `width`/`height` on every SVG.** Without an intrinsic size a
 browser rasterising the SVG to a canvas falls back to its own default and

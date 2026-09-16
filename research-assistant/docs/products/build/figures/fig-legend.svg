@@ -1,21 +1,27 @@
-<svg viewBox="0 0 860 92" width="860" height="92" xmlns="http://www.w3.org/2000/svg" role="img">
-<rect width="860" height="92" fill="#ffffff"/>
+<svg viewBox="0 0 880 166" width="880" height="166" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="166" fill="#fbfaf7"/><defs><marker id="ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
+</defs>
 <style>
- .lk{{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;fill:#16150f;font-weight:600}}
- .ld{{font-family:'JetBrains Mono',monospace;font-size:8.5px;fill:#7c7566}}
-</style>
-<rect x="24" y="22" width="96" height="30" rx="8" fill="#fff" stroke="#a06b21" stroke-width="1.6"/>
-<text class="lk" x="42" y="41">Process</text><text class="ld" x="24" y="70">the system itself</text>
-<path d="M176,29 a48,7 0 0,1 96,0 v16 a48,7 0 0,1 -96,0 z" fill="#f7f4ed" stroke="#1d5f63" stroke-width="1.5"/>
-<path d="M176,29 a48,7 0 0,0 96,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/>
-<text class="lk" x="196" y="44">Data store</text><text class="ld" x="176" y="70">data at rest</text>
-<path d="M340,22 L424,22 L412,52 L328,52 z" fill="#faf6f8" stroke="#6b3352" stroke-width="1.5"/>
-<text class="lk" x="346" y="41">External</text><text class="ld" x="328" y="70">outside the boundary</text>
-<rect x="480" y="22" width="96" height="30" rx="8" fill="#eef5f1" stroke="#1f6b4a" stroke-width="1.6"/>
-<text class="lk" x="502" y="41">Success</text><text class="ld" x="480" y="70">terminal state</text>
-<rect x="632" y="22" width="96" height="30" rx="8" fill="#fbf0ef" stroke="#9c2f26" stroke-width="1.6"/>
-<text class="lk" x="658" y="41">Failure</text><text class="ld" x="632" y="70">terminal state</text>
-<path d="M776,30 L836,30" stroke="#7c7566" stroke-width="1.4" stroke-dasharray="4 3"/>
-<path d="M776,46 L836,46" stroke="#7c7566" stroke-width="1.4"/>
-<text class="ld" x="776" y="70">dashed = conditional</text>
-</svg>
+ .ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#ar-n) }
+ .lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#ar-a) }
+ .lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#ar-t) }
+ .lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#ar-p) }
+ .dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><rect x="30" y="28" width="122" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#card)"/><text class="ttl" x="91.0" y="49.0">Process</text><text class="sub" x="91.0" y="64.0">the system</text><g filter="url(#card)"><path d="M186,35 a61.0,7 0 0,1 122,0 v32 a61.0,7 0 0,1 -122,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M186,35 a61.0,7 0 0,0 122,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="ttl" x="247.0" y="49.0">Data store</text><text class="sub" x="247.0" y="64.0">at rest</text><path d="M354,28 L464,28 L452,74 L342,74 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#card)"/><text class="ttl" x="403.0" y="49.0">External</text><text class="sub" x="403.0" y="64.0">outside</text><rect x="498" y="28" width="122" height="46" rx="12" fill="#eef5f0" stroke="#2f7d55" stroke-width="1.5" filter="url(#card)"/><text class="ttl" x="559.0" y="49.0">Success</text><text class="sub" x="559.0" y="64.0">terminal</text><rect x="654" y="28" width="122" height="46" rx="12" fill="#fbf0ee" stroke="#b3402f" stroke-width="1.5" filter="url(#card)"/><text class="ttl" x="715.0" y="49.0">Failure</text><text class="sub" x="715.0" y="64.0">terminal</text><path class="ln" d="M30,104 L86,104"/><text class="note" x="96" y="108.0" fill="#6b6965">a step in the flow</text><path class="ln dash" d="M232,104 L288,104"/><text class="note" x="298" y="108.0" fill="#6b6965">a conditional or optional path</text><text class="note" x="30" y="138.0" fill="#6b6965">Shape carries meaning as well as colour: a rounded rectangle is a process, a cylinder is a store,</text><text class="note" x="30" y="151.5" fill="#6b6965">a slanted parallelogram is something outside the boundary, and a diamond is a decision.</text></svg>

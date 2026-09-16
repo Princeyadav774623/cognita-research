@@ -370,7 +370,7 @@ def f9():
     b += f'<circle cx="735" cy="50" r="6" fill="{INK}"/>'
 
     b += elbow([(350, 220), (300, 220), (300, 404), (344, 404)], "lnb", dash=True)
-    b += note(238, 290, ["no - and no", "retry yet"], BRONZE)
+    b += note(252, 284, ["no - and no", "retry yet"], BRONZE)
     b += box(350, 380, 190, 48, "Rewrite the question", "different wording")
     b += elbow([(445, 428), (445, 466), (150, 466), (150, 346)], "lnb", dash=True)
     b += note(300, 484, ["retry retrieval, once only"])

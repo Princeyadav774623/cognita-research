@@ -5,124 +5,147 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 :root {
-  --paper:#edf1f0; --paper-2:#f7faf9; --card:#ffffff;
-  --ink:#16150f; --ink-2:#474338; --ink-3:#7c7566;
-  --rule:#ccdad7; --rule-soft:#dde8e6;
-  --accent:#1d5f63; --accent-deep:#12464a; --accent-soft:rgba(29,95,99,.10);
-  --second:#a06b21; --second-soft:rgba(160,107,33,.10);
-  --good:#1f6b4a; --warn:#8a6314; --bad:#9c2f26;
+  --paper:#f0eee6; --paper-2:#f5f2ea; --card:#fbfaf7;
+  --ink:#141413; --ink-2:#4d4c48; --ink-3:#6b6965;
+  --rule:#e2ddd2; --rule-soft:#ebe7de;
+  --accent:#a94b2f; --accent-deep:#8f3d25; --accent-soft:rgba(169,75,47,.10);
+  --second:#1d5f63; --second-soft:rgba(29,95,99,.10);
+  --good:#2f7d55; --warn:#a8690d; --bad:#b3402f;
+  --shadow:0 1px 2px rgba(60,50,38,.04), 0 10px 26px -16px rgba(60,50,38,.22); --shadow-sm:0 1px 2px rgba(60,50,38,.05);
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --r-sm:6px; --r-md:12px; --r-lg:18px; --r-xl:26px; --r-pill:9999px;
   --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem; --s7:3rem; --s8:4rem;
 }
 * { box-sizing:border-box; }
 body { margin:0; background:var(--paper); color:var(--ink); font-family:var(--serif);
-       font-size:1rem; line-height:1.68; -webkit-font-smoothing:antialiased; }
-.page { max-width:1080px; margin:0 auto; padding:var(--s8) 40px var(--s8); }
+       font-size:1rem; line-height:1.68; -webkit-font-smoothing:antialiased;
+       /* The prose names real identifiers — test_sources_the_draft_already_used_...
+          is a single 60-character token that will otherwise push the page sideways
+          at narrow widths. Break only where a word genuinely does not fit. */
+       overflow-wrap:break-word; }
+.page { max-width:1080px; margin:0 auto; padding:var(--s8) 40px; }
 .measure { max-width:68ch; }
 
-.cover { padding-bottom:var(--s7); border-bottom:3px double var(--ink); margin-bottom:var(--s7); }
-.cover__eyebrow { font-family:var(--mono); font-size:.72rem; letter-spacing:.22em;
-                   text-transform:uppercase; color:var(--accent); margin-bottom:var(--s5); }
+/* ---- the card treatment, shared by every raised block ---- */
+.toc, .tbl-wrap, .frame, .stats, .prompt, .pair > div {
+  background:var(--card); border:1px solid var(--rule); border-radius:var(--r-lg);
+  box-shadow:var(--shadow);
+}
+
+.cover { padding-bottom:var(--s7); margin-bottom:var(--s7);
+          border-bottom:1px solid var(--rule); }
+.cover__eyebrow { display:inline-block; font-family:var(--mono); font-size:.66rem;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--accent);
+  background:var(--accent-soft); padding:.4em .9em; border-radius:var(--r-pill);
+  margin-bottom:var(--s5); }
 h1 { font-family:var(--sans); font-size:clamp(2.4rem,6vw,4rem); font-weight:800;
-      letter-spacing:-.04em; line-height:1.02; margin:0 0 var(--s5); text-wrap:balance; }
-h1 em { font-family:var(--serif); font-style:italic; font-weight:500; color:var(--accent); }
-.cover__sub { font-size:1.2rem; color:var(--ink-2); max-width:60ch; margin:0 0 var(--s6); }
+      letter-spacing:-.042em; line-height:1.02; margin:0 0 var(--s5); text-wrap:balance; }
+h1 em { font-family:var(--serif); font-style:italic; font-weight:400; color:var(--accent); }
+.cover__sub { font-size:1.2rem; color:var(--ink-2); max-width:58ch; margin:0 0 var(--s6); }
 .cover__meta { display:flex; flex-wrap:wrap; gap:var(--s6); padding-top:var(--s5);
                 border-top:1px solid var(--rule); }
-.cover__meta div { font-family:var(--mono); font-size:.72rem; color:var(--ink-3); }
+.cover__meta div { font-family:var(--mono); font-size:.66rem; letter-spacing:.08em;
+                    text-transform:uppercase; color:var(--ink-3); }
 .cover__meta b { display:block; font-family:var(--sans); font-size:.95rem; color:var(--ink);
-                  font-weight:600; margin-top:2px; }
+                  font-weight:600; letter-spacing:-.01em; text-transform:none; margin-top:4px; }
 
 .pair { display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin:var(--s6) 0 0; }
-.pair > div { border:1px solid var(--rule); border-radius:10px; padding:var(--s4) var(--s5);
-               background:var(--card); }
-.pair h5 { font-family:var(--mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase;
-            margin:0 0 var(--s2); }
+.pair > div { padding:var(--s4) var(--s5); }
+.pair h5 { font-family:var(--mono); font-size:.6rem; letter-spacing:.14em;
+            text-transform:uppercase; margin:0 0 var(--s2); color:var(--ink-3); }
 .pair p { margin:0; font-size:.92rem; color:var(--ink-2); }
-.pair--this { border-color:var(--accent); }
+.pair--this { border-color:var(--accent); box-shadow:var(--shadow), inset 3px 0 0 var(--accent); }
 .pair--this h5 { color:var(--accent); }
-.pair--that h5 { color:var(--ink-3); }
 
-.toc { background:var(--paper-2); border:1px solid var(--rule); border-radius:10px;
-        padding:var(--s5) var(--s6); margin-bottom:var(--s8); }
-.toc h2 { font-family:var(--sans); font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
-           color:var(--ink-3); margin:0 0 var(--s4); border:0; padding:0; }
-.toc ol { margin:0; padding-left:1.4em; columns:2; column-gap:var(--s7); }
+.toc { padding:var(--s5) var(--s6); margin-bottom:var(--s8); }
+.toc h2 { font-family:var(--mono); font-size:.66rem; letter-spacing:.16em;
+           text-transform:uppercase; color:var(--ink-3); margin:0 0 var(--s4);
+           border:0; padding:0; font-weight:600; }
+.toc ol { margin:0; padding-left:1.5em; columns:2; column-gap:var(--s7); }
 .toc li { margin-bottom:var(--s2); break-inside:avoid; }
 .toc a { color:var(--ink); text-decoration:none; font-size:.95rem; }
 .toc a:hover { color:var(--accent); }
 
 .chapter { margin-bottom:var(--s8); }
-.chapter__num { font-family:var(--mono); font-size:.68rem; letter-spacing:.18em;
-                 text-transform:uppercase; color:var(--accent); margin-bottom:var(--s2); }
-h2 { font-family:var(--sans); font-size:1.85rem; font-weight:700; letter-spacing:-.028em;
-      margin:0 0 var(--s5); padding-bottom:var(--s3); border-bottom:2px solid var(--ink);
-      text-wrap:balance; }
-h3 { font-family:var(--sans); font-size:1.12rem; font-weight:700; letter-spacing:-.012em;
+.chapter__num { display:inline-block; font-family:var(--mono); font-size:.62rem;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--accent);
+  background:var(--accent-soft); padding:.35em .8em; border-radius:var(--r-pill);
+  margin-bottom:var(--s3); }
+h2 { font-family:var(--sans); font-size:1.9rem; font-weight:700; letter-spacing:-.032em;
+      margin:0 0 var(--s5); padding-bottom:var(--s3);
+      border-bottom:1px solid var(--rule); text-wrap:balance; }
+h3 { font-family:var(--sans); font-size:1.1rem; font-weight:700; letter-spacing:-.015em;
       margin:var(--s6) 0 var(--s3); }
-h4 { font-family:var(--mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
-      color:var(--ink-3); margin:var(--s5) 0 var(--s2); }
+h4 { font-family:var(--mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+      color:var(--ink-3); margin:var(--s5) 0 var(--s2); font-weight:600; }
 p { margin:0 0 var(--s4); }
-.lede { font-size:1.12rem; color:var(--ink-2); border-left:3px solid var(--accent);
+.lede { font-size:1.1rem; color:var(--ink-2); border-left:2px solid var(--accent);
          padding-left:var(--s4); margin-bottom:var(--s5); }
 ul { margin:0 0 var(--s5); padding-left:1.2em; }
 li { margin-bottom:var(--s2); }
+li::marker { color:var(--accent); }
 code { font-family:var(--mono); font-size:.84em; background:var(--paper-2);
-        border:1px solid var(--rule-soft); border-radius:3px; padding:.08em .32em; }
-pre { background:var(--paper-2); border:1px solid var(--rule); border-radius:8px;
+        border:1px solid var(--rule-soft); border-radius:var(--r-sm); padding:.1em .38em; }
+pre { background:var(--paper-2); border:1px solid var(--rule); border-radius:var(--r-md);
        padding:var(--s4); overflow-x:auto; }
 pre code { border:0; background:none; padding:0; font-size:.8rem; }
 
-.tbl-wrap { overflow-x:auto; border:1px solid var(--rule); border-radius:8px;
-             margin:var(--s5) 0; background:var(--card); }
+/* The scroll lives on the wrapper, not the table: making the table itself a
+   block with its own overflow inflates the root scrollWidth even though nothing
+   is visibly outside the viewport. */
+.tbl-wrap { overflow-x:auto; margin:var(--s5) 0; }
 table { border-collapse:collapse; width:100%; font-family:var(--sans); font-size:.88rem; }
-th { text-align:left; font-family:var(--mono); font-size:.66rem; letter-spacing:.1em;
-      text-transform:uppercase; color:var(--ink-3); padding:var(--s3) var(--s4);
-      border-bottom:2px solid var(--rule); white-space:nowrap; }
+th { text-align:left; font-family:var(--mono); font-size:.62rem; letter-spacing:.12em;
+      text-transform:uppercase; color:var(--ink-3); font-weight:600;
+      padding:var(--s3) var(--s4); background:var(--paper-2);
+      border-bottom:1px solid var(--rule); white-space:nowrap; }
 td { padding:var(--s3) var(--s4); border-bottom:1px solid var(--rule-soft);
       color:var(--ink-2); vertical-align:top; }
 tr:last-child td { border-bottom:0; }
-td:first-child { font-family:var(--mono); font-size:.78rem; color:var(--ink); white-space:nowrap; }
+td:first-child { font-family:var(--mono); font-size:.76rem; color:var(--ink);
+                  white-space:nowrap; }
 
 figure { margin:var(--s6) 0; }
-figcaption { font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
-              color:var(--ink-3); margin-bottom:var(--s3); }
+figcaption { font-family:var(--mono); font-size:.64rem; letter-spacing:.12em;
+              text-transform:uppercase; color:var(--accent); font-weight:600;
+              margin-bottom:var(--s3); }
 figcaption .cap { display:block; font-family:var(--serif); font-size:.92rem; letter-spacing:0;
-                   text-transform:none; color:var(--ink-2); margin-top:var(--s2); }
-.frame { background:var(--card); border:1px solid var(--rule); border-radius:10px;
-          padding:var(--s5); overflow-x:auto; }
-.frame svg { display:block; width:100%; height:auto; }
-.frame img { display:block; width:100%; height:auto; }
+                   text-transform:none; color:var(--ink-2); font-weight:400; margin-top:var(--s2); }
+.frame { padding:var(--s5); overflow-x:auto; }
+.frame svg { display:block; width:100%; height:auto; border-radius:var(--r-md); }
+.frame img { display:block; width:100%; height:auto; border-radius:var(--r-md); }
 
-.note { border-left:3px solid var(--second); background:var(--second-soft);
-         padding:var(--s4) var(--s5); border-radius:0 8px 8px 0; margin:var(--s5) 0; font-size:.95rem; }
+.note { border:1px solid var(--rule); border-left:3px solid var(--second);
+         background:var(--second-soft); padding:var(--s4) var(--s5);
+         border-radius:var(--r-md); margin:var(--s5) 0; font-size:.95rem; }
 .note--alt { border-left-color:var(--accent); background:var(--accent-soft); }
-.note--caveat { border-left-color:var(--bad); background:rgba(156,47,38,.07); }
-.note b { font-family:var(--sans); }
+.note--caveat { border-left-color:var(--bad); background:rgba(179,64,47,.07); }
+.note b { font-family:var(--sans); color:var(--ink); }
 
-.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1px;
-          background:var(--rule); border:1px solid var(--rule); border-radius:10px;
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
           overflow:hidden; margin:var(--s5) 0; }
-.stat { background:var(--card); padding:var(--s4); }
-.stat__k { font-family:var(--mono); font-size:.62rem; letter-spacing:.1em; text-transform:uppercase;
-            color:var(--ink-3); }
-.stat__v { font-family:var(--sans); font-size:1.5rem; font-weight:700; letter-spacing:-.02em;
-            margin-top:2px; font-variant-numeric:tabular-nums; }
-.stat__n { font-family:var(--sans); font-size:.76rem; color:var(--ink-3); line-height:1.4; margin-top:4px; }
+.stat { padding:var(--s4) var(--s5); border-right:1px solid var(--rule-soft); }
+.stat:last-child { border-right:0; }
+.stat__k { font-family:var(--mono); font-size:.58rem; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--ink-3); font-weight:600; }
+.stat__v { font-family:var(--sans); font-size:1.6rem; font-weight:700; letter-spacing:-.03em;
+            margin-top:4px; font-variant-numeric:tabular-nums; color:var(--ink); }
+.stat__n { font-family:var(--sans); font-size:.74rem; color:var(--ink-3); line-height:1.45;
+            margin-top:4px; }
 
-.prompt { border:1px solid var(--rule); border-radius:10px; margin:var(--s4) 0;
-           background:var(--card); overflow:hidden; }
+.prompt { margin:var(--s4) 0; overflow:hidden; }
 .prompt__head { display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s3);
-                 padding:var(--s3) var(--s4); background:var(--paper-2);
+                 padding:var(--s3) var(--s5); background:var(--paper-2);
                  border-bottom:1px solid var(--rule); }
-.prompt__n { font-family:var(--mono); font-size:.72rem; color:var(--accent); font-weight:600; }
-.prompt__role { font-family:var(--sans); font-weight:700; font-size:1rem; }
+.prompt__n { font-family:var(--mono); font-size:.7rem; color:var(--accent); font-weight:600; }
+.prompt__role { font-family:var(--sans); font-weight:700; font-size:1rem;
+                 letter-spacing:-.015em; }
 .prompt__meta { margin-left:auto; display:flex; gap:var(--s2); flex-wrap:wrap; }
-.chip { font-family:var(--mono); font-size:.62rem; padding:2px 7px; border-radius:3px;
+.chip { font-family:var(--mono); font-size:.6rem; padding:3px 9px; border-radius:var(--r-pill);
          background:var(--accent-soft); color:var(--accent-deep); white-space:nowrap; }
-.prompt__why { padding:var(--s3) var(--s4); font-size:.92rem; color:var(--ink-2);
+.prompt__why { padding:var(--s3) var(--s5); font-size:.92rem; color:var(--ink-2);
                 border-bottom:1px solid var(--rule-soft); }
 .prompt pre { margin:0; border:0; border-radius:0; background:var(--card); }
 
@@ -131,13 +154,14 @@ figcaption .cap { display:block; font-family:var(--serif); font-size:.92rem; let
   .page { max-width:none; padding:0; }
   .chapter { break-before:page; }
   .cover { break-after:page; }
-  figure, .tbl-wrap, .note, .stats { break-inside:avoid; }
+  figure, .tbl-wrap, .note, .stats, .prompt { break-inside:avoid; box-shadow:none; }
   a { color:var(--ink); text-decoration:none; }
 }
 @media (max-width:760px) {
   .page { padding:var(--s6) 18px; }
   .toc ol { columns:1; }
   .pair { grid-template-columns:1fr; }
+  .stat { border-right:0; border-bottom:1px solid var(--rule-soft); }
 }
 </style>
 <div class="page">
@@ -269,324 +293,276 @@ figcaption .cap { display:block; font-family:var(--serif); font-size:.92rem; let
 <figcaption>Figure 11.0 — Notation used throughout this chapter
 <span class="cap">One visual language across all nine diagrams, so it is learned once rather than re-read per figure.</span>
 </figcaption>
-<div class="frame"><svg viewBox="0 0 860 92" width="860" height="92" xmlns="http://www.w3.org/2000/svg" role="img">
-<rect width="860" height="92" fill="#ffffff"/>
-<style>
- .g16lk{{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;fill:#16150f;font-weight:600}}
- .g16ld{{font-family:'JetBrains Mono',monospace;font-size:8.5px;fill:#7c7566}}
-</style>
-<rect x="24" y="22" width="96" height="30" rx="8" fill="#fff" stroke="#a06b21" stroke-width="1.6"/>
-<text class="g16lk" x="42" y="41">Process</text><text class="g16ld" x="24" y="70">the system itself</text>
-<path d="M176,29 a48,7 0 0,1 96,0 v16 a48,7 0 0,1 -96,0 z" fill="#f7f4ed" stroke="#1d5f63" stroke-width="1.5"/>
-<path d="M176,29 a48,7 0 0,0 96,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/>
-<text class="g16lk" x="196" y="44">Data store</text><text class="g16ld" x="176" y="70">data at rest</text>
-<path d="M340,22 L424,22 L412,52 L328,52 z" fill="#faf6f8" stroke="#6b3352" stroke-width="1.5"/>
-<text class="g16lk" x="346" y="41">External</text><text class="g16ld" x="328" y="70">outside the boundary</text>
-<rect x="480" y="22" width="96" height="30" rx="8" fill="#eef5f1" stroke="#1f6b4a" stroke-width="1.6"/>
-<text class="g16lk" x="502" y="41">Success</text><text class="g16ld" x="480" y="70">terminal state</text>
-<rect x="632" y="22" width="96" height="30" rx="8" fill="#fbf0ef" stroke="#9c2f26" stroke-width="1.6"/>
-<text class="g16lk" x="658" y="41">Failure</text><text class="g16ld" x="632" y="70">terminal state</text>
-<path d="M776,30 L836,30" stroke="#7c7566" stroke-width="1.4" stroke-dasharray="4 3"/>
-<path d="M776,46 L836,46" stroke="#7c7566" stroke-width="1.4"/>
-<text class="g16ld" x="776" y="70">dashed = conditional</text>
-</svg></div></figure>
-<figure id="fig-F1"><figcaption>Figure 11.1 — Context diagram<span class="cap">Chat with Files and everything outside it. Embeddings are computed locally, so no vector data leaves the deployment.</span></figcaption><div class="frame"><svg viewBox="0 0 880 400" width="880" height="400" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g17a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g17ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g17at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g17ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g17open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+<div class="frame"><svg viewBox="0 0 880 166" width="880" height="166" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="166" fill="#fbfaf7"/><defs><marker id="g16ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g16ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g16ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g16ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g16ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g16ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g16card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g16lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g17t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g17tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g17s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g17sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g17lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g17lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g17cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g17ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g17a) }
-  .g17lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g17ab) }
-  .g17lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g17at) }
-  .g17lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g17ap) }
-  .g17dash{ stroke-dasharray:4 3 }
-  .g17proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g17store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g17ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g17band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g17ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g17bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="400" fill="#ffffff"/><g stroke="#a06b21" stroke-width="1.6" fill="none"><circle cx="72" cy="176" r="7"/><path d="M72,183 v16 M62,189 h20 M72,199 l-8,11 M72,199 l8,11"/></g><text class="g17tc" x="72" y="224">Document owner</text><rect class="g17band" x="200" y="110" width="300" height="150" rx="14"/><text class="g17cap" x="350.0" y="130" fill="#a06b21">CHAT WITH FILES</text><rect class="g17proc" x="232" y="148" width="236" height="82" rx="10"/><text class="g17tc" x="350.0" y="186.0">Cognita</text><text class="g17sc" x="350.0" y="200.0">ingest · retrieve · answer</text><path class="g17ext" d="M612,44 L830,44 L818,98 L600,98 z"/><text class="g17tc" x="715.0" y="68.0">Groq inference</text><text class="g17sc" x="715.0" y="82.0">answering, grading, judge</text><path class="g17ext" d="M612,128 L830,128 L818,182 L600,182 z"/><text class="g17tc" x="715.0" y="152.0">Supabase auth</text><text class="g17sc" x="715.0" y="166.0">JWT via public JWKS</text><path class="g17ext" d="M612,212 L830,212 L818,266 L600,266 z"/><text class="g17tc" x="715.0" y="236.0">Stripe</text><text class="g17sc" x="715.0" y="250.0">subscription state</text><path class="g17lnb" d="M148,170 L226,170"/><text class="g17lbc" x="187.0" y="162">upload a file</text><path class="g17lnb" d="M148,196 L226,196"/><text class="g17lbc" x="187.0" y="214">ask a question</text><path class="g17ln g17dash" d="M226,220 L190,220 L190,274 L100,274 L100,216"/><text class="g17lb" x="128" y="292" fill="#7c7566">answer with the passages it used — or a refusal</text><path class="g17lnp" d="M470,189 L596,71"/><path class="g17lnp" d="M470,189 L596,155"/><path class="g17lnp" d="M470,189 L596,239"/><path class="g17store" d="M232,299 a118.0,7 0 0,1 236,0 v42 a118.0,7 0 0,1 -236,0 z"/><path d="M232,299 a118.0,7 0 0,0 236,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g17tc" x="350.0" y="322.0">Postgres + pgvector</text><text class="g17sc" x="350.0" y="336.0">documents, chunks, chats</text><path class="g17lnt" d="M350,230 L350,290"/><text class="g17lb" x="524" y="292" fill="#7c7566">Embeddings are computed on the application</text><text class="g17lb" x="524" y="305" fill="#7c7566">node, not by a provider — no vector data</text><text class="g17lb" x="524" y="318" fill="#7c7566">leaves the deployment.</text><rect x="200" y="372" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="g17lb" x="217" y="381">this product</text><rect x="286.8" y="372" width="11" height="11" rx="3" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g17lb" x="303.8" y="381">outside the boundary</text><rect x="416.8" y="372" width="11" height="11" rx="3" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g17lb" x="433.8" y="381">data at rest</text></svg></div></figure>
-<figure id="fig-F2"><figcaption>Figure 11.2 — Data flow diagram — level 0<span class="cap">Two processes, not one: ingestion runs per document and asynchronously, answering runs per question and synchronously.</span></figcaption><div class="frame"><svg viewBox="0 0 880 430" width="880" height="430" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g18a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g18ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g18at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g18ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g18open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g16ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g16sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g16lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g16lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g16eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g16idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g16note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g16ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g16ar-n) }
+ .g16lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g16ar-a) }
+ .g16lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g16ar-t) }
+ .g16lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g16ar-p) }
+ .g16dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><rect x="30" y="28" width="122" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g16card)"/><text class="g16ttl" x="91.0" y="49.0">Process</text><text class="g16sub" x="91.0" y="64.0">the system</text><g filter="url(#g16card)"><path d="M186,35 a61.0,7 0 0,1 122,0 v32 a61.0,7 0 0,1 -122,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M186,35 a61.0,7 0 0,0 122,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g16ttl" x="247.0" y="49.0">Data store</text><text class="g16sub" x="247.0" y="64.0">at rest</text><path d="M354,28 L464,28 L452,74 L342,74 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g16card)"/><text class="g16ttl" x="403.0" y="49.0">External</text><text class="g16sub" x="403.0" y="64.0">outside</text><rect x="498" y="28" width="122" height="46" rx="12" fill="#eef5f0" stroke="#2f7d55" stroke-width="1.5" filter="url(#g16card)"/><text class="g16ttl" x="559.0" y="49.0">Success</text><text class="g16sub" x="559.0" y="64.0">terminal</text><rect x="654" y="28" width="122" height="46" rx="12" fill="#fbf0ee" stroke="#b3402f" stroke-width="1.5" filter="url(#g16card)"/><text class="g16ttl" x="715.0" y="49.0">Failure</text><text class="g16sub" x="715.0" y="64.0">terminal</text><path class="g16ln" d="M30,104 L86,104"/><text class="g16note" x="96" y="108.0" fill="#6b6965">a step in the flow</text><path class="g16ln g16dash" d="M232,104 L288,104"/><text class="g16note" x="298" y="108.0" fill="#6b6965">a conditional or optional path</text><text class="g16note" x="30" y="138.0" fill="#6b6965">Shape carries meaning as well as colour: a rounded rectangle is a process, a cylinder is a store,</text><text class="g16note" x="30" y="151.5" fill="#6b6965">a slanted parallelogram is something outside the boundary, and a diamond is a decision.</text></svg></div></figure>
+<figure id="fig-F1"><figcaption>Figure 11.1 — Context diagram<span class="cap">Chat with Files and everything outside it. Embeddings are computed locally, so no vector data leaves the deployment.</span></figcaption><div class="frame"><svg viewBox="0 0 880 400" width="880" height="400" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="400" fill="#fbfaf7"/><defs><marker id="g17ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g17ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g17ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g17ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g17ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g17ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g17card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g17lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g18t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g18tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g18s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g18sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g18lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g18lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g18cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g18ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g18a) }
-  .g18lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g18ab) }
-  .g18lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g18at) }
-  .g18lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g18ap) }
-  .g18dash{ stroke-dasharray:4 3 }
-  .g18proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g18store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g18ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g18band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g18ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g18bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="430" fill="#ffffff"/><path class="g18ext" d="M52,60 L198,60 L186,114 L40,114 z"/><text class="g18tc" x="119.0" y="84.0">Document owner</text><text class="g18sc" x="119.0" y="98.0">uploads a file</text><path class="g18ext" d="M52,220 L198,220 L186,274 L40,274 z"/><text class="g18tc" x="119.0" y="244.0">Document owner</text><text class="g18sc" x="119.0" y="258.0">asks a question</text><rect class="g18proc" x="300" y="50" width="250" height="76" rx="12"/><text class="g18tc" x="425.0" y="85.0">1.0  Ingest</text><text class="g18sc" x="425.0" y="99.0">extract · chunk · embed</text><rect class="g18proc" x="300" y="210" width="250" height="76" rx="12"/><text class="g18tc" x="425.0" y="245.0">2.0  Answer</text><text class="g18sc" x="425.0" y="259.0">retrieve · grade · reply</text><path class="g18lnb" d="M200,86 L296,86"/><text class="g18lbc" x="248.0" y="78">file bytes</text><path class="g18lnb" d="M200,246 L296,246"/><text class="g18lbc" x="248.0" y="238">question</text><path class="g18ln g18dash" d="M296,276 L250,276 L250,320 L119,320 L119,280"/><text class="g18lb" x="70" y="340" fill="#7c7566">answer + passages, or a refusal</text><path class="g18ext" d="M688,210 L844,210 L832,264 L676,264 z"/><text class="g18tc" x="760.0" y="234.0">Groq</text><text class="g18sc" x="760.0" y="248.0">inference</text><path class="g18lnp" d="M552,240 L672,238"/><text class="g18lb" x="580" y="230" fill="#7c7566">prompts</text><path class="g18store" d="M624,57 a100.0,7 0 0,1 200,0 v44 a100.0,7 0 0,1 -200,0 z"/><path d="M624,57 a100.0,7 0 0,0 200,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g18tc" x="724.0" y="81.0">D1  rag_documents</text><text class="g18sc" x="724.0" y="95.0">status + metadata</text><path class="g18store" d="M624,135 a100.0,7 0 0,1 200,0 v44 a100.0,7 0 0,1 -200,0 z"/><path d="M624,135 a100.0,7 0 0,0 200,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g18tc" x="724.0" y="159.0">D2  rag_chunks</text><text class="g18sc" x="724.0" y="173.0">text + 384-d vector</text><path class="g18lnt" d="M552,76 L620,76"/><path class="g18lnt" d="M552,100 L620,150"/><path class="g18lnt g18dash" d="M700,186 L700,198 L620,198 L620,232 L552,232"/><text class="g18lb" x="560" y="300" fill="#7c7566">retrieval reads chunks only;</text><text class="g18lb" x="560" y="313" fill="#7c7566">the answer never sees a whole file</text><path class="g18store" d="M300,327 a125.0,7 0 0,1 250,0 v40 a125.0,7 0 0,1 -250,0 z"/><path d="M300,327 a125.0,7 0 0,0 250,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g18tc" x="425.0" y="349.0">D3  rag_conversations + rag_messages</text><path class="g18lnt" d="M425,288 L425,316"/><rect x="40" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="g18lb" x="57" y="411">process</text><rect x="99.80000000000001" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g18lb" x="116.80000000000001" y="411">data store</text><rect x="175.8" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g18lb" x="192.8" y="411">external entity</text><rect x="278.8" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#7c7566" stroke-width="1.6"/><text class="g18lb" x="295.8" y="411">dashed = conditional</text></svg></div></figure>
-<figure id="fig-F3"><figcaption>Figure 11.3 — Data flow diagram — level 1<span class="cap">Both paths decomposed. The dashed edge from grading back to rewriting is what turns retrieval from one shot into a loop.</span></figcaption><div class="frame"><svg viewBox="0 0 880 520" width="880" height="520" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g19a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g19ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g19at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g19ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g19open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g17ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g17sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g17lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g17lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g17eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g17idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g17note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g17ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g17ar-n) }
+ .g17lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g17ar-a) }
+ .g17lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g17ar-t) }
+ .g17lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g17ar-p) }
+ .g17dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><g stroke="#a94b2f" stroke-width="1.7" fill="none" stroke-linecap="round"><circle cx="72" cy="176" r="7.5"/><path d="M72,184 v15 M62,189 h20 M72,199 l-8,11 M72,199 l8,11"/></g><text class="g17ttl" x="72" y="225">Document owner</text><rect x="200" y="110" width="300" height="150" rx="18" fill="#f4f1e9" stroke="#ddd8cc" stroke-width="1.1"/><text class="g17eyb" x="350.0" y="131" text-anchor="middle" fill="#a94b2f">CHAT WITH FILES</text><rect x="232" y="148" width="236" height="82" rx="10" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g17card)"/><text class="g17ttl" x="350.0" y="187.0">Cognita</text><text class="g17sub" x="350.0" y="202.0">ingest · retrieve · answer</text><path d="M612,44 L830,44 L818,98 L600,98 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g17card)"/><text class="g17ttl" x="715.0" y="69.0">Groq inference</text><text class="g17sub" x="715.0" y="84.0">answering, grading, judge</text><path d="M612,128 L830,128 L818,182 L600,182 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g17card)"/><text class="g17ttl" x="715.0" y="153.0">Supabase auth</text><text class="g17sub" x="715.0" y="168.0">JWT via public JWKS</text><path d="M612,212 L830,212 L818,266 L600,266 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g17card)"/><text class="g17ttl" x="715.0" y="237.0">Stripe</text><text class="g17sub" x="715.0" y="252.0">subscription state</text><path class="g17lna" d="M148,170 L226,170"/><rect x="149.24" y="153.5" width="75.52" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g17lblc" x="187.0" y="162">upload a file</text><path class="g17lna" d="M148,196 L226,196"/><rect x="146.72" y="205.5" width="80.56" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g17lblc" x="187.0" y="214">ask a question</text><path class="g17ln g17dash" d="M226,220 L199.0,220.0 Q190,220 190.0,229.0 L190.0,265.0 Q190,274 181.0,274.0 L109.0,274.0 Q100,274 100.0,265.0 L100,216"/><text class="g17note" x="128" y="292.0" fill="#6b6965">answer with the passages it used — or a refusal</text><path class="g17lnp" d="M470,189 L596,71"/><path class="g17lnp" d="M470,189 L596,155"/><path class="g17lnp" d="M470,189 L596,239"/><g filter="url(#g17card)"><path d="M232,299 a118.0,7 0 0,1 236,0 v42 a118.0,7 0 0,1 -236,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M232,299 a118.0,7 0 0,0 236,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g17ttl" x="350.0" y="318.0">Postgres + pgvector</text><text class="g17sub" x="350.0" y="333.0">documents, chunks, chats</text><path class="g17lnt" d="M350,230 L350,290"/><text class="g17note" x="524" y="292.0" fill="#6b6965">Embeddings are computed on the application</text><text class="g17note" x="524" y="305.5" fill="#6b6965">node, not by a provider — no vector data</text><text class="g17note" x="524" y="319.0" fill="#6b6965">leaves the deployment.</text><rect x="200" y="372" width="12" height="12" rx="4" fill="#fff" stroke="#a94b2f" stroke-width="1.6"/><text class="g17lbl" x="218" y="381.5">this product</text><rect x="288.4" y="372" width="12" height="12" rx="4" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g17lbl" x="306.4" y="381.5">outside the boundary</text><rect x="418.4" y="372" width="12" height="12" rx="4" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g17lbl" x="436.4" y="381.5">data at rest</text></svg></div></figure>
+<figure id="fig-F2"><figcaption>Figure 11.2 — Data flow diagram — level 0<span class="cap">Two processes, not one: ingestion runs per document and asynchronously, answering runs per question and synchronously.</span></figcaption><div class="frame"><svg viewBox="0 0 880 430" width="880" height="430" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="430" fill="#fbfaf7"/><defs><marker id="g18ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g18ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g18ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g18ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g18ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g18ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g18card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g18lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g19t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g19tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g19s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g19sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g19lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g19lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g19cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g19ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g19a) }
-  .g19lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g19ab) }
-  .g19lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g19at) }
-  .g19lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g19ap) }
-  .g19dash{ stroke-dasharray:4 3 }
-  .g19proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g19store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g19ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g19band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g19ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g19bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="520" fill="#ffffff"/><text x="24" y="26" font-family="JetBrains Mono,monospace" font-size="9" letter-spacing=".1em" fill="#a06b21">INGESTION - ONCE PER DOCUMENT, ASYNCHRONOUS</text><path class="g19ext" d="M36,52 L142,52 L130,100 L24,100 z"/><text class="g19tc" x="83.0" y="78.0">Owner</text><rect class="g19proc" x="170" y="44" width="146" height="58" rx="8"/><text class="g19tc" x="243.0" y="70.0">1.1 Validate</text><text class="g19sc" x="243.0" y="84.0">magic bytes</text><rect class="g19proc" x="330" y="44" width="146" height="58" rx="8"/><text class="g19tc" x="403.0" y="70.0">1.2 Extract</text><text class="g19sc" x="403.0" y="84.0">PDF · DOCX · OCR</text><rect class="g19proc" x="490" y="44" width="146" height="58" rx="8"/><text class="g19tc" x="563.0" y="70.0">1.3 Chunk</text><text class="g19sc" x="563.0" y="84.0">1,000 / 150 overlap</text><rect class="g19proc" x="650" y="44" width="146" height="58" rx="8"/><text class="g19tc" x="723.0" y="70.0">1.4 Embed</text><text class="g19sc" x="723.0" y="84.0">bge-small, local</text><path class="g19lnb" d="M142,72 L166,72"/><path class="g19lnb" d="M316,73 L330,73"/><path class="g19lnb" d="M476,73 L490,73"/><path class="g19lnb" d="M636,73 L650,73"/><path class="g19store" d="M400,147 a95.0,7 0 0,1 190,0 v38 a95.0,7 0 0,1 -190,0 z"/><path d="M400,147 a95.0,7 0 0,0 190,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g19tc" x="495.0" y="168.0">D1 rag_documents</text><path class="g19store" d="M650,147 a95.0,7 0 0,1 190,0 v38 a95.0,7 0 0,1 -190,0 z"/><path d="M650,147 a95.0,7 0 0,0 190,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g19tc" x="745.0" y="168.0">D2 rag_chunks</text><path class="g19lnt" d="M723,102 L723,136"/><path class="g19lnt" d="M403,102 L403,120 L495,120 L495,136"/><text class="g19lb" x="150" y="150" fill="#7c7566">the HTTP request returns</text><text class="g19lb" x="150" y="163" fill="#7c7566">as soon as the row exists</text><path d="M24,214 L856,214" stroke="#ddd6c8" stroke-width="1.2"/><text x="24" y="242" font-family="JetBrains Mono,monospace" font-size="9" letter-spacing=".1em" fill="#1d5f63">ANSWERING - ONCE PER QUESTION, SYNCHRONOUS</text><path class="g19ext" d="M36,268 L142,268 L130,316 L24,316 z"/><text class="g19tc" x="83.0" y="294.0">Owner</text><rect class="g19proc" x="170" y="260" width="146" height="58" rx="8"/><text class="g19tc" x="243.0" y="286.0">2.1 Contextualise</text><text class="g19sc" x="243.0" y="300.0">resolve pronouns</text><rect class="g19proc" x="330" y="260" width="146" height="58" rx="8"/><text class="g19tc" x="403.0" y="286.0">2.2 Retrieve</text><text class="g19sc" x="403.0" y="300.0">vector + keyword</text><rect class="g19proc" x="490" y="260" width="146" height="58" rx="8"/><text class="g19tc" x="563.0" y="286.0">2.3 Fuse</text><text class="g19sc" x="563.0" y="300.0">RRF, k = 60</text><rect class="g19proc" x="650" y="260" width="146" height="58" rx="8"/><text class="g19tc" x="723.0" y="286.0">2.4 Grade</text><text class="g19sc" x="723.0" y="300.0">do these answer it?</text><rect class="g19proc" x="490" y="356" width="146" height="58" rx="8"/><text class="g19tc" x="563.0" y="382.0">2.5 Rewrite</text><text class="g19sc" x="563.0" y="396.0">different wording</text><rect class="g19proc" x="650" y="356" width="146" height="58" rx="8"/><text class="g19tc" x="723.0" y="382.0">2.6 Answer</text><text class="g19sc" x="723.0" y="396.0">or decline</text><path class="g19lnb" d="M142,288 L166,288"/><path class="g19lnb" d="M316,289 L330,289"/><path class="g19lnb" d="M476,289 L490,289"/><path class="g19lnb" d="M636,289 L650,289"/><path class="g19lnb g19dash" d="M723,318 L723,336 L563,336 L563,356"/><text class="g19lb" x="576" y="332" fill="#a06b21">no - rewrite once</text><path class="g19lnb" d="M723,336 L723,352"/><text class="g19lb" x="732" y="340" fill="#a06b21">yes</text><path class="g19lnb g19dash" d="M490,395 L310,395 L310,332 L403,332 L403,322"/><text class="g19lb" x="322" y="352" fill="#a06b21">retry retrieval, once only</text><path class="g19lnt" d="M650,166 L610,166 L610,232 L403,232 L403,256"/><text class="g19lb" x="412" y="224" fill="#1d5f63">chunks + vectors</text><path class="g19ln g19dash" d="M723,414 L723,448 L120,448 L120,322"/><text class="g19lb" x="330" y="464" fill="#7c7566">answer with the passages it used, or a refusal</text><rect x="24" y="492" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="g19lb" x="41" y="501">process</text><rect x="83.80000000000001" y="492" width="11" height="11" rx="3" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g19lb" x="100.80000000000001" y="501">store</text><rect x="132.8" y="492" width="11" height="11" rx="3" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g19lb" x="149.8" y="501">external</text><rect x="198.0" y="492" width="11" height="11" rx="3" fill="#fff" stroke="#7c7566" stroke-width="1.6"/><text class="g19lb" x="215.0" y="501">dashed = conditional</text></svg></div></figure>
-<figure id="fig-F4"><figcaption>Figure 11.4 — Use case diagram<span class="cap">Everything a user can do with this product. Searching the web is deliberately absent — that belongs to Deep Research.</span></figcaption><div class="frame"><svg viewBox="0 0 880 430" width="880" height="430" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g20a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g20ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g20at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g20ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g20open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g18ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g18sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g18lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g18lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g18eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g18idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g18note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g18ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g18ar-n) }
+ .g18lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g18ar-a) }
+ .g18lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g18ar-t) }
+ .g18lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g18ar-p) }
+ .g18dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><path d="M52,60 L198,60 L186,114 L40,114 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g18card)"/><text class="g18ttl" x="119.0" y="85.0">Document owner</text><text class="g18sub" x="119.0" y="100.0">uploads a file</text><path d="M52,220 L198,220 L186,274 L40,274 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g18card)"/><text class="g18ttl" x="119.0" y="245.0">Document owner</text><text class="g18sub" x="119.0" y="260.0">asks a question</text><rect x="300" y="50" width="250" height="76" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g18card)"/><text class="g18ttl" x="425.0" y="86.0">1.0  Ingest</text><text class="g18sub" x="425.0" y="101.0">extract · chunk · embed</text><rect x="300" y="210" width="250" height="76" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g18card)"/><text class="g18ttl" x="425.0" y="246.0">2.0  Answer</text><text class="g18sub" x="425.0" y="261.0">retrieve · grade · reply</text><path class="g18lna" d="M200,86 L296,86"/><rect x="217.8" y="69.5" width="60.4" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g18lblc" x="248.0" y="78">file bytes</text><path class="g18lna" d="M200,246 L296,246"/><rect x="222.84" y="229.5" width="50.32" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g18lblc" x="248.0" y="238">question</text><path class="g18ln g18dash" d="M296,276 L259.0,276.0 Q250,276 250.0,285.0 L250.0,311.0 Q250,320 241.0,320.0 L128.0,320.0 Q119,320 119.0,311.0 L119,280"/><text class="g18note" x="70" y="340.0" fill="#6b6965">answer + passages, or a refusal</text><path d="M688,210 L844,210 L832,264 L676,264 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g18card)"/><text class="g18ttl" x="760.0" y="235.0">Groq</text><text class="g18sub" x="760.0" y="250.0">inference</text><path class="g18lnp" d="M552,240 L672,238"/><text class="g18note" x="580" y="230.0" fill="#6b6965">prompts</text><g filter="url(#g18card)"><path d="M624,57 a100.0,7 0 0,1 200,0 v44 a100.0,7 0 0,1 -200,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M624,57 a100.0,7 0 0,0 200,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g18ttl" x="724.0" y="77.0">D1  rag_documents</text><text class="g18sub" x="724.0" y="92.0">status + metadata</text><g filter="url(#g18card)"><path d="M624,135 a100.0,7 0 0,1 200,0 v44 a100.0,7 0 0,1 -200,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M624,135 a100.0,7 0 0,0 200,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g18ttl" x="724.0" y="155.0">D2  rag_chunks</text><text class="g18sub" x="724.0" y="170.0">text + 384-d vector</text><path class="g18lnt" d="M552,76 L620,76"/><path class="g18lnt" d="M552,100 L620,150"/><path class="g18lnt g18dash" d="M700,186 L700.0,192.0 Q700,198 694.0,198.0 L629.0,198.0 Q620,198 620.0,207.0 L620.0,223.0 Q620,232 611.0,232.0 L552,232"/><text class="g18note" x="560" y="300.0" fill="#6b6965">retrieval reads chunks only;</text><text class="g18note" x="560" y="313.5" fill="#6b6965">the answer never sees a whole file</text><g filter="url(#g18card)"><path d="M300,327 a125.0,7 0 0,1 250,0 v40 a125.0,7 0 0,1 -250,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M300,327 a125.0,7 0 0,0 250,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g18ttl" x="425.0" y="351.0">D3  rag_conversations + rag_messages</text><path class="g18lnt" d="M425,288 L425,316"/><rect x="40" y="402" width="12" height="12" rx="4" fill="#fff" stroke="#a94b2f" stroke-width="1.6"/><text class="g18lbl" x="58" y="411.5">process</text><rect x="102.4" y="402" width="12" height="12" rx="4" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g18lbl" x="120.4" y="411.5">data store</text><rect x="180.4" y="402" width="12" height="12" rx="4" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g18lbl" x="198.4" y="411.5">external entity</text><rect x="284.4" y="402" width="12" height="12" rx="4" fill="#fff" stroke="#6b6965" stroke-width="1.6"/><text class="g18lbl" x="302.4" y="411.5">dashed = conditional</text></svg></div></figure>
+<figure id="fig-F3"><figcaption>Figure 11.3 — Data flow diagram — level 1<span class="cap">Both paths decomposed. The dashed edge from grading back to rewriting is what turns retrieval from one shot into a loop.</span></figcaption><div class="frame"><svg viewBox="0 0 880 520" width="880" height="520" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="520" fill="#fbfaf7"/><defs><marker id="g19ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g19ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g19ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g19ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g19ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g19ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g19card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g19lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g20t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g20tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g20s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g20sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g20lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g20lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g20cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g20ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g20a) }
-  .g20lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g20ab) }
-  .g20lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g20at) }
-  .g20lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g20ap) }
-  .g20dash{ stroke-dasharray:4 3 }
-  .g20proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g20store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g20ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g20band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g20ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g20bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="430" fill="#ffffff"/><g stroke="#a06b21" stroke-width="1.6" fill="none"><circle cx="76" cy="120" r="7"/><path d="M76,127 v16 M66,133 h20 M76,143 l-8,11 M76,143 l8,11"/></g><text class="g20tc" x="76" y="168">Document owner</text><g stroke="#a06b21" stroke-width="1.6" fill="none"><circle cx="76" cy="300" r="7"/><path d="M76,307 v16 M66,313 h20 M76,323 l-8,11 M76,323 l8,11"/></g><text class="g20tc" x="76" y="348">Guest (dev)</text><g stroke="#a06b21" stroke-width="1.6" fill="none"><circle cx="800" cy="200" r="7"/><path d="M800,207 v16 M790,213 h20 M800,223 l-8,11 M800,223 l8,11"/></g><text class="g20tc" x="800" y="248">Stripe</text><rect class="g20band" x="190" y="26" width="540" height="350" rx="14"/><text class="g20cap" x="460.0" y="46" fill="#a06b21">CHAT WITH FILES</text><ellipse class="g20proc" cx="460" cy="76" rx="168" ry="18"/><text class="g20tc" x="460" y="79">Upload PDF, DOCX, TXT, MD or image</text><ellipse class="g20proc" cx="460" cy="124" rx="168" ry="18"/><text class="g20tc" x="460" y="127">Watch ingestion progress</text><ellipse class="g20proc" cx="460" cy="172" rx="168" ry="18"/><text class="g20tc" x="460" y="175">Ask a question of the corpus</text><ellipse class="g20proc" cx="460" cy="220" rx="168" ry="18"/><text class="g20tc" x="460" y="223">See which passages were used</text><ellipse class="g20proc" cx="460" cy="268" rx="168" ry="18"/><text class="g20tc" x="460" y="271">Receive an honest refusal</text><ellipse class="g20proc" cx="460" cy="316" rx="168" ry="18"/><text class="g20tc" x="460" y="319">Delete a document and its chunks</text><ellipse class="g20proc" cx="460" cy="356" rx="168" ry="18"/><text class="g20tc" x="460" y="359">Consume monthly quota</text><path class="g20ln" d="M112,130 L290,76"/><path class="g20ln" d="M112,130 L290,124"/><path class="g20ln" d="M112,130 L290,172"/><path class="g20ln" d="M112,130 L290,220"/><path class="g20ln" d="M112,130 L290,268"/><path class="g20ln" d="M112,130 L290,316"/><path class="g20ln" d="M112,306 L292,316"/><path class="g20lnp" d="M792,208 L700,208 L700,356 L630,356"/><text class="g20lb" x="200" y="398" fill="#7c7566">Answering from the open web is NOT a use case of this product — that belongs to</text><text class="g20lb" x="200" y="411" fill="#7c7566">Deep Research. Everything here is bounded by what the user uploaded.</text></svg></div></figure>
-<figure id="fig-F5"><figcaption>Figure 11.5 — Sequence diagram — upload, then ask<span class="cap">The upload returns before the work finishes; the question does not. The split is the reason the two halves are drawn apart.</span></figcaption><div class="frame"><svg viewBox="0 0 880 686" width="880" height="686" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g21a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g21ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g21at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g21ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g21open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g19ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g19sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g19lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g19lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g19eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g19idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g19note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g19ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g19ar-n) }
+ .g19lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g19ar-a) }
+ .g19lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g19ar-t) }
+ .g19lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g19ar-p) }
+ .g19dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><text x="24" y="26" font-family="JetBrains Mono,monospace" font-size="9" letter-spacing=".1em" fill="#a94b2f">INGESTION - ONCE PER DOCUMENT, ASYNCHRONOUS</text><path d="M36,52 L142,52 L130,100 L24,100 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g19card)"/><text class="g19ttl" x="83.0" y="80.0">Owner</text><rect x="170" y="44" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="243.0" y="71.0">1.1 Validate</text><text class="g19sub" x="243.0" y="86.0">magic bytes</text><rect x="330" y="44" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="403.0" y="71.0">1.2 Extract</text><text class="g19sub" x="403.0" y="86.0">PDF · DOCX · OCR</text><rect x="490" y="44" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="563.0" y="71.0">1.3 Chunk</text><text class="g19sub" x="563.0" y="86.0">1,000 / 150 overlap</text><rect x="650" y="44" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="723.0" y="71.0">1.4 Embed</text><text class="g19sub" x="723.0" y="86.0">bge-small, local</text><path class="g19lna" d="M142,72 L166,72"/><path class="g19lna" d="M316,73 L330,73"/><path class="g19lna" d="M476,73 L490,73"/><path class="g19lna" d="M636,73 L650,73"/><g filter="url(#g19card)"><path d="M400,147 a95.0,7 0 0,1 190,0 v38 a95.0,7 0 0,1 -190,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M400,147 a95.0,7 0 0,0 190,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g19ttl" x="495.0" y="170.0">D1 rag_documents</text><g filter="url(#g19card)"><path d="M650,147 a95.0,7 0 0,1 190,0 v38 a95.0,7 0 0,1 -190,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M650,147 a95.0,7 0 0,0 190,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g19ttl" x="745.0" y="170.0">D2 rag_chunks</text><path class="g19lnt" d="M723,102 L723,136"/><path class="g19lnt" d="M403,102 L403.0,111.0 Q403,120 412.0,120.0 L487.0,120.0 Q495,120 495.0,128.0 L495,136"/><text class="g19note" x="150" y="150.0" fill="#6b6965">the HTTP request returns</text><text class="g19note" x="150" y="163.5" fill="#6b6965">as soon as the row exists</text><path d="M24,214 L856,214" stroke="#ddd8cc" stroke-width="1.2"/><text x="24" y="242" font-family="JetBrains Mono,monospace" font-size="9" letter-spacing=".1em" fill="#1d5f63">ANSWERING - ONCE PER QUESTION, SYNCHRONOUS</text><path d="M36,268 L142,268 L130,316 L24,316 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g19card)"/><text class="g19ttl" x="83.0" y="296.0">Owner</text><rect x="170" y="260" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="243.0" y="287.0">2.1 Contextualise</text><text class="g19sub" x="243.0" y="302.0">resolve pronouns</text><rect x="330" y="260" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="403.0" y="287.0">2.2 Retrieve</text><text class="g19sub" x="403.0" y="302.0">vector + keyword</text><rect x="490" y="260" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="563.0" y="287.0">2.3 Fuse</text><text class="g19sub" x="563.0" y="302.0">RRF, k = 60</text><rect x="650" y="260" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="723.0" y="287.0">2.4 Grade</text><text class="g19sub" x="723.0" y="302.0">do these answer it?</text><rect x="490" y="356" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="563.0" y="383.0">2.5 Rewrite</text><text class="g19sub" x="563.0" y="398.0">different wording</text><rect x="650" y="356" width="146" height="58" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g19card)"/><text class="g19ttl" x="723.0" y="383.0">2.6 Answer</text><text class="g19sub" x="723.0" y="398.0">or decline</text><path class="g19lna" d="M142,288 L166,288"/><path class="g19lna" d="M316,289 L330,289"/><path class="g19lna" d="M476,289 L490,289"/><path class="g19lna" d="M636,289 L650,289"/><path class="g19lna g19dash" d="M723,318 L723.0,327.0 Q723,336 714.0,336.0 L572.0,336.0 Q563,336 563.0,345.0 L563,356"/><text class="g19note" x="576" y="332.0" fill="#a94b2f">no - rewrite once</text><path class="g19lna" d="M723,336 L723,352"/><text class="g19note" x="732" y="340.0" fill="#a94b2f">yes</text><path class="g19lna g19dash" d="M490,395 L319.0,395.0 Q310,395 310.0,386.0 L310.0,341.0 Q310,332 319.0,332.0 L398.0,332.0 Q403,332 403.0,327.0 L403,322"/><text class="g19note" x="322" y="352.0" fill="#a94b2f">retry retrieval, once only</text><path class="g19lnt" d="M650,166 L619.0,166.0 Q610,166 610.0,175.0 L610.0,223.0 Q610,232 601.0,232.0 L412.0,232.0 Q403,232 403.0,241.0 L403,256"/><text class="g19note" x="412" y="224.0" fill="#1d5f63">chunks + vectors</text><path class="g19ln g19dash" d="M723,414 L723.0,439.0 Q723,448 714.0,448.0 L129.0,448.0 Q120,448 120.0,439.0 L120,322"/><text class="g19note" x="330" y="464.0" fill="#6b6965">answer with the passages it used, or a refusal</text><rect x="24" y="492" width="12" height="12" rx="4" fill="#fff" stroke="#a94b2f" stroke-width="1.6"/><text class="g19lbl" x="42" y="501.5">process</text><rect x="86.4" y="492" width="12" height="12" rx="4" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g19lbl" x="104.4" y="501.5">store</text><rect x="138.4" y="492" width="12" height="12" rx="4" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g19lbl" x="156.4" y="501.5">external</text><rect x="206.0" y="492" width="12" height="12" rx="4" fill="#fff" stroke="#6b6965" stroke-width="1.6"/><text class="g19lbl" x="224.0" y="501.5">dashed = conditional</text></svg></div></figure>
+<figure id="fig-F4"><figcaption>Figure 11.4 — Use case diagram<span class="cap">Everything a user can do with this product. Searching the web is deliberately absent — that belongs to Deep Research.</span></figcaption><div class="frame"><svg viewBox="0 0 880 430" width="880" height="430" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="430" fill="#fbfaf7"/><defs><marker id="g20ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g20ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g20ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g20ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g20ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g20ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g20card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g20lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g21t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g21tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g21s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g21sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g21lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g21lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g21cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g21ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g21a) }
-  .g21lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g21ab) }
-  .g21lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g21at) }
-  .g21lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g21ap) }
-  .g21dash{ stroke-dasharray:4 3 }
-  .g21proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g21store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g21ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g21band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g21ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g21bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="686" fill="#ffffff"/><rect class="g21proc" x="24.0" y="26" width="132" height="34" rx="8"/><text class="g21tc" x="90.0" y="45.0">Browser</text><path d="M90,60 L90,620" stroke="#7c7566" stroke-width="1" stroke-dasharray="3 4" fill="none"/><rect class="g21proc" x="198.0" y="26" width="132" height="34" rx="8"/><text class="g21tc" x="264.0" y="45.0">FastAPI</text><path d="M264,60 L264,620" stroke="#7c7566" stroke-width="1" stroke-dasharray="3 4" fill="none"/><rect class="g21proc" x="374.0" y="26" width="132" height="34" rx="8"/><text class="g21tc" x="440.0" y="45.0">Ingest / retrieval</text><path d="M440,60 L440,620" stroke="#7c7566" stroke-width="1" stroke-dasharray="3 4" fill="none"/><rect class="g21ext" x="552.0" y="26" width="132" height="34" rx="8"/><text class="g21tc" x="618.0" y="45.0">Groq</text><path d="M618,60 L618,620" stroke="#7c7566" stroke-width="1" stroke-dasharray="3 4" fill="none"/><rect class="g21store" x="724.0" y="26" width="132" height="34" rx="8"/><text class="g21tc" x="790.0" y="45.0">Postgres</text><path d="M790,60 L790,620" stroke="#7c7566" stroke-width="1" stroke-dasharray="3 4" fill="none"/><text class="g21cap" x="120" y="102" fill="#a06b21">UPLOAD</text><path class="g21ln" d="M96,126 L258,126"/><text class="g21lbc" x="177.0" y="120">POST the file</text><path class="g21lnt" d="M270,156 L784,156"/><text class="g21lbc" x="527.0" y="150">insert row, status = processing</text><path class="g21ln g21dash" d="M258,186 L96,186"/><text class="g21lbc" x="177.0" y="180">202 Accepted — request returns now</text><path class="g21lnb" d="M270,216 L434,216"/><text class="g21lbc" x="352.0" y="210">hand off, out of the request</text><path class="g21ln" d="M446,246 L500,246 L500,266 L450,266"/><text class="g21lb" x="508" y="260">extract, chunk, embed locally</text><path class="g21lnt" d="M446,290 L784,290"/><text class="g21lbc" x="615.0" y="284">write chunks + vectors, status = ready</text><path d="M24,326 L856,326" stroke="#ddd6c8" stroke-width="1.2"/><text class="g21cap" x="126" y="352" fill="#1d5f63">QUESTION</text><path class="g21ln" d="M96,374 L258,374"/><text class="g21lbc" x="177.0" y="368">POST the question</text><path class="g21lnb" d="M270,404 L434,404"/><text class="g21lbc" x="352.0" y="398">contextualise against chat history</text><path class="g21lnt" d="M446,434 L784,434"/><text class="g21lbc" x="615.0" y="428">vector search + keyword search</text><path class="g21ln" d="M446,464 L500,464 L500,484 L450,484"/><text class="g21lb" x="508" y="478">fuse the two rankings — RRF</text><path class="g21lnp" d="M446,508 L612,508"/><text class="g21lbc" x="529.0" y="502">grade the passages  (20B)</text><path class="g21lnp" d="M446,538 L612,538"/><text class="g21lbc" x="529.0" y="532">answer from the passages  (120B)</text><path class="g21lnt" d="M446,568 L784,568"/><text class="g21lbc" x="615.0" y="562">persist the turn</text><path class="g21ln" d="M258,598 L96,598"/><text class="g21lbc" x="177.0" y="592">answer + the passages it used</text><text class="g21lb" x="24" y="650" fill="#7c7566">If grading fails, the question is rewritten once and retrieval runs again before the</text><text class="g21lb" x="24" y="663" fill="#7c7566">system declines — that branch is drawn in full in Figure F.9.</text></svg></div></figure>
-<figure id="fig-F6"><figcaption>Figure 11.6 — Entity-relationship diagram<span class="cap">Chunks and messages carry no user id — their access policies are derived from the parent row, so the two cannot disagree.</span></figcaption><div class="frame"><svg viewBox="0 0 880 498" width="880" height="498" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g22a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g22ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g22at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g22ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g22open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g20ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g20sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g20lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g20lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g20eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g20idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g20note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g20ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g20ar-n) }
+ .g20lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g20ar-a) }
+ .g20lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g20ar-t) }
+ .g20lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g20ar-p) }
+ .g20dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><g stroke="#a94b2f" stroke-width="1.7" fill="none" stroke-linecap="round"><circle cx="76" cy="120" r="7.5"/><path d="M76,128 v15 M66,133 h20 M76,143 l-8,11 M76,143 l8,11"/></g><text class="g20ttl" x="76" y="169">Document owner</text><g stroke="#a94b2f" stroke-width="1.7" fill="none" stroke-linecap="round"><circle cx="76" cy="300" r="7.5"/><path d="M76,308 v15 M66,313 h20 M76,323 l-8,11 M76,323 l8,11"/></g><text class="g20ttl" x="76" y="349">Guest (dev)</text><g stroke="#a94b2f" stroke-width="1.7" fill="none" stroke-linecap="round"><circle cx="800" cy="200" r="7.5"/><path d="M800,208 v15 M790,213 h20 M800,223 l-8,11 M800,223 l8,11"/></g><text class="g20ttl" x="800" y="249">Stripe</text><rect x="190" y="26" width="540" height="350" rx="18" fill="#f4f1e9" stroke="#ddd8cc" stroke-width="1.1"/><text class="g20eyb" x="460.0" y="47" text-anchor="middle" fill="#a94b2f">CHAT WITH FILES</text><ellipse cx="460" cy="76" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="80">Upload PDF, DOCX, TXT, MD or image</text><ellipse cx="460" cy="124" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="128">Watch ingestion progress</text><ellipse cx="460" cy="172" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="176">Ask a question of the corpus</text><ellipse cx="460" cy="220" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="224">See which passages were used</text><ellipse cx="460" cy="268" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="272">Receive an honest refusal</text><ellipse cx="460" cy="316" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="320">Delete a document and its chunks</text><ellipse cx="460" cy="356" rx="168" ry="18" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.4" filter="url(#g20lift)"/><text class="g20ttl" x="460" y="360">Consume monthly quota</text><path class="g20ln" d="M112,130 L290,76"/><path class="g20ln" d="M112,130 L290,124"/><path class="g20ln" d="M112,130 L290,172"/><path class="g20ln" d="M112,130 L290,220"/><path class="g20ln" d="M112,130 L290,268"/><path class="g20ln" d="M112,130 L290,316"/><path class="g20ln" d="M112,306 L292,316"/><path class="g20lnp" d="M792,208 L709.0,208.0 Q700,208 700.0,217.0 L700.0,347.0 Q700,356 691.0,356.0 L630,356"/><text class="g20note" x="200" y="398.0" fill="#6b6965">Answering from the open web is NOT a use case of this product — that belongs to</text><text class="g20note" x="200" y="411.5" fill="#6b6965">Deep Research. Everything here is bounded by what the user uploaded.</text></svg></div></figure>
+<figure id="fig-F5"><figcaption>Figure 11.5 — Sequence diagram — upload, then ask<span class="cap">The upload returns before the work finishes; the question does not. The split is the reason the two halves are drawn apart.</span></figcaption><div class="frame"><svg viewBox="0 0 880 686" width="880" height="686" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="686" fill="#fbfaf7"/><defs><marker id="g21ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g21ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g21ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g21ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g21ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g21ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g21card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g21lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g22t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g22tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g22s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g22sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g22lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g22lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g22cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g22ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g22a) }
-  .g22lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g22ab) }
-  .g22lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g22at) }
-  .g22lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g22ap) }
-  .g22dash{ stroke-dasharray:4 3 }
-  .g22proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g22store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g22ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g22band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g22ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g22bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="498" fill="#ffffff"/><path class="g22ext" d="M42,60 L200,60 L188,110 L30,110 z"/><text class="g22tc" x="115.0" y="82.0">Supabase identity</text><text class="g22sc" x="115.0" y="96.0">user_id from a JWT</text><rect x="250" y="44" width="230" height="169" rx="7" fill="#fff" stroke="#1d5f63" stroke-width="1.5"/><path d="M250,70 h230" stroke="#1d5f63" stroke-width="1.2" opacity=".5"/><text class="g22tc" x="365.0" y="62">rag_documents</text><text class="g22lb" x="260" y="86">id</text><text class="g22lb" x="470" y="86" text-anchor="end" fill="#a06b21">PK</text><text class="g22lb" x="260" y="101">user_id</text><text class="g22lb" x="470" y="101" text-anchor="end" fill="#a06b21">FK</text><text class="g22lb" x="260" y="116">filename</text><text class="g22lb" x="260" y="131">file_type</text><text class="g22lb" x="260" y="146">status</text><text class="g22lb" x="260" y="161">char_count</text><text class="g22lb" x="260" y="176">chunk_count</text><text class="g22lb" x="260" y="191">error</text><text class="g22lb" x="260" y="206">created_at</text><rect x="560" y="44" width="250" height="124" rx="7" fill="#fff" stroke="#1d5f63" stroke-width="1.5"/><path d="M560,70 h250" stroke="#1d5f63" stroke-width="1.2" opacity=".5"/><text class="g22tc" x="685.0" y="62">rag_chunks</text><text class="g22lb" x="570" y="86">id</text><text class="g22lb" x="800" y="86" text-anchor="end" fill="#a06b21">PK</text><text class="g22lb" x="570" y="101">document_id</text><text class="g22lb" x="800" y="101" text-anchor="end" fill="#a06b21">FK</text><text class="g22lb" x="570" y="116">chunk_index</text><text class="g22lb" x="570" y="131">content</text><text class="g22lb" x="570" y="146">embedding  vector(384)</text><text class="g22lb" x="570" y="161">content_tsv  tsvector</text><rect x="250" y="252" width="230" height="79" rx="7" fill="#fff" stroke="#1d5f63" stroke-width="1.5"/><path d="M250,278 h230" stroke="#1d5f63" stroke-width="1.2" opacity=".5"/><text class="g22tc" x="365.0" y="270">rag_conversations</text><text class="g22lb" x="260" y="294">id</text><text class="g22lb" x="470" y="294" text-anchor="end" fill="#a06b21">PK</text><text class="g22lb" x="260" y="309">user_id</text><text class="g22lb" x="470" y="309" text-anchor="end" fill="#a06b21">FK</text><text class="g22lb" x="260" y="324">created_at</text><rect x="560" y="252" width="250" height="124" rx="7" fill="#fff" stroke="#1d5f63" stroke-width="1.5"/><path d="M560,278 h250" stroke="#1d5f63" stroke-width="1.2" opacity=".5"/><text class="g22tc" x="685.0" y="270">rag_messages</text><text class="g22lb" x="570" y="294">id</text><text class="g22lb" x="800" y="294" text-anchor="end" fill="#a06b21">PK</text><text class="g22lb" x="570" y="309">conversation_id</text><text class="g22lb" x="800" y="309" text-anchor="end" fill="#a06b21">FK</text><text class="g22lb" x="570" y="324">role</text><text class="g22lb" x="570" y="339">content</text><text class="g22lb" x="570" y="354">sources  (JSON text)</text><text class="g22lb" x="570" y="369">created_at</text><path class="g22lnt" d="M480,80 L556,80"/><text class="g22lb" x="496" y="72" fill="#1d5f63">1 : N</text><path class="g22lnt" d="M480,288 L556,288"/><text class="g22lb" x="496" y="280" fill="#1d5f63">1 : N</text><path class="g22lnt" d="M200,84 L225,84 L225,80 L246,80"/><path class="g22lnt" d="M200,96 L225,96 L225,288 L246,288"/><text class="g22lb" x="206" y="200" fill="#1d5f63">1 : N</text><text class="g22lb" x="30" y="132" fill="#7c7566">No local users</text><text class="g22lb" x="30" y="145" fill="#7c7566">table — identity</text><text class="g22lb" x="30" y="158" fill="#7c7566">lives in Supabase</text><text class="g22lb" x="30" y="372" fill="#7c7566">rag_chunks and rag_messages carry no user_id of their own. Their row-level security policies</text><text class="g22lb" x="30" y="385" fill="#7c7566">are derived — a chunk is visible only if its parent document is, and a message only if its</text><text class="g22lb" x="30" y="398" fill="#7c7566">conversation is. One fewer column to forget on insert, and no way for a chunk and its document</text><text class="g22lb" x="30" y="411" fill="#7c7566">to disagree about who owns them. Both foreign keys are ON DELETE CASCADE.</text><text class="g22lb" x="30" y="424" fill="#7c7566"></text><text class="g22lb" x="30" y="437" fill="#7c7566">embedding is vector(384) behind an HNSW index; content_tsv is a generated tsvector behind a GIN</text><text class="g22lb" x="30" y="450" fill="#7c7566">index. Both halves of hybrid retrieval are indexed on the same row, so fusion needs no join.</text><rect x="30" y="470" width="11" height="11" rx="3" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g22lb" x="47" y="479">entity and relationship</text><rect x="176.2" y="470" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="g22lb" x="193.2" y="479">key column</text><rect x="252.2" y="470" width="11" height="11" rx="3" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g22lb" x="269.2" y="479">outside the boundary</text></svg></div></figure>
-<figure id="fig-F7"><figcaption>Figure 11.7 — State transition diagram<span class="cap">The life of one uploaded document, including the stale state a restart produces and the reaper that ends it.</span></figcaption><div class="frame"><svg viewBox="0 0 880 484" width="880" height="484" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g23a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g23ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g23at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g23ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g23open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g21ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g21sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g21lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g21lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g21eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g21idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g21note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g21ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g21ar-n) }
+ .g21lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g21ar-a) }
+ .g21lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g21ar-t) }
+ .g21lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g21ar-p) }
+ .g21dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><rect x="16.0" y="26" width="148" height="36" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g21card)"/><text class="g21ttl" x="90.0" y="48.0">Browser</text><path d="M90,62 L90,620" stroke="#ddd8cc" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/><rect x="190.0" y="26" width="148" height="36" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g21card)"/><text class="g21ttl" x="264.0" y="48.0">FastAPI</text><path d="M264,62 L264,620" stroke="#ddd8cc" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/><rect x="366.0" y="26" width="148" height="36" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g21card)"/><text class="g21ttl" x="440.0" y="48.0">Ingest / retrieval</text><path d="M440,62 L440,620" stroke="#ddd8cc" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/><rect x="544.0" y="26" width="148" height="36" rx="12" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g21card)"/><text class="g21ttl" x="618.0" y="48.0">Groq</text><path d="M618,62 L618,620" stroke="#ddd8cc" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/><rect x="716.0" y="26" width="148" height="36" rx="12" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4" filter="url(#g21card)"/><text class="g21ttl" x="790.0" y="48.0">Postgres</text><path d="M790,62 L790,620" stroke="#ddd8cc" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/><text class="g21cap" x="120" y="102" fill="#a94b2f">UPLOAD</text><path class="g21ln" d="M96,126 L258,126"/><rect x="139.24" y="110.5" width="75.52" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="177.0" y="119">POST the file</text><path class="g21lnt" d="M270,156 L784,156"/><rect x="443.88" y="140.5" width="166.24" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="527.0" y="149">insert row, status = processing</text><path class="g21ln g21dash" d="M258,186 L96,186"/><rect x="86.32" y="170.5" width="181.36" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="177.0" y="179">202 Accepted — request returns now</text><path class="g21lna" d="M270,216 L434,216"/><rect x="276.44" y="200.5" width="151.12" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="352.0" y="209">hand off, out of the request</text><path class="g21ln" d="M446,246 L494.0,246.0 Q500,246 500.0,252.0 L500.0,260.0 Q500,266 494.0,266.0 L450,266"/><text class="g21lbl" x="509" y="260">extract, chunk, embed locally</text><path class="g21lnt" d="M446,290 L784,290"/><rect x="514.24" y="274.5" width="201.52" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="615.0" y="283">write chunks + vectors, status = ready</text><path d="M24,326 L856,326" stroke="#ddd8cc" stroke-width="1.2"/><text class="g21cap" x="126" y="352" fill="#1d5f63">QUESTION</text><path class="g21ln" d="M96,374 L258,374"/><rect x="129.16" y="358.5" width="95.68" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="177.0" y="367">POST the question</text><path class="g21lna" d="M270,404 L434,404"/><rect x="261.32" y="388.5" width="181.36" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="352.0" y="397">contextualise against chat history</text><path class="g21lnt" d="M446,434 L784,434"/><rect x="534.4" y="418.5" width="161.2" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="615.0" y="427">vector search + keyword search</text><path class="g21ln" d="M446,464 L494.0,464.0 Q500,464 500.0,470.0 L500.0,478.0 Q500,484 494.0,484.0 L450,484"/><text class="g21lbl" x="509" y="478">fuse the two rankings — RRF</text><path class="g21lnp" d="M446,508 L612,508"/><rect x="461.0" y="492.5" width="136.0" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="529.0" y="501">grade the passages  (20B)</text><path class="g21lnp" d="M446,538 L612,538"/><rect x="443.36" y="522.5" width="171.28" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="529.0" y="531">answer from the passages  (120B)</text><path class="g21lnt" d="M446,568 L784,568"/><rect x="569.68" y="552.5" width="90.64" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="615.0" y="561">persist the turn</text><path class="g21ln" d="M258,598 L96,598"/><rect x="98.92" y="582.5" width="156.16" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g21lblc" x="177.0" y="591">answer + the passages it used</text><text class="g21note" x="24" y="650.0" fill="#6b6965">If grading fails, the question is rewritten once and retrieval runs again before the</text><text class="g21note" x="24" y="663.5" fill="#6b6965">system declines — that branch is drawn in full in Figure F.9.</text></svg></div></figure>
+<figure id="fig-F6"><figcaption>Figure 11.6 — Entity-relationship diagram<span class="cap">Chunks and messages carry no user id — their access policies are derived from the parent row, so the two cannot disagree.</span></figcaption><div class="frame"><svg viewBox="0 0 880 498" width="880" height="498" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="498" fill="#fbfaf7"/><defs><marker id="g22ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g22ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g22ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g22ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g22ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g22ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g22card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g22lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g23t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g23tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g23s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g23sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g23lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g23lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g23cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g23ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g23a) }
-  .g23lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g23ab) }
-  .g23lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g23at) }
-  .g23lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g23ap) }
-  .g23dash{ stroke-dasharray:4 3 }
-  .g23proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g23store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g23ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g23band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g23ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g23bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="484" fill="#ffffff"/><circle cx="60" cy="86" r="9" fill="#16150f"/><path class="g23lnb" d="M69,86 L116,86"/><rect class="g23proc" x="120" y="60" width="160" height="52" rx="8"/><text class="g23tc" x="200.0" y="83.0">uploaded</text><text class="g23sc" x="200.0" y="97.0">row exists</text><path class="g23lnb" d="M280,86 L326,86"/><rect class="g23proc" x="330" y="60" width="160" height="52" rx="8"/><text class="g23tc" x="410.0" y="83.0">extracting</text><text class="g23sc" x="410.0" y="97.0">by type</text><path class="g23lnb" d="M490,86 L536,86"/><rect class="g23proc" x="540" y="60" width="160" height="52" rx="8"/><text class="g23tc" x="620.0" y="83.0">chunking</text><text class="g23sc" x="620.0" y="97.0">1,000 / 150</text><path class="g23lnb" d="M620,112 L620,150 L200,150 L200,186"/><rect class="g23proc" x="120" y="186" width="160" height="52" rx="8"/><text class="g23tc" x="200.0" y="209.0">embedding</text><text class="g23sc" x="200.0" y="223.0">local, 384-d</text><path class="g23lnb" d="M280,212 L326,212"/><rect class="g23ok" x="330" y="186" width="180" height="52" rx="8"/><text class="g23tc" x="420.0" y="209.0">ready</text><text class="g23sc" x="420.0" y="223.0">answerable</text><rect class="g23bad" x="330" y="316" width="180" height="52" rx="8"/><text class="g23tc" x="420.0" y="339.0">failed</text><text class="g23sc" x="420.0" y="353.0">unsupported or corrupt</text><path class="g23lnb g23dash" d="M410,112 L410,130 L300,130 L300,342 L326,342"/><text class="g23lb" x="214" y="300" fill="#9c2f26">any ingest step,</text><text class="g23lb" x="214" y="313" fill="#9c2f26">on error</text><rect class="g23bad" x="600" y="316" width="200" height="52" rx="8"/><text class="g23tc" x="700.0" y="339.0">failed (stale)</text><text class="g23sc" x="700.0" y="353.0">reaped after 15 min</text><path class="g23lnb g23dash" d="M200,238 L200,280 L700,280 L700,312"/><text class="g23lb" x="360" y="274" fill="#8a6314">process restarted mid-ingest</text><rect class="g23ok" x="600" y="186" width="200" height="52" rx="8"/><text class="g23tc" x="700.0" y="209.0">deleted</text><text class="g23sc" x="700.0" y="223.0">chunks cascade</text><path class="g23lnb" d="M510,212 L596,212"/><text class="g23lb" x="520" y="174" fill="#a06b21">on request</text><text class="g23lb" x="120" y="396" fill="#7c7566">There is no durable queue behind this. A restart between 'uploaded' and 'ready'</text><text class="g23lb" x="120" y="409" fill="#7c7566">strands the row, and the reaper is what stops it sitting in 'processing' forever —</text><text class="g23lb" x="120" y="422" fill="#7c7566">a mitigation, not a fix. Chapter 10 says so plainly.</text><rect x="120" y="456" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="g23lb" x="137" y="465">in progress</text><rect x="201.4" y="456" width="11" height="11" rx="3" fill="#fff" stroke="#1f6b4a" stroke-width="1.6"/><text class="g23lb" x="218.4" y="465">terminal success</text><rect x="309.8" y="456" width="11" height="11" rx="3" fill="#fff" stroke="#9c2f26" stroke-width="1.6"/><text class="g23lb" x="326.8" y="465">terminal failure</text><rect x="418.20000000000005" y="456" width="11" height="11" rx="3" fill="#fff" stroke="#7c7566" stroke-width="1.6"/><text class="g23lb" x="435.20000000000005" y="465">dashed = conditional</text></svg></div></figure>
-<figure id="fig-F8"><figcaption>Figure 11.8 — Deployment diagram<span class="cap">Embedding runs in the application process, which is what makes evaluation free — and ingestion shares it, which is the compromise.</span></figcaption><div class="frame"><svg viewBox="0 0 880 452" width="880" height="452" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g24a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g24ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g24at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g24ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g24open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g22ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g22sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g22lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g22lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g22eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g22idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g22note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g22ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g22ar-n) }
+ .g22lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g22ar-a) }
+ .g22lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g22ar-t) }
+ .g22lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g22ar-p) }
+ .g22dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><path d="M42,60 L200,60 L188,110 L30,110 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g22card)"/><text class="g22ttl" x="115.0" y="83.0">Supabase identity</text><text class="g22sub" x="115.0" y="98.0">user_id from a JWT</text><rect x="250" y="44" width="230" height="175" rx="12" fill="#fbfaf7" stroke="#1d5f63" stroke-width="1.4" filter="url(#g22card)"/><path d="M251,74 h228" stroke="#1d5f63" stroke-width="1.1" opacity=".45"/><text class="g22ttl" x="365.0" y="64">rag_documents</text><text class="g22lbl" x="262" y="90">id</text><text class="g22lbl" x="468" y="90" text-anchor="end" fill="#a94b2f" font-weight="600">PK</text><text class="g22lbl" x="262" y="105">user_id</text><text class="g22lbl" x="468" y="105" text-anchor="end" fill="#a94b2f" font-weight="600">FK</text><text class="g22lbl" x="262" y="120">filename</text><text class="g22lbl" x="262" y="135">file_type</text><text class="g22lbl" x="262" y="150">status</text><text class="g22lbl" x="262" y="165">char_count</text><text class="g22lbl" x="262" y="180">chunk_count</text><text class="g22lbl" x="262" y="195">error</text><text class="g22lbl" x="262" y="210">created_at</text><rect x="560" y="44" width="250" height="130" rx="12" fill="#fbfaf7" stroke="#1d5f63" stroke-width="1.4" filter="url(#g22card)"/><path d="M561,74 h248" stroke="#1d5f63" stroke-width="1.1" opacity=".45"/><text class="g22ttl" x="685.0" y="64">rag_chunks</text><text class="g22lbl" x="572" y="90">id</text><text class="g22lbl" x="798" y="90" text-anchor="end" fill="#a94b2f" font-weight="600">PK</text><text class="g22lbl" x="572" y="105">document_id</text><text class="g22lbl" x="798" y="105" text-anchor="end" fill="#a94b2f" font-weight="600">FK</text><text class="g22lbl" x="572" y="120">chunk_index</text><text class="g22lbl" x="572" y="135">content</text><text class="g22lbl" x="572" y="150">embedding  vector(384)</text><text class="g22lbl" x="572" y="165">content_tsv  tsvector</text><rect x="250" y="252" width="230" height="85" rx="12" fill="#fbfaf7" stroke="#1d5f63" stroke-width="1.4" filter="url(#g22card)"/><path d="M251,282 h228" stroke="#1d5f63" stroke-width="1.1" opacity=".45"/><text class="g22ttl" x="365.0" y="272">rag_conversations</text><text class="g22lbl" x="262" y="298">id</text><text class="g22lbl" x="468" y="298" text-anchor="end" fill="#a94b2f" font-weight="600">PK</text><text class="g22lbl" x="262" y="313">user_id</text><text class="g22lbl" x="468" y="313" text-anchor="end" fill="#a94b2f" font-weight="600">FK</text><text class="g22lbl" x="262" y="328">created_at</text><rect x="560" y="252" width="250" height="130" rx="12" fill="#fbfaf7" stroke="#1d5f63" stroke-width="1.4" filter="url(#g22card)"/><path d="M561,282 h248" stroke="#1d5f63" stroke-width="1.1" opacity=".45"/><text class="g22ttl" x="685.0" y="272">rag_messages</text><text class="g22lbl" x="572" y="298">id</text><text class="g22lbl" x="798" y="298" text-anchor="end" fill="#a94b2f" font-weight="600">PK</text><text class="g22lbl" x="572" y="313">conversation_id</text><text class="g22lbl" x="798" y="313" text-anchor="end" fill="#a94b2f" font-weight="600">FK</text><text class="g22lbl" x="572" y="328">role</text><text class="g22lbl" x="572" y="343">content</text><text class="g22lbl" x="572" y="358">sources  (JSON text)</text><text class="g22lbl" x="572" y="373">created_at</text><path class="g22lnt" d="M480,80 L556,80"/><text class="g22note" x="496" y="72.0" fill="#1d5f63">1 : N</text><path class="g22lnt" d="M480,288 L556,288"/><text class="g22note" x="496" y="280.0" fill="#1d5f63">1 : N</text><path class="g22lnt" d="M200,84 L223.0,84.0 Q225,84 225.0,82.0 L225.0,82.0 Q225,80 227.0,80.0 L246,80"/><path class="g22lnt" d="M200,96 L216.0,96.0 Q225,96 225.0,105.0 L225.0,279.0 Q225,288 234.0,288.0 L246,288"/><text class="g22note" x="206" y="200.0" fill="#1d5f63">1 : N</text><text class="g22note" x="30" y="132.0" fill="#6b6965">No local users</text><text class="g22note" x="30" y="145.5" fill="#6b6965">table — identity</text><text class="g22note" x="30" y="159.0" fill="#6b6965">lives in Supabase</text><text class="g22note" x="30" y="372.0" fill="#6b6965">rag_chunks and rag_messages carry no user_id of their own. Their row-level security policies</text><text class="g22note" x="30" y="385.5" fill="#6b6965">are derived — a chunk is visible only if its parent document is, and a message only if its</text><text class="g22note" x="30" y="399.0" fill="#6b6965">conversation is. One fewer column to forget on insert, and no way for a chunk and its document</text><text class="g22note" x="30" y="412.5" fill="#6b6965">to disagree about who owns them. Both foreign keys are ON DELETE CASCADE.</text><text class="g22note" x="30" y="426.0" fill="#6b6965"></text><text class="g22note" x="30" y="439.5" fill="#6b6965">embedding is vector(384) behind an HNSW index; content_tsv is a generated tsvector behind a GIN</text><text class="g22note" x="30" y="453.0" fill="#6b6965">index. Both halves of hybrid retrieval are indexed on the same row, so fusion needs no join.</text><rect x="30" y="470" width="12" height="12" rx="4" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="g22lbl" x="48" y="479.5">entity and relationship</text><rect x="175.60000000000002" y="470" width="12" height="12" rx="4" fill="#fff" stroke="#a94b2f" stroke-width="1.6"/><text class="g22lbl" x="193.60000000000002" y="479.5">key column</text><rect x="253.60000000000002" y="470" width="12" height="12" rx="4" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="g22lbl" x="271.6" y="479.5">outside the boundary</text></svg></div></figure>
+<figure id="fig-F7"><figcaption>Figure 11.7 — State transition diagram<span class="cap">The life of one uploaded document, including the stale state a restart produces and the reaper that ends it.</span></figcaption><div class="frame"><svg viewBox="0 0 880 484" width="880" height="484" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="484" fill="#fbfaf7"/><defs><marker id="g23ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g23ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g23ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g23ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g23ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g23ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g23card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g23lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g24t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g24tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g24s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g24sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g24lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g24lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g24cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g24ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g24a) }
-  .g24lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g24ab) }
-  .g24lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g24at) }
-  .g24lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g24ap) }
-  .g24dash{ stroke-dasharray:4 3 }
-  .g24proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g24store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g24ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g24band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g24ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g24bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="452" fill="#ffffff"/><rect class="g24band" x="30" y="30" width="240" height="190" rx="14"/><text class="g24cap" x="150.0" y="50" fill="#a06b21">CLIENT</text><rect class="g24proc" x="56" y="66" width="188" height="54" rx="8"/><text class="g24tc" x="150.0" y="90.0">Browser</text><text class="g24sc" x="150.0" y="104.0">React 19 SPA</text><rect class="g24proc" x="56" y="138" width="188" height="54" rx="8"/><text class="g24tc" x="150.0" y="162.0">Upload widget</text><text class="g24sc" x="150.0" y="176.0">progress polling</text><rect class="g24band" x="310" y="30" width="270" height="300" rx="14"/><text class="g24cap" x="445.0" y="50" fill="#a06b21">APPLICATION NODE</text><rect class="g24proc" x="336" y="66" width="218" height="54" rx="8"/><text class="g24tc" x="445.0" y="90.0">uvicorn / FastAPI</text><text class="g24sc" x="445.0" y="104.0">async workers</text><rect class="g24proc" x="336" y="138" width="218" height="54" rx="8"/><text class="g24tc" x="445.0" y="162.0">fastembed</text><text class="g24sc" x="445.0" y="176.0">bge-small, in-process</text><rect class="g24proc" x="336" y="210" width="218" height="54" rx="8"/><text class="g24tc" x="445.0" y="234.0">ingest task</text><text class="g24sc" x="445.0" y="248.0">background, same process</text><rect class="g24band" x="620" y="30" width="230" height="176" rx="14"/><text class="g24cap" x="735.0" y="50" fill="#a06b21">DATA NODE</text><path class="g24store" d="M646,73 a89.0,7 0 0,1 178,0 v48 a89.0,7 0 0,1 -178,0 z"/><path d="M646,73 a89.0,7 0 0,0 178,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="g24tc" x="735.0" y="99.0">PostgreSQL 16</text><text class="g24sc" x="735.0" y="113.0">pgvector + FTS</text><text class="g24lb" x="646" y="150" fill="#7c7566">HNSW on embedding</text><text class="g24lb" x="646" y="163" fill="#7c7566">GIN on tsv</text><rect class="g24band" x="620" y="240" width="230" height="186" rx="14"/><text class="g24cap" x="735.0" y="260" fill="#a06b21">EXTERNAL</text><path class="g24ext" d="M658,272 L824,272 L812,320 L646,320 z"/><text class="g24tc" x="735.0" y="293.0">Groq</text><text class="g24sc" x="735.0" y="307.0">20B / 120B</text><path class="g24ext" d="M658,332 L824,332 L812,380 L646,380 z"/><text class="g24tc" x="735.0" y="353.0">Supabase</text><text class="g24sc" x="735.0" y="367.0">JWKS</text><path class="g24ln" d="M248,92 L332,92"/><text class="g24lbc" x="290.0" y="86.0">HTTPS</text><path class="g24ln" d="M248,164 L332,100"/><path class="g24lnt" d="M558,96 L642,96"/><text class="g24lbc" x="600.0" y="90.0">cognita_app role</text><path class="g24lnt" d="M558,236 L642,100"/><path class="g24lnp" d="M558,164 L642,296"/><text class="g24lb" x="336" y="290" fill="#7c7566">embedding runs here, so retrieval costs nothing</text><text class="g24lb" x="336" y="303" fill="#7c7566">and evaluating hundreds of questions is free</text><text class="g24lb" x="336" y="352" fill="#8a6314">ingestion shares the web process — the single</text><text class="g24lb" x="336" y="365" fill="#8a6314">largest architectural compromise in this product</text></svg></div></figure>
-<figure id="fig-F9"><figcaption>Figure 11.9 — Activity diagram<span class="cap">Grade, rewrite, retry, decline. Declining is drawn as a terminal success, because it is one.</span></figcaption><div class="frame"><svg viewBox="0 0 880 566" width="880" height="566" xmlns="http://www.w3.org/2000/svg" role="img">
-<defs>
-  <marker id="g25a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
-  <marker id="g25ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
-  <marker id="g25at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
-  <marker id="g25ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
-  <marker id="g25open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+ .g23ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g23sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g23lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g23lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g23eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g23idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g23note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g23ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g23ar-n) }
+ .g23lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g23ar-a) }
+ .g23lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g23ar-t) }
+ .g23lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g23ar-p) }
+ .g23dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><circle cx="60" cy="86" r="9" fill="#141413"/><path class="g23lna" d="M69,86 L116,86"/><rect x="120" y="60" width="160" height="52" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="200.0" y="84.0">uploaded</text><text class="g23sub" x="200.0" y="99.0">row exists</text><path class="g23lna" d="M280,86 L326,86"/><rect x="330" y="60" width="160" height="52" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="410.0" y="84.0">extracting</text><text class="g23sub" x="410.0" y="99.0">by type</text><path class="g23lna" d="M490,86 L536,86"/><rect x="540" y="60" width="160" height="52" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="620.0" y="84.0">chunking</text><text class="g23sub" x="620.0" y="99.0">1,000 / 150</text><path class="g23lna" d="M620,112 L620.0,141.0 Q620,150 611.0,150.0 L209.0,150.0 Q200,150 200.0,159.0 L200,186"/><rect x="120" y="186" width="160" height="52" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="200.0" y="210.0">embedding</text><text class="g23sub" x="200.0" y="225.0">local, 384-d</text><path class="g23lna" d="M280,212 L326,212"/><rect x="330" y="186" width="180" height="52" rx="12" fill="#eef5f0" stroke="#2f7d55" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="420.0" y="210.0">ready</text><text class="g23sub" x="420.0" y="225.0">answerable</text><rect x="330" y="316" width="180" height="52" rx="12" fill="#fbf0ee" stroke="#b3402f" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="420.0" y="340.0">failed</text><text class="g23sub" x="420.0" y="355.0">unsupported or corrupt</text><path class="g23lna g23dash" d="M410,112 L410.0,121.0 Q410,130 401.0,130.0 L309.0,130.0 Q300,130 300.0,139.0 L300.0,333.0 Q300,342 309.0,342.0 L326,342"/><text class="g23note" x="214" y="300.0" fill="#b3402f">any ingest step,</text><text class="g23note" x="214" y="313.5" fill="#b3402f">on error</text><rect x="600" y="316" width="200" height="52" rx="12" fill="#fbf0ee" stroke="#b3402f" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="700.0" y="340.0">failed (stale)</text><text class="g23sub" x="700.0" y="355.0">reaped after 15 min</text><path class="g23lna g23dash" d="M200,238 L200.0,271.0 Q200,280 209.0,280.0 L691.0,280.0 Q700,280 700.0,289.0 L700,312"/><text class="g23note" x="360" y="274.0" fill="#a8690d">process restarted mid-ingest</text><rect x="600" y="186" width="200" height="52" rx="12" fill="#eef5f0" stroke="#2f7d55" stroke-width="1.5" filter="url(#g23card)"/><text class="g23ttl" x="700.0" y="210.0">deleted</text><text class="g23sub" x="700.0" y="225.0">chunks cascade</text><path class="g23lna" d="M510,212 L596,212"/><text class="g23note" x="520" y="174.0" fill="#a94b2f">on request</text><text class="g23note" x="120" y="396.0" fill="#6b6965">There is no durable queue behind this. A restart between 'uploaded' and 'ready'</text><text class="g23note" x="120" y="409.5" fill="#6b6965">strands the row, and the reaper is what stops it sitting in 'processing' forever —</text><text class="g23note" x="120" y="423.0" fill="#6b6965">a mitigation, not a fix. Chapter 10 says so plainly.</text><rect x="120" y="456" width="12" height="12" rx="4" fill="#fff" stroke="#a94b2f" stroke-width="1.6"/><text class="g23lbl" x="138" y="465.5">in progress</text><rect x="203.2" y="456" width="12" height="12" rx="4" fill="#fff" stroke="#2f7d55" stroke-width="1.6"/><text class="g23lbl" x="221.2" y="465.5">terminal success</text><rect x="312.4" y="456" width="12" height="12" rx="4" fill="#fff" stroke="#b3402f" stroke-width="1.6"/><text class="g23lbl" x="330.4" y="465.5">terminal failure</text><rect x="421.59999999999997" y="456" width="12" height="12" rx="4" fill="#fff" stroke="#6b6965" stroke-width="1.6"/><text class="g23lbl" x="439.59999999999997" y="465.5">dashed = conditional</text></svg></div></figure>
+<figure id="fig-F8"><figcaption>Figure 11.8 — Deployment diagram<span class="cap">Embedding runs in the application process, which is what makes evaluation free — and ingestion shares it, which is the compromise.</span></figcaption><div class="frame"><svg viewBox="0 0 880 452" width="880" height="452" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="452" fill="#fbfaf7"/><defs><marker id="g24ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g24ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g24ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g24ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g24ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g24ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g24card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g24lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
 </defs>
 <style>
-  .g25t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
-  .g25tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
-  .g25s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
-  .g25sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
-  .g25lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
-  .g25lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
-  .g25cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
-  .g25ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#g25a) }
-  .g25lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#g25ab) }
-  .g25lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#g25at) }
-  .g25lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#g25ap) }
-  .g25dash{ stroke-dasharray:4 3 }
-  .g25proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
-  .g25store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
-  .g25ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
-  .g25band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
-  .g25ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
-  .g25bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
-</style><rect width="880" height="566" fill="#ffffff"/><circle cx="150" cy="40" r="9" fill="#16150f"/><path class="g25lnb" d="M150,49 L150,72"/><rect class="g25proc" x="60" y="72" width="180" height="46" rx="8"/><text class="g25tc" x="150.0" y="92.0">Contextualise</text><text class="g25sc" x="150.0" y="106.0">resolve against history</text><path class="g25lnb" d="M150,118 L150,146"/><rect class="g25proc" x="60" y="146" width="180" height="46" rx="8"/><text class="g25tc" x="150.0" y="166.0">Vector search</text><text class="g25sc" x="150.0" y="180.0">cosine, top 20</text><path class="g25lnb" d="M150,192 L150,220"/><rect class="g25proc" x="60" y="220" width="180" height="46" rx="8"/><text class="g25tc" x="150.0" y="240.0">Keyword search</text><text class="g25sc" x="150.0" y="254.0">websearch_to_tsquery</text><path class="g25lnb" d="M150,266 L150,294"/><rect class="g25proc" x="60" y="294" width="180" height="46" rx="8"/><text class="g25tc" x="150.0" y="314.0">Fuse rankings</text><text class="g25sc" x="150.0" y="328.0">RRF, k = 60</text><path class="g25lnb" d="M240,317 L344,317"/><rect class="g25proc" x="350" y="294" width="190" height="46" rx="8"/><text class="g25tc" x="445.0" y="319.0">Grade the passages</text><path class="g25lnb" d="M400,294 L422,246"/><path class="g25proc" d="M450,189.0 L550.0,220 L450,251.0 L350.0,220 z"/><text class="g25tc" x="450" y="223">do they answer it?</text><path class="g25lnb" d="M550,220 L634,220"/><text class="g25lb" x="576" y="212" fill="#a06b21">yes</text><rect class="g25ok" x="640" y="196" width="190" height="48" rx="8"/><text class="g25tc" x="735.0" y="217.0">Answer from them</text><text class="g25sc" x="735.0" y="231.0">with citations</text><path class="g25lnb" d="M735,196 L735,160"/><rect class="g25proc" x="640" y="104" width="190" height="48" rx="8"/><text class="g25tc" x="735.0" y="125.0">Judge the answer</text><text class="g25sc" x="735.0" y="139.0">faithful? relevant?</text><path class="g25lnt" d="M735,104 L735,68"/><circle cx="735" cy="50" r="11" fill="none" stroke="#16150f" stroke-width="2"/><circle cx="735" cy="50" r="6" fill="#16150f"/><path class="g25lnb g25dash" d="M350,220 L300,220 L300,404 L344,404"/><text class="g25lb" x="238" y="290" fill="#a06b21">no - and no</text><text class="g25lb" x="238" y="303" fill="#a06b21">retry yet</text><rect class="g25proc" x="350" y="380" width="190" height="48" rx="8"/><text class="g25tc" x="445.0" y="401.0">Rewrite the question</text><text class="g25sc" x="445.0" y="415.0">different wording</text><path class="g25lnb g25dash" d="M445,428 L445,466 L150,466 L150,346"/><text class="g25lb" x="300" y="484" fill="#7c7566">retry retrieval, once only</text><path class="g25lnb g25dash" d="M480,244 L600,244 L600,404 L634,404"/><text class="g25lb" x="608" y="330" fill="#a06b21">no - and</text><text class="g25lb" x="608" y="343" fill="#a06b21">already retried</text><rect class="g25ok" x="640" y="380" width="190" height="48" rx="8"/><text class="g25tc" x="735.0" y="401.0">Decline to answer</text><text class="g25sc" x="735.0" y="415.0">say what is missing</text><text class="g25lb" x="60" y="520" fill="#7c7566">Declining is drawn as a success because that is what it is. A system that answers</text><text class="g25lb" x="60" y="533" fill="#7c7566">every question from a corpus that does not contain the answer is not more useful —</text><text class="g25lb" x="60" y="546" fill="#7c7566">it is the failure this product exists to avoid.</text></svg></div></figure>
+ .g24ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g24sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g24lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g24lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g24eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g24idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g24note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g24ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g24ar-n) }
+ .g24lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g24ar-a) }
+ .g24lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g24ar-t) }
+ .g24lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g24ar-p) }
+ .g24dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><rect x="30" y="30" width="240" height="190" rx="18" fill="#f4f1e9" stroke="#ddd8cc" stroke-width="1.1"/><text class="g24eyb" x="150.0" y="51" text-anchor="middle" fill="#a94b2f">CLIENT</text><rect x="56" y="66" width="188" height="54" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g24card)"/><text class="g24ttl" x="150.0" y="91.0">Browser</text><text class="g24sub" x="150.0" y="106.0">React 19 SPA</text><rect x="56" y="138" width="188" height="54" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g24card)"/><text class="g24ttl" x="150.0" y="163.0">Upload widget</text><text class="g24sub" x="150.0" y="178.0">progress polling</text><rect x="310" y="30" width="270" height="300" rx="18" fill="#f4f1e9" stroke="#ddd8cc" stroke-width="1.1"/><text class="g24eyb" x="445.0" y="51" text-anchor="middle" fill="#a94b2f">APPLICATION NODE</text><rect x="336" y="66" width="218" height="54" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g24card)"/><text class="g24ttl" x="445.0" y="91.0">uvicorn / FastAPI</text><text class="g24sub" x="445.0" y="106.0">async workers</text><rect x="336" y="138" width="218" height="54" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g24card)"/><text class="g24ttl" x="445.0" y="163.0">fastembed</text><text class="g24sub" x="445.0" y="178.0">bge-small, in-process</text><rect x="336" y="210" width="218" height="54" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g24card)"/><text class="g24ttl" x="445.0" y="235.0">ingest task</text><text class="g24sub" x="445.0" y="250.0">background, same process</text><rect x="620" y="30" width="230" height="176" rx="18" fill="#f4f1e9" stroke="#ddd8cc" stroke-width="1.1"/><text class="g24eyb" x="735.0" y="51" text-anchor="middle" fill="#a94b2f">DATA NODE</text><g filter="url(#g24card)"><path d="M646,73 a89.0,7 0 0,1 178,0 v48 a89.0,7 0 0,1 -178,0 z" fill="#eef4f4" stroke="#1d5f63" stroke-width="1.4"/><path d="M646,73 a89.0,7 0 0,0 178,0" fill="none" stroke="#1d5f63" stroke-width="1.4"/></g><text class="g24ttl" x="735.0" y="95.0">PostgreSQL 16</text><text class="g24sub" x="735.0" y="110.0">pgvector + FTS</text><text class="g24note" x="646" y="150.0" fill="#6b6965">HNSW on embedding</text><text class="g24note" x="646" y="163.5" fill="#6b6965">GIN on tsv</text><rect x="620" y="240" width="230" height="186" rx="18" fill="#f4f1e9" stroke="#ddd8cc" stroke-width="1.1"/><text class="g24eyb" x="735.0" y="261" text-anchor="middle" fill="#a94b2f">EXTERNAL</text><path d="M658,272 L824,272 L812,320 L646,320 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g24card)"/><text class="g24ttl" x="735.0" y="294.0">Groq</text><text class="g24sub" x="735.0" y="309.0">20B / 120B</text><path d="M658,332 L824,332 L812,380 L646,380 z" fill="#f9f2f6" stroke="#6b3352" stroke-width="1.4" filter="url(#g24card)"/><text class="g24ttl" x="735.0" y="354.0">Supabase</text><text class="g24sub" x="735.0" y="369.0">JWKS</text><path class="g24ln" d="M248,92 L332,92"/><rect x="272.4" y="76.5" width="35.2" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g24lblc" x="290.0" y="85.0">HTTPS</text><path class="g24ln" d="M248,164 L332,100"/><path class="g24lnt" d="M558,96 L642,96"/><rect x="554.68" y="80.5" width="90.64" height="13" rx="4" fill="#fbfaf7" fill-opacity=".95"/><text class="g24lblc" x="600.0" y="89.0">cognita_app role</text><path class="g24lnt" d="M558,236 L642,100"/><path class="g24lnp" d="M558,164 L642,296"/><text class="g24note" x="336" y="290.0" fill="#6b6965">embedding runs here, so retrieval costs nothing</text><text class="g24note" x="336" y="303.5" fill="#6b6965">and evaluating hundreds of questions is free</text><text class="g24note" x="336" y="352.0" fill="#a8690d">ingestion shares the web process — the single</text><text class="g24note" x="336" y="365.5" fill="#a8690d">largest architectural compromise in this product</text></svg></div></figure>
+<figure id="fig-F9"><figcaption>Figure 11.9 — Activity diagram<span class="cap">Grade, rewrite, retry, decline. Declining is drawn as a terminal success, because it is one.</span></figcaption><div class="frame"><svg viewBox="0 0 880 566" width="880" height="566" xmlns="http://www.w3.org/2000/svg" role="img"><rect width="880" height="566" fill="#fbfaf7"/><defs><marker id="g25ar-n" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b6965"/></marker><marker id="g25ar-a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#a94b2f"/></marker><marker id="g25ar-t" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#1d5f63"/></marker><marker id="g25ar-p" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b3352"/></marker><marker id="g25ar-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2f7d55"/></marker><marker id="g25ar-r" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#b3402f"/></marker>
+<filter id="g25card" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#3c3226" flood-opacity="0.13"/>
+</filter>
+<filter id="g25lift" x="-25%" y="-25%" width="150%" height="170%">
+  <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#3c3226" flood-opacity="0.10"/>
+</filter>
+</defs>
+<style>
+ .g25ttl { font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:12px; font-weight:700; fill:#141413;
+        letter-spacing:-.01em; text-anchor:middle }
+ .g25sub { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.2px; fill:#6b6965; text-anchor:middle }
+ .g25lbl { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48 }
+ .g25lblc{ font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.4px; fill:#4d4c48; text-anchor:middle }
+ .g25eyb { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8.6px; font-weight:600; letter-spacing:.14em }
+ .g25idx { font-family:'JetBrains Mono',Menlo,Consolas,monospace; font-size:8px; font-weight:600; text-anchor:middle }
+ .g25note{ font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif; font-size:9.4px; fill:#6b6965 }
+ .g25ln  { fill:none; stroke:#6b6965; stroke-width:1.25; stroke-linecap:round;
+        marker-end:url(#g25ar-n) }
+ .g25lna { fill:none; stroke:#a94b2f; stroke-width:1.5; stroke-linecap:round;
+        marker-end:url(#g25ar-a) }
+ .g25lnt { fill:none; stroke:#1d5f63; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g25ar-t) }
+ .g25lnp { fill:none; stroke:#6b3352; stroke-width:1.4; stroke-linecap:round;
+        marker-end:url(#g25ar-p) }
+ .g25dash{ stroke-dasharray:5 4; stroke-opacity:.85 }
+</style><circle cx="150" cy="40" r="9" fill="#141413"/><path class="g25lna" d="M150,49 L150,72"/><rect x="60" y="72" width="180" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="150.0" y="93.0">Contextualise</text><text class="g25sub" x="150.0" y="108.0">resolve against history</text><path class="g25lna" d="M150,118 L150,146"/><rect x="60" y="146" width="180" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="150.0" y="167.0">Vector search</text><text class="g25sub" x="150.0" y="182.0">cosine, top 20</text><path class="g25lna" d="M150,192 L150,220"/><rect x="60" y="220" width="180" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="150.0" y="241.0">Keyword search</text><text class="g25sub" x="150.0" y="256.0">websearch_to_tsquery</text><path class="g25lna" d="M150,266 L150,294"/><rect x="60" y="294" width="180" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="150.0" y="315.0">Fuse rankings</text><text class="g25sub" x="150.0" y="330.0">RRF, k = 60</text><path class="g25lna" d="M240,317 L344,317"/><rect x="350" y="294" width="190" height="46" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="445.0" y="321.0">Grade the passages</text><path class="g25lna" d="M400,294 L422,246"/><path d="M450,189.0 L550.0,220 L450,251.0 L350.0,220 z" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="450" y="224">do they answer it?</text><path class="g25lna" d="M550,220 L634,220"/><text class="g25note" x="576" y="212.0" fill="#a94b2f">yes</text><rect x="640" y="196" width="190" height="48" rx="12" fill="#eef5f0" stroke="#2f7d55" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="735.0" y="218.0">Answer from them</text><text class="g25sub" x="735.0" y="233.0">with citations</text><path class="g25lna" d="M735,196 L735,160"/><rect x="640" y="104" width="190" height="48" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="735.0" y="126.0">Judge the answer</text><text class="g25sub" x="735.0" y="141.0">faithful? relevant?</text><path class="g25lnt" d="M735,104 L735,68"/><circle cx="735" cy="50" r="11" fill="none" stroke="#141413" stroke-width="2"/><circle cx="735" cy="50" r="6" fill="#141413"/><path class="g25lna g25dash" d="M350,220 L309.0,220.0 Q300,220 300.0,229.0 L300.0,395.0 Q300,404 309.0,404.0 L344,404"/><text class="g25note" x="252" y="284.0" fill="#a94b2f">no - and no</text><text class="g25note" x="252" y="297.5" fill="#a94b2f">retry yet</text><rect x="350" y="380" width="190" height="48" rx="12" fill="#fdf6f3" stroke="#a94b2f" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="445.0" y="402.0">Rewrite the question</text><text class="g25sub" x="445.0" y="417.0">different wording</text><path class="g25lna g25dash" d="M445,428 L445.0,457.0 Q445,466 436.0,466.0 L159.0,466.0 Q150,466 150.0,457.0 L150,346"/><text class="g25note" x="300" y="484.0" fill="#6b6965">retry retrieval, once only</text><path class="g25lna g25dash" d="M480,244 L591.0,244.0 Q600,244 600.0,253.0 L600.0,395.0 Q600,404 609.0,404.0 L634,404"/><text class="g25note" x="608" y="330.0" fill="#a94b2f">no - and</text><text class="g25note" x="608" y="343.5" fill="#a94b2f">already retried</text><rect x="640" y="380" width="190" height="48" rx="12" fill="#eef5f0" stroke="#2f7d55" stroke-width="1.5" filter="url(#g25card)"/><text class="g25ttl" x="735.0" y="402.0">Decline to answer</text><text class="g25sub" x="735.0" y="417.0">say what is missing</text><text class="g25note" x="60" y="520.0" fill="#6b6965">Declining is drawn as a success because that is what it is. A system that answers</text><text class="g25note" x="60" y="533.5" fill="#6b6965">every question from a corpus that does not contain the answer is not more useful —</text><text class="g25note" x="60" y="547.0" fill="#6b6965">it is the failure this product exists to avoid.</text></svg></div></figure>
 </section>
 <section class="chapter" id="ch12"><div class="chapter__num">Chapter Twelve</div><h2>Appendix: Prompts, Environment and Reproduction</h2><p class="lede measure">Every instruction Chat with Files sends to a model, reproduced verbatim from source by AST extraction rather than retyped — so this appendix cannot drift from what the system actually sends.</p><div class="measure"><h3>A. Prompt catalogue</h3><p>5 prompts belong to this product. Each entry records the model it goes to, the temperature it runs at, where it lives in the source, and why it is worded the way it is.</p></div><article class="prompt"><div class="prompt__head"><span class="prompt__n">P01</span><span class="prompt__role">RAG answerer</span><span class="prompt__meta"><span class="chip">gpt-oss-120b</span><span class="chip">temp user-set, default 0.2</span><span class="chip">rag/chat_agent.py · SYSTEM_PROMPT</span></span></div><div class="prompt__why">Answers from uploaded documents. The final paragraph is the prompt-injection defence: excerpts arrive inside &lt;document&gt; tags and are declared data, never instructions.</div><pre><code>You are an advanced AI research assistant. Answer questions using ONLY the
 provided document excerpts.

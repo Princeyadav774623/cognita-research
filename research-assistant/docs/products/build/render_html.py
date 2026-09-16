@@ -18,23 +18,30 @@ import figures_files
 DOCS = pathlib.Path(__file__).resolve().parents[1]
 FIGDIR = pathlib.Path(__file__).parent / "figures"
 
-# --------------------------------------------------------------- palettes
-PALETTE = {
-    # Warm, bronze-led: the research document.
-    "deep-research": dict(
-        paper="#f4f1ea", paper2="#fbf9f5", card="#ffffff",
-        rule="#ddd6c8", rule_soft="#eae4d8",
-        accent="#a06b21", accent_deep="#7d5115", accent_soft="rgba(160,107,33,.10)",
-        second="#1d5f63", second_soft="rgba(29,95,99,.10)",
-    ),
-    # Cool, teal-led: the document document.
-    "chat-with-files": dict(
-        paper="#edf1f0", paper2="#f7faf9", card="#ffffff",
-        rule="#ccdad7", rule_soft="#dde8e6",
-        accent="#1d5f63", accent_deep="#12464a", accent_soft="rgba(29,95,99,.10)",
-        second="#a06b21", second_soft="rgba(160,107,33,.10)",
-    ),
-}
+# --------------------------------------------------------------- palette
+# Cognita's own light theme, token for token from frontend/src/index.css, so a
+# page in the report and a card in the running application are the same object.
+# Both reports share it: the legend, the components and the accent must mean the
+# same thing in either document.
+COGNITA = dict(
+    paper="#f0eee6",          # --bg-app
+    paper2="#f5f2ea",
+    card="#fbfaf7",           # --bg-card
+    rule="#e2ddd2",           # --card-edge, flattened
+    rule_soft="#ebe7de",
+    ink="#141413",            # --text-primary
+    ink2="#4d4c48",           # --text-secondary
+    ink3="#6b6965",           # --text-muted
+    accent="#a94b2f",         # --accent
+    accent_deep="#8f3d25",    # --accent-hover
+    accent_soft="rgba(169,75,47,.10)",
+    second="#1d5f63",
+    second_soft="rgba(29,95,99,.10)",
+    good="#2f7d55", warn="#a8690d", bad="#b3402f",
+    shadow="0 1px 2px rgba(60,50,38,.04), 0 10px 26px -16px rgba(60,50,38,.22)",
+    shadow_sm="0 1px 2px rgba(60,50,38,.05)",
+)
+PALETTE = {"deep-research": COGNITA, "chat-with-files": COGNITA}
 
 FIGS = {"deep-research": figures_research, "chat-with-files": figures_files}
 
@@ -158,123 +165,146 @@ def css(pal):
     return f"""
 :root {{
   --paper:{pal['paper']}; --paper-2:{pal['paper2']}; --card:{pal['card']};
-  --ink:#16150f; --ink-2:#474338; --ink-3:#7c7566;
+  --ink:{pal['ink']}; --ink-2:{pal['ink2']}; --ink-3:{pal['ink3']};
   --rule:{pal['rule']}; --rule-soft:{pal['rule_soft']};
   --accent:{pal['accent']}; --accent-deep:{pal['accent_deep']}; --accent-soft:{pal['accent_soft']};
   --second:{pal['second']}; --second-soft:{pal['second_soft']};
-  --good:#1f6b4a; --warn:#8a6314; --bad:#9c2f26;
+  --good:{pal['good']}; --warn:{pal['warn']}; --bad:{pal['bad']};
+  --shadow:{pal['shadow']}; --shadow-sm:{pal['shadow_sm']};
   --serif:"Newsreader",Georgia,"Times New Roman",serif;
   --sans:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",Menlo,Consolas,monospace;
+  --r-sm:6px; --r-md:12px; --r-lg:18px; --r-xl:26px; --r-pill:9999px;
   --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem; --s7:3rem; --s8:4rem;
 }}
 * {{ box-sizing:border-box; }}
 body {{ margin:0; background:var(--paper); color:var(--ink); font-family:var(--serif);
-       font-size:1rem; line-height:1.68; -webkit-font-smoothing:antialiased; }}
-.page {{ max-width:1080px; margin:0 auto; padding:var(--s8) 40px var(--s8); }}
+       font-size:1rem; line-height:1.68; -webkit-font-smoothing:antialiased;
+       /* The prose names real identifiers — test_sources_the_draft_already_used_...
+          is a single 60-character token that will otherwise push the page sideways
+          at narrow widths. Break only where a word genuinely does not fit. */
+       overflow-wrap:break-word; }}
+.page {{ max-width:1080px; margin:0 auto; padding:var(--s8) 40px; }}
 .measure {{ max-width:68ch; }}
 
-.cover {{ padding-bottom:var(--s7); border-bottom:3px double var(--ink); margin-bottom:var(--s7); }}
-.cover__eyebrow {{ font-family:var(--mono); font-size:.72rem; letter-spacing:.22em;
-                   text-transform:uppercase; color:var(--accent); margin-bottom:var(--s5); }}
+/* ---- the card treatment, shared by every raised block ---- */
+.toc, .tbl-wrap, .frame, .stats, .prompt, .pair > div {{
+  background:var(--card); border:1px solid var(--rule); border-radius:var(--r-lg);
+  box-shadow:var(--shadow);
+}}
+
+.cover {{ padding-bottom:var(--s7); margin-bottom:var(--s7);
+          border-bottom:1px solid var(--rule); }}
+.cover__eyebrow {{ display:inline-block; font-family:var(--mono); font-size:.66rem;
+  letter-spacing:.2em; text-transform:uppercase; color:var(--accent);
+  background:var(--accent-soft); padding:.4em .9em; border-radius:var(--r-pill);
+  margin-bottom:var(--s5); }}
 h1 {{ font-family:var(--sans); font-size:clamp(2.4rem,6vw,4rem); font-weight:800;
-      letter-spacing:-.04em; line-height:1.02; margin:0 0 var(--s5); text-wrap:balance; }}
-h1 em {{ font-family:var(--serif); font-style:italic; font-weight:500; color:var(--accent); }}
-.cover__sub {{ font-size:1.2rem; color:var(--ink-2); max-width:60ch; margin:0 0 var(--s6); }}
+      letter-spacing:-.042em; line-height:1.02; margin:0 0 var(--s5); text-wrap:balance; }}
+h1 em {{ font-family:var(--serif); font-style:italic; font-weight:400; color:var(--accent); }}
+.cover__sub {{ font-size:1.2rem; color:var(--ink-2); max-width:58ch; margin:0 0 var(--s6); }}
 .cover__meta {{ display:flex; flex-wrap:wrap; gap:var(--s6); padding-top:var(--s5);
                 border-top:1px solid var(--rule); }}
-.cover__meta div {{ font-family:var(--mono); font-size:.72rem; color:var(--ink-3); }}
+.cover__meta div {{ font-family:var(--mono); font-size:.66rem; letter-spacing:.08em;
+                    text-transform:uppercase; color:var(--ink-3); }}
 .cover__meta b {{ display:block; font-family:var(--sans); font-size:.95rem; color:var(--ink);
-                  font-weight:600; margin-top:2px; }}
+                  font-weight:600; letter-spacing:-.01em; text-transform:none; margin-top:4px; }}
 
 .pair {{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin:var(--s6) 0 0; }}
-.pair > div {{ border:1px solid var(--rule); border-radius:10px; padding:var(--s4) var(--s5);
-               background:var(--card); }}
-.pair h5 {{ font-family:var(--mono); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase;
-            margin:0 0 var(--s2); }}
+.pair > div {{ padding:var(--s4) var(--s5); }}
+.pair h5 {{ font-family:var(--mono); font-size:.6rem; letter-spacing:.14em;
+            text-transform:uppercase; margin:0 0 var(--s2); color:var(--ink-3); }}
 .pair p {{ margin:0; font-size:.92rem; color:var(--ink-2); }}
-.pair--this {{ border-color:var(--accent); }}
+.pair--this {{ border-color:var(--accent); box-shadow:var(--shadow), inset 3px 0 0 var(--accent); }}
 .pair--this h5 {{ color:var(--accent); }}
-.pair--that h5 {{ color:var(--ink-3); }}
 
-.toc {{ background:var(--paper-2); border:1px solid var(--rule); border-radius:10px;
-        padding:var(--s5) var(--s6); margin-bottom:var(--s8); }}
-.toc h2 {{ font-family:var(--sans); font-size:.78rem; letter-spacing:.14em; text-transform:uppercase;
-           color:var(--ink-3); margin:0 0 var(--s4); border:0; padding:0; }}
-.toc ol {{ margin:0; padding-left:1.4em; columns:2; column-gap:var(--s7); }}
+.toc {{ padding:var(--s5) var(--s6); margin-bottom:var(--s8); }}
+.toc h2 {{ font-family:var(--mono); font-size:.66rem; letter-spacing:.16em;
+           text-transform:uppercase; color:var(--ink-3); margin:0 0 var(--s4);
+           border:0; padding:0; font-weight:600; }}
+.toc ol {{ margin:0; padding-left:1.5em; columns:2; column-gap:var(--s7); }}
 .toc li {{ margin-bottom:var(--s2); break-inside:avoid; }}
 .toc a {{ color:var(--ink); text-decoration:none; font-size:.95rem; }}
 .toc a:hover {{ color:var(--accent); }}
 
 .chapter {{ margin-bottom:var(--s8); }}
-.chapter__num {{ font-family:var(--mono); font-size:.68rem; letter-spacing:.18em;
-                 text-transform:uppercase; color:var(--accent); margin-bottom:var(--s2); }}
-h2 {{ font-family:var(--sans); font-size:1.85rem; font-weight:700; letter-spacing:-.028em;
-      margin:0 0 var(--s5); padding-bottom:var(--s3); border-bottom:2px solid var(--ink);
-      text-wrap:balance; }}
-h3 {{ font-family:var(--sans); font-size:1.12rem; font-weight:700; letter-spacing:-.012em;
+.chapter__num {{ display:inline-block; font-family:var(--mono); font-size:.62rem;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--accent);
+  background:var(--accent-soft); padding:.35em .8em; border-radius:var(--r-pill);
+  margin-bottom:var(--s3); }}
+h2 {{ font-family:var(--sans); font-size:1.9rem; font-weight:700; letter-spacing:-.032em;
+      margin:0 0 var(--s5); padding-bottom:var(--s3);
+      border-bottom:1px solid var(--rule); text-wrap:balance; }}
+h3 {{ font-family:var(--sans); font-size:1.1rem; font-weight:700; letter-spacing:-.015em;
       margin:var(--s6) 0 var(--s3); }}
-h4 {{ font-family:var(--mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
-      color:var(--ink-3); margin:var(--s5) 0 var(--s2); }}
+h4 {{ font-family:var(--mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+      color:var(--ink-3); margin:var(--s5) 0 var(--s2); font-weight:600; }}
 p {{ margin:0 0 var(--s4); }}
-.lede {{ font-size:1.12rem; color:var(--ink-2); border-left:3px solid var(--accent);
+.lede {{ font-size:1.1rem; color:var(--ink-2); border-left:2px solid var(--accent);
          padding-left:var(--s4); margin-bottom:var(--s5); }}
 ul {{ margin:0 0 var(--s5); padding-left:1.2em; }}
 li {{ margin-bottom:var(--s2); }}
+li::marker {{ color:var(--accent); }}
 code {{ font-family:var(--mono); font-size:.84em; background:var(--paper-2);
-        border:1px solid var(--rule-soft); border-radius:3px; padding:.08em .32em; }}
-pre {{ background:var(--paper-2); border:1px solid var(--rule); border-radius:8px;
+        border:1px solid var(--rule-soft); border-radius:var(--r-sm); padding:.1em .38em; }}
+pre {{ background:var(--paper-2); border:1px solid var(--rule); border-radius:var(--r-md);
        padding:var(--s4); overflow-x:auto; }}
 pre code {{ border:0; background:none; padding:0; font-size:.8rem; }}
 
-.tbl-wrap {{ overflow-x:auto; border:1px solid var(--rule); border-radius:8px;
-             margin:var(--s5) 0; background:var(--card); }}
+/* The scroll lives on the wrapper, not the table: making the table itself a
+   block with its own overflow inflates the root scrollWidth even though nothing
+   is visibly outside the viewport. */
+.tbl-wrap {{ overflow-x:auto; margin:var(--s5) 0; }}
 table {{ border-collapse:collapse; width:100%; font-family:var(--sans); font-size:.88rem; }}
-th {{ text-align:left; font-family:var(--mono); font-size:.66rem; letter-spacing:.1em;
-      text-transform:uppercase; color:var(--ink-3); padding:var(--s3) var(--s4);
-      border-bottom:2px solid var(--rule); white-space:nowrap; }}
+th {{ text-align:left; font-family:var(--mono); font-size:.62rem; letter-spacing:.12em;
+      text-transform:uppercase; color:var(--ink-3); font-weight:600;
+      padding:var(--s3) var(--s4); background:var(--paper-2);
+      border-bottom:1px solid var(--rule); white-space:nowrap; }}
 td {{ padding:var(--s3) var(--s4); border-bottom:1px solid var(--rule-soft);
       color:var(--ink-2); vertical-align:top; }}
 tr:last-child td {{ border-bottom:0; }}
-td:first-child {{ font-family:var(--mono); font-size:.78rem; color:var(--ink); white-space:nowrap; }}
+td:first-child {{ font-family:var(--mono); font-size:.76rem; color:var(--ink);
+                  white-space:nowrap; }}
 
 figure {{ margin:var(--s6) 0; }}
-figcaption {{ font-family:var(--mono); font-size:.68rem; letter-spacing:.08em; text-transform:uppercase;
-              color:var(--ink-3); margin-bottom:var(--s3); }}
+figcaption {{ font-family:var(--mono); font-size:.64rem; letter-spacing:.12em;
+              text-transform:uppercase; color:var(--accent); font-weight:600;
+              margin-bottom:var(--s3); }}
 figcaption .cap {{ display:block; font-family:var(--serif); font-size:.92rem; letter-spacing:0;
-                   text-transform:none; color:var(--ink-2); margin-top:var(--s2); }}
-.frame {{ background:var(--card); border:1px solid var(--rule); border-radius:10px;
-          padding:var(--s5); overflow-x:auto; }}
-.frame svg {{ display:block; width:100%; height:auto; }}
-.frame img {{ display:block; width:100%; height:auto; }}
+                   text-transform:none; color:var(--ink-2); font-weight:400; margin-top:var(--s2); }}
+.frame {{ padding:var(--s5); overflow-x:auto; }}
+.frame svg {{ display:block; width:100%; height:auto; border-radius:var(--r-md); }}
+.frame img {{ display:block; width:100%; height:auto; border-radius:var(--r-md); }}
 
-.note {{ border-left:3px solid var(--second); background:var(--second-soft);
-         padding:var(--s4) var(--s5); border-radius:0 8px 8px 0; margin:var(--s5) 0; font-size:.95rem; }}
+.note {{ border:1px solid var(--rule); border-left:3px solid var(--second);
+         background:var(--second-soft); padding:var(--s4) var(--s5);
+         border-radius:var(--r-md); margin:var(--s5) 0; font-size:.95rem; }}
 .note--alt {{ border-left-color:var(--accent); background:var(--accent-soft); }}
-.note--caveat {{ border-left-color:var(--bad); background:rgba(156,47,38,.07); }}
-.note b {{ font-family:var(--sans); }}
+.note--caveat {{ border-left-color:var(--bad); background:rgba(179,64,47,.07); }}
+.note b {{ font-family:var(--sans); color:var(--ink); }}
 
-.stats {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1px;
-          background:var(--rule); border:1px solid var(--rule); border-radius:10px;
+.stats {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
           overflow:hidden; margin:var(--s5) 0; }}
-.stat {{ background:var(--card); padding:var(--s4); }}
-.stat__k {{ font-family:var(--mono); font-size:.62rem; letter-spacing:.1em; text-transform:uppercase;
-            color:var(--ink-3); }}
-.stat__v {{ font-family:var(--sans); font-size:1.5rem; font-weight:700; letter-spacing:-.02em;
-            margin-top:2px; font-variant-numeric:tabular-nums; }}
-.stat__n {{ font-family:var(--sans); font-size:.76rem; color:var(--ink-3); line-height:1.4; margin-top:4px; }}
+.stat {{ padding:var(--s4) var(--s5); border-right:1px solid var(--rule-soft); }}
+.stat:last-child {{ border-right:0; }}
+.stat__k {{ font-family:var(--mono); font-size:.58rem; letter-spacing:.14em;
+            text-transform:uppercase; color:var(--ink-3); font-weight:600; }}
+.stat__v {{ font-family:var(--sans); font-size:1.6rem; font-weight:700; letter-spacing:-.03em;
+            margin-top:4px; font-variant-numeric:tabular-nums; color:var(--ink); }}
+.stat__n {{ font-family:var(--sans); font-size:.74rem; color:var(--ink-3); line-height:1.45;
+            margin-top:4px; }}
 
-.prompt {{ border:1px solid var(--rule); border-radius:10px; margin:var(--s4) 0;
-           background:var(--card); overflow:hidden; }}
+.prompt {{ margin:var(--s4) 0; overflow:hidden; }}
 .prompt__head {{ display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--s3);
-                 padding:var(--s3) var(--s4); background:var(--paper-2);
+                 padding:var(--s3) var(--s5); background:var(--paper-2);
                  border-bottom:1px solid var(--rule); }}
-.prompt__n {{ font-family:var(--mono); font-size:.72rem; color:var(--accent); font-weight:600; }}
-.prompt__role {{ font-family:var(--sans); font-weight:700; font-size:1rem; }}
+.prompt__n {{ font-family:var(--mono); font-size:.7rem; color:var(--accent); font-weight:600; }}
+.prompt__role {{ font-family:var(--sans); font-weight:700; font-size:1rem;
+                 letter-spacing:-.015em; }}
 .prompt__meta {{ margin-left:auto; display:flex; gap:var(--s2); flex-wrap:wrap; }}
-.chip {{ font-family:var(--mono); font-size:.62rem; padding:2px 7px; border-radius:3px;
+.chip {{ font-family:var(--mono); font-size:.6rem; padding:3px 9px; border-radius:var(--r-pill);
          background:var(--accent-soft); color:var(--accent-deep); white-space:nowrap; }}
-.prompt__why {{ padding:var(--s3) var(--s4); font-size:.92rem; color:var(--ink-2);
+.prompt__why {{ padding:var(--s3) var(--s5); font-size:.92rem; color:var(--ink-2);
                 border-bottom:1px solid var(--rule-soft); }}
 .prompt pre {{ margin:0; border:0; border-radius:0; background:var(--card); }}
 
@@ -283,13 +313,14 @@ figcaption .cap {{ display:block; font-family:var(--serif); font-size:.92rem; le
   .page {{ max-width:none; padding:0; }}
   .chapter {{ break-before:page; }}
   .cover {{ break-after:page; }}
-  figure, .tbl-wrap, .note, .stats {{ break-inside:avoid; }}
+  figure, .tbl-wrap, .note, .stats, .prompt {{ break-inside:avoid; box-shadow:none; }}
   a {{ color:var(--ink); text-decoration:none; }}
 }}
 @media (max-width:760px) {{
   .page {{ padding:var(--s6) 18px; }}
   .toc ol {{ columns:1; }}
   .pair {{ grid-template-columns:1fr; }}
+  .stat {{ border-right:0; border-bottom:1px solid var(--rule-soft); }}
 }}
 """
 
@@ -376,27 +407,28 @@ def legend_figure(pal):
 <div class="frame">{namespace_svg(_LEGEND_SVG)}</div></figure>""")
 
 
-_LEGEND_SVG = """<svg viewBox="0 0 860 92" width="860" height="92" xmlns="http://www.w3.org/2000/svg" role="img">
-<rect width="860" height="92" fill="#ffffff"/>
-<style>
- .lk{{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;fill:#16150f;font-weight:600}}
- .ld{{font-family:'JetBrains Mono',monospace;font-size:8.5px;fill:#7c7566}}
-</style>
-<rect x="24" y="22" width="96" height="30" rx="8" fill="#fff" stroke="#a06b21" stroke-width="1.6"/>
-<text class="lk" x="42" y="41">Process</text><text class="ld" x="24" y="70">the system itself</text>
-<path d="M176,29 a48,7 0 0,1 96,0 v16 a48,7 0 0,1 -96,0 z" fill="#f7f4ed" stroke="#1d5f63" stroke-width="1.5"/>
-<path d="M176,29 a48,7 0 0,0 96,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/>
-<text class="lk" x="196" y="44">Data store</text><text class="ld" x="176" y="70">data at rest</text>
-<path d="M340,22 L424,22 L412,52 L328,52 z" fill="#faf6f8" stroke="#6b3352" stroke-width="1.5"/>
-<text class="lk" x="346" y="41">External</text><text class="ld" x="328" y="70">outside the boundary</text>
-<rect x="480" y="22" width="96" height="30" rx="8" fill="#eef5f1" stroke="#1f6b4a" stroke-width="1.6"/>
-<text class="lk" x="502" y="41">Success</text><text class="ld" x="480" y="70">terminal state</text>
-<rect x="632" y="22" width="96" height="30" rx="8" fill="#fbf0ef" stroke="#9c2f26" stroke-width="1.6"/>
-<text class="lk" x="658" y="41">Failure</text><text class="ld" x="632" y="70">terminal state</text>
-<path d="M776,30 L836,30" stroke="#7c7566" stroke-width="1.4" stroke-dasharray="4 3"/>
-<path d="M776,46 L836,46" stroke="#7c7566" stroke-width="1.4"/>
-<text class="ld" x="776" y="70">dashed = conditional</text>
-</svg>"""
+def _legend_svg():
+    """The notation key, drawn with the same primitives as the diagrams so it
+    cannot describe a visual language the figures no longer use."""
+    import draw
+    b = draw.box(30, 28, 122, 46, "Process", "the system")
+    b += draw.cyl(186, 28, 122, 46, "Data store", "at rest")
+    b += draw.para(342, 28, 122, 46, "External", "outside")
+    b += draw.box(498, 28, 122, 46, "Success", "terminal", cls="ok")
+    b += draw.box(654, 28, 122, 46, "Failure", "terminal", cls="bad")
+
+    b += '<path class="ln" d="M30,104 L86,104"/>'
+    b += draw.note(96, 108, ["a step in the flow"])
+    b += '<path class="ln dash" d="M232,104 L288,104"/>'
+    b += draw.note(298, 108, ["a conditional or optional path"])
+
+    b += draw.note(30, 138, [
+        "Shape carries meaning as well as colour: a rounded rectangle is a process, a cylinder is a store,",
+        "a slanted parallelogram is something outside the boundary, and a diamond is a decision."])
+    return draw.svg(880, 166, b)
+
+
+_LEGEND_SVG = _legend_svg()
 
 
 def appendix(meta, pal):
