@@ -68,6 +68,20 @@ rm ./_a.js
 python3 build/fix-bookmarks.py Cognita-Technical-Appendix.docx
 ```
 
+## No TOC field, on purpose
+
+An earlier build used a Word TOC field with `updateFields`, which makes Word
+open the document with *"This document contains fields that may refer to other
+files. Do you want to update the fields?"* — wording that reads as a security
+warning to anyone you send it to, for what is only a table of contents.
+
+Both documents now carry a plain hyperlinked chapter list instead. It renders
+in Word, Google Docs, Preview and anything else, needs no refresh, and opens
+without a dialog. The cost is page numbers in the contents, which is a fair
+trade for a document that is mostly read on screen.
+
+Do not reintroduce `features: { updateFields: true }`.
+
 ## Always run fix-bookmarks.py
 
 `docx-js` writes `w:id="1"` on every bookmark it emits. The bookmark *names*

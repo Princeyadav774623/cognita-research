@@ -218,9 +218,6 @@ children.push(
       children: [new TextRun({ text: title, font: "Georgia", size: 21, color: INK2 })],
     })],
   })),
-  new Paragraph({ spacing: { before: 280, after: 120 },
-    children: [new TextRun({ text: "Detailed contents with page numbers", font: "Consolas", size: 15, color: INK3, allCaps: true, characterSpacing: 20 })] }),
-  new TableOfContents("Contents", { hyperlink: true, headingStyleRange: "1-2" }),
 );
 
 /* ---- CH 1 ---- */
@@ -514,7 +511,6 @@ children.push(BULLET("python -m evals.factcheck_accuracy --export claims.jsonl â
 
 /* ====================== ASSEMBLE ====================== */
 const doc = new Document({
-  features: { updateFields: true },
   creator: "Prince Yadav",
   title: "Cognita â€” Project Report",
   description: "Architecture, requirements and measured results for the Cognita multi-agent research assistant.",

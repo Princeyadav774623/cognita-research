@@ -235,10 +235,6 @@ children.push(
       children: [new TextRun({ text: title, font: "Georgia", size: 21, color: INK2 })],
     })],
   })),
-  new Paragraph({ spacing: { before: 280, after: 120 }, children: [new TextRun({
-    text: "Detailed contents with page numbers", font: "Consolas", size: 15,
-    color: INK3, allCaps: true, characterSpacing: 20 })] }),
-  new TableOfContents("Contents", { hyperlink: true, headingStyleRange: "1-2" }),
 );
 
 /* ---- Part A ---- */
@@ -293,7 +289,6 @@ children.push(H2("Keeping them honest"));
 children.push(P("Each specification above names what the figure must show. When the system changes, update the source and re-render — and if the change contradicts the Purpose line, the figure has stopped earning its place and should be rethought rather than patched."));
 
 const doc = new Document({
-  features: { updateFields: true },
   creator: "Prince Yadav",
   title: "Cognita — Technical Appendix",
   description: "Prompt catalogue and SRS figure specifications for the Cognita research assistant.",
