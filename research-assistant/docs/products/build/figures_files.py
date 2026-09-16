@@ -171,7 +171,7 @@ def f4():
 # ------------------------------------------------------------------ F.5
 def f5():
     """Sequence diagram — an upload, then a question over the resulting corpus."""
-    TOP, BOT = 26, 500
+    TOP, BOT = 26, 620
     X = {"br": 90, "api": 264, "ing": 440, "ex": 618, "pg": 790}
     b = ""
     b += lifeline(X["br"], TOP, BOT, "Browser")
@@ -222,9 +222,9 @@ def f5():
         b += msg(x1 + (6 if x2 > x1 else -6), x2 + (-6 if x2 > x1 else 6), y, label, cls, dash)
         y += 30
 
-    b += note(24, 526, ["If grading fails, the question is rewritten once and retrieval runs again before the",
+    b += note(24, 650, ["If grading fails, the question is rewritten once and retrieval runs again before the",
                         "system declines — that branch is drawn in full in Figure F.9."])
-    return svg(880, 560, b)
+    return svg(880, 686, b)
 
 
 # ------------------------------------------------------------------ F.6

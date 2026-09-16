@@ -284,7 +284,7 @@ def r8():
     b += box(336, 66, 218, 54, "uvicorn / FastAPI", "async workers")
     b += box(336, 138, 218, 54, "LangGraph runtime", "nine nodes, in-process")
     b += box(336, 210, 218, 54, "token ledger", "per-run usage and cost")
-    b += note(336, 290, ["the pipeline is in-process:", "no queue, no worker fleet"])
+    b += note(336, 284, ["the pipeline is in-process:", "no queue, no worker fleet"])
 
     b += band(620, 30, 230, 120, "DATA NODE")
     b += cyl(646, 66, 178, 62, "PostgreSQL 16", "sessions + quota")
@@ -299,8 +299,8 @@ def r8():
     b += arrow(558, 96, 642, 96, "lnt", "cognita_app role")
     b += arrow(558, 164, 642, 240, "lnp")
     b += arrow(558, 172, 642, 300, "lnp")
-    b += note(336, 306, ["all runtime queries use the low-privilege role,",
-                         "so row-level security applies to every read"])
+    b += note(30, 362, ["all runtime queries use the low-privilege role, so row-level",
+                        "security applies to every read this product makes"])
     return svg(880, 452, b)
 
 
