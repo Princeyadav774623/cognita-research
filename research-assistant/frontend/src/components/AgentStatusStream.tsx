@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { StepStatus } from "../useResearch";
 import { Icon, type IconName } from "./Icon";
+import { AgentGraph } from "./AgentGraph";
 
 /** The pipeline in execution order. Showing the whole sequence up front means
  *  a two-minute wait has a shape: the reader can see what is left, not just
@@ -69,6 +70,15 @@ export function AgentStatusStream({ steps, running }: Props) {
           {running && ` · ${formatElapsed(elapsed)}`}
         </span>
       </div>
+
+      {/* The five agents are the product's differentiator and were shown only
+          as a ticking list of text. */}
+      <AgentGraph
+        completed={PIPELINE.slice(0, completed).map((p) => p.node)}
+        active={running && completed < PIPELINE.length ? PIPELINE[completed].node : null}
+        running={running}
+        looped={steps.filter((s) => s.node === "search").length > 1}
+      />
 
       <div
         className="agent-progress"

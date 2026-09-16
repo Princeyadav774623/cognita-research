@@ -3499,3 +3499,134 @@ textarea.query-box__input {
   color: var(--text-muted);
   margin: var(--space-4) 0 0;
 }
+
+/* ==========================================================================
+   LIVE AGENT GRAPH — the pipeline, drawn, while it runs
+   ========================================================================== */
+
+.agent-graph {
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4) var(--space-2) var(--space-2);
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+.agent-graph__svg {
+  display: block;
+  width: 100%;
+  min-width: 620px;   /* below this the labels collide; the figure scrolls */
+  height: auto;
+}
+
+/* --- edges --- */
+.agent-graph__edge {
+  stroke: var(--border-medium);
+  stroke-width: 1.5;
+  transition: stroke 0.4s ease;
+}
+
+.agent-graph__edge--done { stroke: var(--accent-border); }
+
+.agent-graph__edge--live {
+  stroke: var(--accent-warm);
+  stroke-dasharray: 4 4;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .agent-graph__edge--live { animation: agent-graph-flow 1s linear infinite; }
+}
+
+@keyframes agent-graph-flow {
+  to { stroke-dashoffset: -8; }
+}
+
+.agent-graph__pulse { fill: var(--accent-warm); }
+
+/* --- the reflective loop --- */
+.agent-graph__loop {
+  stroke: var(--border-subtle);
+  stroke-width: 1.25;
+  stroke-dasharray: 3 5;
+}
+
+.agent-graph__loop--taken {
+  stroke: var(--accent-warm);
+  stroke-dasharray: none;
+}
+
+.agent-graph__loop-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  fill: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* --- nodes --- */
+.agent-graph__dot {
+  fill: var(--bg-surface-raised);
+  stroke: var(--border-medium);
+  stroke-width: 1.5;
+  transition: fill 0.35s ease, stroke 0.35s ease;
+}
+
+.agent-graph__node.is-done .agent-graph__dot {
+  fill: var(--accent-subtle);
+  stroke: var(--accent-border);
+}
+
+.agent-graph__node.is-active .agent-graph__dot {
+  fill: var(--accent-warm);
+  stroke: var(--accent-warm);
+}
+
+.agent-graph__tick {
+  stroke: var(--accent-warm);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* One halo, on the stage that is running — so the eye has a single place to
+   land rather than nine competing pulses. */
+.agent-graph__halo {
+  fill: none;
+  stroke: var(--accent-warm);
+  stroke-width: 1.5;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .agent-graph__halo { animation: agent-graph-halo 1.8s ease-out infinite; }
+}
+
+@keyframes agent-graph-halo {
+  0%   { r: 11; opacity: 0.5; }
+  100% { r: 22; opacity: 0; }
+}
+
+.agent-graph__label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  fill: var(--text-muted);
+  transition: fill 0.35s ease;
+}
+
+.agent-graph__node.is-active .agent-graph__label {
+  fill: var(--text-primary);
+  font-weight: 600;
+}
+
+.agent-graph__node.is-done .agent-graph__label { fill: var(--text-secondary); }
+
+.agent-graph__status {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: var(--space-2) 0 0;
+}
+
+@media print { .agent-graph { display: none !important; } }
