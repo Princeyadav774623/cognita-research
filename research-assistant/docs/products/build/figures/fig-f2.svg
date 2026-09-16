@@ -1,0 +1,33 @@
+<svg viewBox="0 0 880 430" width="880" height="430" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
+  <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
+  <marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+</defs>
+<style>
+  .t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
+  .tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
+  .s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
+  .sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
+  .lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
+  .lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
+  .cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
+  .ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#ab) }
+  .lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#at) }
+  .lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#ap) }
+  .dash{ stroke-dasharray:4 3 }
+  .proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
+  .store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
+  .ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
+  .band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
+  .ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
+  .bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
+</style><rect width="880" height="430" fill="#ffffff"/><path class="ext" d="M52,60 L198,60 L186,114 L40,114 z"/><text class="tc" x="119.0" y="84.0">Document owner</text><text class="sc" x="119.0" y="98.0">uploads a file</text><path class="ext" d="M52,220 L198,220 L186,274 L40,274 z"/><text class="tc" x="119.0" y="244.0">Document owner</text><text class="sc" x="119.0" y="258.0">asks a question</text><rect class="proc" x="300" y="50" width="250" height="76" rx="12"/><text class="tc" x="425.0" y="85.0">1.0  Ingest</text><text class="sc" x="425.0" y="99.0">extract · chunk · embed</text><rect class="proc" x="300" y="210" width="250" height="76" rx="12"/><text class="tc" x="425.0" y="245.0">2.0  Answer</text><text class="sc" x="425.0" y="259.0">retrieve · grade · reply</text><path class="lnb" d="M200,86 L296,86"/><text class="lbc" x="248.0" y="78">file bytes</text><path class="lnb" d="M200,246 L296,246"/><text class="lbc" x="248.0" y="238">question</text><path class="ln dash" d="M296,276 L250,276 L250,320 L119,320 L119,280"/><text class="lb" x="70" y="340" fill="#7c7566">answer + passages, or a refusal</text><path class="ext" d="M688,210 L844,210 L832,264 L676,264 z"/><text class="tc" x="760.0" y="234.0">Groq</text><text class="sc" x="760.0" y="248.0">inference</text><path class="lnp" d="M552,240 L672,238"/><text class="lb" x="580" y="230" fill="#7c7566">prompts</text><path class="store" d="M624,57 a100.0,7 0 0,1 200,0 v44 a100.0,7 0 0,1 -200,0 z"/><path d="M624,57 a100.0,7 0 0,0 200,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="tc" x="724.0" y="81.0">D1  rag_documents</text><text class="sc" x="724.0" y="95.0">status + metadata</text><path class="store" d="M624,135 a100.0,7 0 0,1 200,0 v44 a100.0,7 0 0,1 -200,0 z"/><path d="M624,135 a100.0,7 0 0,0 200,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="tc" x="724.0" y="159.0">D2  rag_chunks</text><text class="sc" x="724.0" y="173.0">text + 384-d vector</text><path class="lnt" d="M552,76 L620,76"/><path class="lnt" d="M552,100 L620,150"/><path class="lnt dash" d="M700,186 L700,198 L620,198 L620,232 L552,232"/><text class="lb" x="560" y="300" fill="#7c7566">retrieval reads chunks only;</text><text class="lb" x="560" y="313" fill="#7c7566">the answer never sees a whole file</text><path class="store" d="M300,327 a125.0,7 0 0,1 250,0 v40 a125.0,7 0 0,1 -250,0 z"/><path d="M300,327 a125.0,7 0 0,0 250,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="tc" x="425.0" y="349.0">D3  rag_conversations + rag_messages</text><path class="lnt" d="M425,288 L425,316"/><rect x="40" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="lb" x="57" y="411">process</text><rect x="99.80000000000001" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="lb" x="116.80000000000001" y="411">data store</text><rect x="175.8" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="lb" x="192.8" y="411">external entity</text><rect x="278.8" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#7c7566" stroke-width="1.6"/><text class="lb" x="295.8" y="411">dashed = conditional</text></svg>

@@ -1,0 +1,1473 @@
+{
+ "meta": {
+  "key": "deep-research",
+  "product": "Deep Research",
+  "other": "Chat with Files",
+  "accent": "bronze",
+  "eyebrow": "PRODUCT REPORT \u00b7 ONE OF TWO",
+  "title": "Deep Research",
+  "title_em": "an answer you can check",
+  "sub": "The multi-agent pipeline behind Cognita's research tool: how a typed question becomes a plan, a search, a body of evidence, a verified draft and a confidence score that reports its own reasoning.",
+  "author": "Prince Yadav",
+  "date": "16 September 2026",
+  "route": "/#research"
+ },
+ "chapters": [
+  {
+   "num": 1,
+   "title": "Introduction and Problem Statement",
+   "lede": "A language model asked a research question will produce a fluent, confident, well-structured answer whether or not it has any basis for it. The failure is not that it is sometimes wrong; it is that a wrong answer is indistinguishable from a right one.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "1.1 The problem"
+    },
+    {
+     "k": "p",
+     "text": "Retrieval-augmented generation is the usual response: give the model source documents and instruct it to answer from them. This helps, but it moves the problem rather than solving it. The model can still assert things the sources do not support, cite a document that does not contain the claim, or answer a question the sources never addressed. A reader has no way to tell which happened."
+    },
+    {
+     "k": "p",
+     "text": "Deep Research starts from a different premise: a research tool's output is only as valuable as the reader's ability to check it. Three properties follow, and everything in this document is downstream of them."
+    },
+    {
+     "k": "ul",
+     "items": [
+      "Every claim traces to a source. Citations must resolve to a document the system actually read, and that must be verified in code rather than trusted.",
+      "Verification must be independent. Checking a claim against the same text it was summarised from proves only that the summary was faithful.",
+      "Confidence must be honest. A score that does not reflect the quality of the evidence beneath it is decoration, and worse than no score at all."
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "1.2 What this product is"
+    },
+    {
+     "k": "p",
+     "text": "Deep Research is one of the two products in Cognita. A user types a question at /#research and nothing else. The system decomposes it into sub-queries, searches the open web, fetches and extracts the pages it finds, optionally folds in documents the user has uploaded, synthesises a draft, verifies each claim in that draft against sources it searches for separately, decides whether the evidence is sufficient, and either returns to searching or writes the report."
+    },
+    {
+     "k": "p",
+     "text": "The output is a cited document with a confidence score and a breakdown of what limits that score. Progress streams to the browser over a WebSocket while the run is in flight, which is what the live pipeline animation in the interface is driven by."
+    },
+    {
+     "k": "h3",
+     "text": "1.3 What this product is not"
+    },
+    {
+     "k": "p",
+     "text": "Cognita's other product, Chat with Files, answers questions from documents the user uploads. It is a separate page with its own query box, its own retrieval path and its own benchmark. It is not a stage of the pipeline described here, and this document does not describe it."
+    },
+    {
+     "k": "p",
+     "text": "The two products meet at exactly one place. The corpus node in this pipeline can read the chunks that Chat with Files created, so a research run can draw on the user's own documents as well as the web. That is Deep Research borrowing the other product's store. The borrowing is one-way: nothing in this pipeline writes to it."
+    },
+    {
+     "k": "note",
+     "label": "Why they are documented separately.",
+     "text": "The two products share a database, an authentication model and a deployment, and almost nothing else. Reading about a nine-node agent graph and a chunking strategy in one narrative makes both harder to follow, and invites the specific misunderstanding that the second is a component of the first.",
+     "tone": "bronze"
+    },
+    {
+     "k": "h3",
+     "text": "1.4 What this report covers"
+    },
+    {
+     "k": "p",
+     "text": "Chapters 2 to 8 describe requirements, architecture, implementation and security for this product alone. Chapter 9 reports measurements taken from the running system \u2014 every figure in it was produced by executing the software, not estimated. Chapter 10 states plainly what remains unproven. Chapter 11 carries the nine SRS diagrams, drawn for this product rather than for Cognita as a whole, and Chapter 12 reproduces every prompt this pipeline sends."
+    }
+   ]
+  },
+  {
+   "num": 2,
+   "title": "Software Requirements Specification",
+   "lede": "The requirements this product is built against, separated from those of Chat with Files so that each can be read, tested and argued with on its own terms.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "2.1 Purpose and intended audience"
+    },
+    {
+     "k": "p",
+     "text": "This specification describes the research half of a web application delivering verifiable answers. Its users are researchers, analysts and students who need an answer they can defend, not merely an answer they can read. Its secondary audience is whoever maintains the pipeline: every requirement below is stated so that a test can be written against it."
+    },
+    {
+     "k": "h3",
+     "text": "2.2 Functional requirements"
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "ID",
+      "Requirement",
+      "Priority",
+      "Status"
+     ],
+     "rows": [
+      [
+       "DR-1",
+       "Accept a natural-language research question of up to 500 characters.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-2",
+       "Classify question complexity and scale research depth accordingly.",
+       "Should",
+       "Implemented"
+      ],
+      [
+       "DR-3",
+       "Route a non-research message to a direct reply without running the pipeline.",
+       "Should",
+       "Implemented"
+      ],
+      [
+       "DR-4",
+       "Decompose a question into 3\u20135 targeted sub-queries before searching.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-5",
+       "Search the open web and extract full text from HTML and PDF sources.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-6",
+       "Deduplicate results by normalised URL before reading.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-7",
+       "Disclose when a source degraded to a search snippet rather than full text.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-8",
+       "Search the user's uploaded documents as part of the same evidence set.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-9",
+       "Reserve evidence slots for corpus chunks so uploads cannot be crowded out.",
+       "Should",
+       "Implemented"
+      ],
+      [
+       "DR-10",
+       "Extract key factual claims from the draft and verify each against evidence.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-11",
+       "Corroborate each claim against sources the draft was not written from.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-12",
+       "Select verification evidence by relevance to the claim, not by position.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-13",
+       "Re-search when gap analysis finds the evidence insufficient.",
+       "Should",
+       "Implemented"
+      ],
+      [
+       "DR-14",
+       "Bound the number of research iterations so a run cannot loop indefinitely.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-15",
+       "Validate that every citation resolves to a source actually read.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-16",
+       "Report a confidence score together with the factors that produced it.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-17",
+       "Stream progress and the report itself as they are produced.",
+       "Should",
+       "Implemented"
+      ],
+      [
+       "DR-18",
+       "Export a report as Markdown, BibTeX and PDF.",
+       "Should",
+       "Implemented"
+      ],
+      [
+       "DR-19",
+       "Enforce a monthly query allowance, refunding the quota when a run fails.",
+       "Must",
+       "Implemented"
+      ],
+      [
+       "DR-20",
+       "Delete all of a user's research history on request (GDPR erasure).",
+       "Must",
+       "Implemented"
+      ]
+     ],
+     "widths": [
+      0.09,
+      0.58,
+      0.13,
+      0.2
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "2.3 Non-functional requirements"
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "ID",
+      "Category",
+      "Requirement",
+      "Verified by"
+     ],
+     "rows": [
+      [
+       "DN-1",
+       "Security",
+       "One tenant's research history must be unreachable by another, enforced at the database.",
+       "CI gate, verify_rls.py"
+      ],
+      [
+       "DN-2",
+       "Security",
+       "Fetched page content must not be able to alter system behaviour.",
+       "Structural delimiting"
+      ],
+      [
+       "DN-3",
+       "Security",
+       "Credentials and API keys must never appear in logs.",
+       "Code review, _safe_url"
+      ],
+      [
+       "DN-4",
+       "Correctness",
+       "A run with no extractable claims must score 0.0, not a default.",
+       "Unit test"
+      ],
+      [
+       "DN-5",
+       "Correctness",
+       "An unsupported claim must not be averaged away by supported ones.",
+       "Unit test"
+      ],
+      [
+       "DN-6",
+       "Reliability",
+       "Transient provider failures must be retried; permanent ones must not.",
+       "26 unit tests"
+      ],
+      [
+       "DN-7",
+       "Reliability",
+       "A failed run must refund the quota it consumed.",
+       "Integration test"
+      ],
+      [
+       "DN-8",
+       "Performance",
+       "Claim verification must not dominate run time.",
+       "Batched: 257 s \u2192 one call"
+      ],
+      [
+       "DN-9",
+       "Accessibility",
+       "WCAG 2.1 AA contrast; visible keyboard focus; 44 px touch targets.",
+       "Measured in browser"
+      ],
+      [
+       "DN-10",
+       "Observability",
+       "Token usage and cost must be recorded per research run.",
+       "Persisted per session"
+      ],
+      [
+       "DN-11",
+       "Portability",
+       "Schema changes applied by versioned migrations, never at startup.",
+       "Alembic, 4 revisions"
+      ]
+     ],
+     "widths": [
+      0.09,
+      0.14,
+      0.5,
+      0.27
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "2.4 Constraints"
+    },
+    {
+     "k": "ul",
+     "items": [
+      "Postgres only. The corpus node reads pgvector chunks and every table carries a row-level security policy; SQLite is rejected at startup.",
+      "Free-tier inference. Groq's limits \u2014 8,000 tokens per minute and 200,000 per day \u2014 shape batching, retry behaviour and model allocation throughout this pipeline.",
+      "Two database roles. An owner role for migrations and the payment webhook path, a low-privilege role for everything at runtime, or row-level security has no effect.",
+      "One process. The pipeline runs in the web process; there is no worker fleet and no durable queue behind it."
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "2.5 Assumptions and dependencies"
+    },
+    {
+     "k": "ul",
+     "items": [
+      "The search provider returns results for arbitrary natural-language sub-queries.",
+      "Fetched pages are frequently unreadable \u2014 paywalls, JavaScript rendering, bot walls \u2014 so a snippet fallback is a normal path, not an error path.",
+      "The inference provider intermittently rejects its own valid structured output, so every structured call needs a JSON fallback.",
+      "Identity is delegated to Supabase; the backend holds no authentication secret and verifies JWTs against a public JWKS endpoint."
+     ]
+    }
+   ]
+  },
+  {
+   "num": 3,
+   "title": "System Architecture",
+   "lede": "Three tiers: a React single-page application, a FastAPI service hosting a LangGraph state machine, and Postgres holding both relational and vector data. This chapter describes them as they serve this product.",
+   "blocks": [
+    {
+     "k": "fig",
+     "id": "3.1",
+     "title": "System architecture",
+     "caption": "Request paths are solid; the WebSocket carries streamed progress and report tokens. Every runtime query passes through the low-privilege role so row-level security applies.",
+     "src": "fig3-architecture.png",
+     "w": 860,
+     "h": 400
+    },
+    {
+     "k": "h3",
+     "text": "3.1 Why a graph and not a chain"
+    },
+    {
+     "k": "p",
+     "text": "The single structural decision that shapes this product is that the pipeline must be able to go backwards. When the fact-checker finds that most of a draft's claims have no supporting evidence, the correct response is not to lower a number and ship \u2014 it is to search again with better-targeted queries. A chain of steps cannot express that. A directed graph with conditional edges can, and LangGraph is a thin enough runtime over that idea to be worth the dependency."
+    },
+    {
+     "k": "h3",
+     "text": "3.2 Technology decisions and their reasons"
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Layer",
+      "Choice",
+      "Why this rather than the obvious alternative"
+     ],
+     "rows": [
+      [
+       "Orchestration",
+       "LangGraph",
+       "The pipeline needs to loop back when evidence is thin. A chain cannot; a graph with conditional edges can."
+      ],
+      [
+       "Transport",
+       "WebSocket",
+       "A research run takes tens of seconds. Polling would either hide progress or hammer the server; SSE cannot carry the client's cancel."
+      ],
+      [
+       "Inference",
+       "Groq",
+       "Fast and free at this scale. Two model sizes let structural JSON tasks avoid competing with synthesis for a scarce token budget."
+      ],
+      [
+       "Corpus access",
+       "pgvector",
+       "The user's documents already live in the same database as their research history, so one policy protects both."
+      ],
+      [
+       "Identity",
+       "Supabase",
+       "JWTs verified against a public JWKS endpoint, so the backend holds no auth secret."
+      ],
+      [
+       "Persistence",
+       "PostgreSQL 16",
+       "Row-level security is the second line of tenant isolation, and it only exists in a real database."
+      ]
+     ],
+     "widths": [
+      0.16,
+      0.16,
+      0.68
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "3.3 Model allocation"
+    },
+    {
+     "k": "p",
+     "text": "Two model sizes are used deliberately, not incidentally. Structural work \u2014 classifying a question, emitting a JSON list of sub-queries, deciding whether to loop \u2014 goes to the 20B model. Synthesis and verification, where quality is the product, go to the 120B model. On a free tier with a 200,000-token daily ceiling, spending the large model's budget on a three-way classification is the difference between a system that runs all day and one that stops at lunchtime."
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Node",
+      "Model",
+      "Why"
+     ],
+     "rows": [
+      [
+       "Triage",
+       "gpt-oss-20b",
+       "A three-way classification. Accuracy here is cheap to reach."
+      ],
+      [
+       "Planner",
+       "gpt-oss-20b",
+       "Structured output; the task is decomposition, not judgement."
+      ],
+      [
+       "Analyst",
+       "gpt-oss-120b",
+       "Synthesis across dozens of sources is the quality-critical step."
+      ],
+      [
+       "Fact-checker",
+       "gpt-oss-120b",
+       "Verification decides the confidence score; a weak model here makes the score meaningless."
+      ],
+      [
+       "Gap analysis",
+       "gpt-oss-20b",
+       "A binary decision plus a short list of follow-up queries."
+      ],
+      [
+       "Report",
+       "gpt-oss-120b",
+       "Prose quality is what the user reads."
+      ]
+     ],
+     "widths": [
+      0.22,
+      0.22,
+      0.56
+     ]
+    },
+    {
+     "k": "note",
+     "label": "One pinned model, on purpose.",
+     "text": "The model identifiers above are pinned in config.py rather than resolved from a provider default. The account this project runs on does not expose the llama-3.x family at all, so a fallback chain that assumed it would fail at runtime on a machine where it had never been tested.",
+     "tone": "bronze"
+    }
+   ]
+  },
+  {
+   "num": 4,
+   "title": "The Agent Pipeline",
+   "lede": "Nine nodes in a directed graph. The important structural feature is not their number but the edge that goes backwards: gap analysis can return the run to search when the evidence gathered so far does not support a confident answer.",
+   "blocks": [
+    {
+     "k": "fig",
+     "id": "4.1",
+     "title": "Research pipeline with reflective loop",
+     "caption": "Triage routes non-research messages straight to the end. The corpus node folds the user's own documents into the same evidence set as the web. Gap analysis returns to search when confidence is low and iterations remain.",
+     "src": "fig4-pipeline.png",
+     "w": 860,
+     "h": 240
+    },
+    {
+     "k": "h3",
+     "text": "4.1 The nine nodes"
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Node",
+      "Responsibility",
+      "Model",
+      "Design note"
+     ],
+     "rows": [
+      [
+       "Triage",
+       "Classify effort: chat, simple, or deep",
+       "20B",
+       "Without it every question paid the cost of the hardest one. Fails open to deep \u2014 over-researching costs time, under-researching costs correctness."
+      ],
+      [
+       "Planner",
+       "Decompose into 3\u20135 sub-queries",
+       "20B",
+       "Structured output with a JSON fallback, because the provider's tool-call wrapper intermittently rejects its own valid generation."
+      ],
+      [
+       "Search",
+       "Execute sub-queries, deduplicate by normalised URL",
+       "\u2014",
+       "Breadth scales with triage: 3 results per query for simple, 5 for deep."
+      ],
+      [
+       "Reader",
+       "Fetch and extract HTML and PDF, concurrently",
+       "\u2014",
+       "Records when extraction failed and a search snippet was substituted, so the report can disclose it."
+      ],
+      [
+       "Corpus",
+       "Retrieve from the user's own documents",
+       "\u2014",
+       "Runs even when web search returned nothing \u2014 the answer may be in the user's files."
+      ],
+      [
+       "Analyst",
+       "Synthesise a draft across all evidence",
+       "120B",
+       "Chunks are ranked by relevance; corpus chunks hold reserved slots so deliberately uploaded documents cannot be crowded out."
+      ],
+      [
+       "Fact-checker",
+       "Extract claims, verify, corroborate independently",
+       "120B",
+       "All claims in one call with per-claim evidence \u2014 verifying individually previously consumed 257 s of a 361 s run."
+      ],
+      [
+       "Gap analysis",
+       "Decide whether to loop or report",
+       "20B",
+       "Hard iteration ceiling prevents unbounded loops; generates targeted follow-up queries."
+      ],
+      [
+       "Report",
+       "Compose the final document",
+       "120B",
+       "Sources and the confidence block are assembled in code, not generated \u2014 removing a place a reference could be invented."
+      ]
+     ],
+     "widths": [
+      0.13,
+      0.24,
+      0.08,
+      0.55
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "4.2 Triage, and the cost of not having it"
+    },
+    {
+     "k": "p",
+     "text": "Before triage existed, every message ran the full pipeline. \"Thanks, that's helpful\" triggered five web searches. Triage classifies each message into chat, simple or deep, and the first of those returns a direct reply without touching the graph at all."
+    },
+    {
+     "k": "p",
+     "text": "It fails open to deep. A question wrongly classified as simple gets a thin answer and the user cannot tell why; a question wrongly classified as deep costs time and tokens and still answers correctly. Those failures are not symmetric, so the default is not either."
+    },
+    {
+     "k": "h3",
+     "text": "4.3 The reflective loop"
+    },
+    {
+     "k": "p",
+     "text": "Gap analysis is the conditional edge. It receives the verified claims and the confidence aggregate, and answers one question: is this enough? If not, and iterations remain, it emits targeted follow-up queries and the graph returns to the search node with them. The evidence set accumulates across iterations rather than being replaced."
+    },
+    {
+     "k": "p",
+     "text": "The ceiling is hard and low. An unbounded loop against a free-tier provider is not a quality feature, it is a way to exhaust a daily token budget on one question. When the ceiling is reached the run reports what it has, with a score that reflects the thinness of the evidence rather than hiding it."
+    },
+    {
+     "k": "note",
+     "label": "This is the structural claim of the product.",
+     "text": "Everything else in this pipeline \u2014 planning, reading, verification, scoring \u2014 exists in other research tools in some form. The backward edge is what makes the confidence score actionable rather than decorative: a low score triggers more work instead of merely being displayed.",
+     "tone": "bronze"
+    }
+   ]
+  },
+  {
+   "num": 5,
+   "title": "Evidence Gathering",
+   "lede": "Four of the nine nodes exist only to assemble the body of evidence a draft is written from, and a fifth decides which parts of it each claim is checked against. The quality of the final score is bounded by these steps.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "5.1 Planning sub-queries"
+    },
+    {
+     "k": "p",
+     "text": "A research question is rarely a good search query. The planner decomposes it into three to five sub-queries that are, each targeting a different facet. This is a structured-output call: the model returns a JSON list, which is parsed and validated."
+    },
+    {
+     "k": "p",
+     "text": "The provider's tool-call wrapper intermittently rejects generations that are in fact valid JSON, so every structured call in this pipeline carries a plain-text fallback that re-parses the raw content. A pipeline that fails because a wrapper had an opinion about its own output is not acceptable at this layer."
+    },
+    {
+     "k": "h3",
+     "text": "5.2 Search and deduplication"
+    },
+    {
+     "k": "p",
+     "text": "Sub-queries are executed and their results merged. Breadth scales with the triage classification: three results per sub-query for a simple question, five for a deep one. Results are deduplicated by normalised URL \u2014 tracking parameters stripped, trailing slashes reconciled \u2014 because the same page returned by three sub-queries is one source, not three, and counting it as three would inflate the source-count caps that Chapter 6 depends on."
+    },
+    {
+     "k": "h3",
+     "text": "5.3 Reading, and the snippet fallback"
+    },
+    {
+     "k": "p",
+     "text": "Selected URLs are fetched and extracted concurrently. HTML and PDF are handled separately. A large fraction of the open web cannot be read by a server-side fetch \u2014 paywalls, JavaScript-rendered content, bot protection \u2014 so failure is a normal outcome, not an exception."
+    },
+    {
+     "k": "p",
+     "text": "When extraction fails, the search snippet is substituted and the source is flagged. That flag travels all the way to the confidence score, where a run whose sources are mostly snippets is capped at 70%. A search snippet is not the paper it stands for, and a system that treats the two identically is measuring something other than what it claims."
+    },
+    {
+     "k": "h3",
+     "text": "5.4 The corpus node"
+    },
+    {
+     "k": "p",
+     "text": "This is the single point at which Deep Research touches the other product. The corpus node retrieves from the chunks that Chat with Files created, and folds them into the same evidence set as the web results."
+    },
+    {
+     "k": "p",
+     "text": "It runs even when web search returned nothing, because the answer may be in the user's own files, and a research tool that ignores the documents its user deliberately uploaded is failing at the easy case. When the analyst ranks evidence for inclusion, corpus chunks hold reserved slots \u2014 without that, a run with forty web sources would reliably crowd out the three documents the user cared enough to upload."
+    },
+    {
+     "k": "h3",
+     "text": "5.5 Evidence selection for verification"
+    },
+    {
+     "k": "p",
+     "text": "Evidence was previously assembled for the fact-checker by position: the first 1,000 characters of each document, truncated to 6,000 characters overall. On a forty-source run that is roughly the top of the first six documents. A claim drawn from anywhere else was unverifiable in principle, and came back \"unverified\" for reasons entirely unrelated to its truth."
+    },
+    {
+     "k": "p",
+     "text": "Passages are now selected per claim, by relevance, across every source. Scoring is IDF-weighted term overlap computed locally \u2014 no API call, no added latency \u2014 and the selector returns at most one passage per source so a single verbose document cannot monopolise the evidence budget for a claim."
+    },
+    {
+     "k": "note",
+     "label": "Why this counts as a correctness fix and not a tuning change.",
+     "text": "Before it, the confidence score's denominator was arbitrary. Claims were marked unverified because of where they happened to sit in the draft relative to where their evidence happened to sit in the source list. The number moved for reasons that had nothing to do with the research.",
+     "tone": "bad"
+    }
+   ]
+  },
+  {
+   "num": 6,
+   "title": "Verification and Confidence Scoring",
+   "lede": "This chapter describes the part of the system that most distinguishes it, and the part where a plausible-looking implementation is most likely to be measuring something other than what it claims.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "6.1 Why na\u00efve verification fails"
+    },
+    {
+     "k": "p",
+     "text": "The obvious implementation extracts claims from the draft and checks them against the source documents. It is circular. A claim faithfully summarised from a source always agrees with that source, including when the source is wrong, and including when the claim is a hallucination the model then also used to write the summary."
+    },
+    {
+     "k": "p",
+     "text": "Such a system measures summarisation fidelity while its interface calls the result grounding. It will report high confidence on a well-written answer built from three bad sources, which is precisely the case a reader most needs warning about."
+    },
+    {
+     "k": "h3",
+     "text": "6.2 Independent corroboration"
+    },
+    {
+     "k": "p",
+     "text": "Each extracted claim is searched for separately and concurrently. The results are labelled distinctly from the documents the draft was written from \u2014 [PRIOR] for evidence the analyst already saw, [INDEPENDENT] for evidence found by this search. A claim confirmed by a source the analyst never saw is marked independently_corroborated."
+    },
+    {
+     "k": "p",
+     "text": "The verifier is instructed to cap its confidence at 0.7 when only prior evidence supports a claim. Agreement with one's own summary is weak evidence, and the prompt says so explicitly rather than leaving the model to infer it."
+    },
+    {
+     "k": "h3",
+     "text": "6.3 Batching, and why it was necessary"
+    },
+    {
+     "k": "p",
+     "text": "Verification originally ran one call per claim. On a representative run that consumed 257 seconds of a 361-second total \u2014 the verification step was the product's latency. All claims now go in a single call, each paired with the evidence selected for it in \u00a75.5."
+    },
+    {
+     "k": "p",
+     "text": "A single-claim fallback remains for the case where the batch response fails to parse. It is slow and it is rarely reached, and it exists because returning no verification at all would silently produce a score of 0.0 that looks like a verdict rather than a parsing failure."
+    },
+    {
+     "k": "h3",
+     "text": "6.4 Scoring the run"
+    },
+    {
+     "k": "p",
+     "text": "The run's confidence is not the mean of its claim scores. A mean hides its worst member: four solid claims and one fabrication scored identically to five mediocre ones. Instead, unsupported claims are weighted more heavily, and the result is capped by the quality of the evidence beneath it \u2014 because thin evidence does not make an answer wrong, it makes a high score unjustifiable."
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Condition",
+      "Effect",
+      "Rationale"
+     ],
+     "rows": [
+      [
+       "Unsupported claim present",
+       "Weighted 1.5\u00d7",
+       "Cannot be averaged away by its neighbours."
+      ],
+      [
+       "Fewer than 3 distinct sources",
+       "Cap 60%",
+       "Perfect claims over two documents is not a confident answer."
+      ],
+      [
+       "Fewer than 5 distinct sources",
+       "Cap 80%",
+       "Insufficient breadth for a high score."
+      ],
+      [
+       "Majority of sources snippet-only",
+       "Cap 70%",
+       "A search snippet is not the paper it stands for."
+      ],
+      [
+       "Independent corroboration",
+       "Up to +10%",
+       "Scaled by the proportion of claims confirmed externally."
+      ],
+      [
+       "No claims extracted",
+       "Score 0.0",
+       "An invented middling number reads as a measurement when nothing was measured."
+      ]
+     ],
+     "widths": [
+      0.28,
+      0.16,
+      0.56
+     ]
+    },
+    {
+     "k": "p",
+     "text": "The caps compose: a run can be limited by source count and by snippet ratio at once, and the lowest applicable cap wins. They are caps rather than penalties deliberately \u2014 a penalty is a subtraction that a few extra good claims can win back, and no number of good claims over two sources makes two sources into broad evidence."
+    },
+    {
+     "k": "h3",
+     "text": "6.5 Reporting the score honestly"
+    },
+    {
+     "k": "p",
+     "text": "Every adjustment is reported alongside the number, and the report carries a \"What limits this score\" section naming what would raise it \u2014 more sources, full text rather than snippets, independent corroboration of specific claims. A score a reader cannot interrogate is decoration."
+    },
+    {
+     "k": "p",
+     "text": "Citations are validated in code before the report is assembled: every reference must resolve to a source the reader actually fetched. The sources list and the confidence block are joined in Python rather than generated by the model, which removes the last place in the pipeline where a reference could be invented."
+    }
+   ]
+  },
+  {
+   "num": 7,
+   "title": "Data Layer and Security",
+   "lede": "This layer is shared with Chat with Files, and is described here in full rather than cross-referenced, because a reader handed only this document should not have to go looking for it.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "7.1 Tenant isolation"
+    },
+    {
+     "k": "p",
+     "text": "Application code filters every query by user. That is necessary and insufficient: it is one forgotten WHERE clause away from a cross-tenant leak. Postgres row-level security provides the second line. Policies are keyed on a session variable set when a connection is checked out of the pool, and current_setting(..., true) returns NULL when unset \u2014 so an unscoped session matches nothing and fails closed."
+    },
+    {
+     "k": "p",
+     "text": "Two roles make this work. The owner role runs migrations and the payment webhook path, which has no user context and must read across tenants. The runtime role owns nothing and has no BYPASSRLS, so policies bind to it. If both connection strings name the same role, every policy is inert \u2014 and startup says so loudly rather than logging a reassuring line that means nothing."
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Check",
+      "Expected",
+      "Result"
+     ],
+     "rows": [
+      [
+       "Owner reads their own rows",
+       "Visible",
+       "Pass"
+      ],
+      [
+       "Unfiltered SELECT by another tenant",
+       "Zero rows",
+       "Pass"
+      ],
+      [
+       "Session with no tenant set",
+       "Zero rows (fail closed)",
+       "Pass"
+      ],
+      [
+       "Insert a row under another tenant's id",
+       "Refused by WITH CHECK",
+       "Pass"
+      ]
+     ],
+     "widths": [
+      0.46,
+      0.34,
+      0.2
+     ]
+    },
+    {
+     "k": "h4",
+     "text": "Verified live \u00b7 all six tables"
+    },
+    {
+     "k": "p",
+     "text": "research_sessions, rag_documents, rag_conversations, rag_chunks, rag_messages and user_subscriptions all report relrowsecurity = true. These four checks run as a build gate; a regression fails CI rather than reaching production."
+    },
+    {
+     "k": "note",
+     "label": "A subtlety that cost a real bug.",
+     "text": "The session variable is bound to the connection, and a commit releases the connection back to the pool. Code that committed and then re-read the same row got a connection with the variable cleared, and row-level security correctly hid the row it had just written. The fix binds the tenant to a ContextVar so any connection checked out within the request is scoped the same way.",
+     "tone": "bad"
+    },
+    {
+     "k": "h3",
+     "text": "7.2 What this product persists"
+    },
+    {
+     "k": "p",
+     "text": "A research run writes one row: the question, the finished Markdown report, the confidence score, the token count and the computed cost. Sources and per-claim verdicts travel inside that row's JSON payload rather than in tables of their own, because they are written once with the run and never queried across runs."
+    },
+    {
+     "k": "p",
+     "text": "The token ledger is worth noting separately. Usage is accumulated in a ContextVar for the duration of a run and persisted with the session, which is what makes the cost figures in Chapter 9 measurements rather than estimates."
+    },
+    {
+     "k": "h3",
+     "text": "7.3 Untrusted content on the research path"
+    },
+    {
+     "k": "p",
+     "text": "This pipeline reads arbitrary web pages, which is to say it puts text written by strangers into a model's context. The defence is structural rather than lexical: fetched content is wrapped in delimiters and the system prompt states that anything inside them is data, never a command. A closing tag appearing inside the content is neutralised, or it would end the block early and hand back exactly the control the delimiter withholds."
+    },
+    {
+     "k": "p",
+     "text": "A regex sanitiser also runs, and it is a speed bump rather than a defence. When this was tested with a realistic injection, the regex missed it entirely \u2014 its patterns expected different phrasing \u2014 and the structural delimiting held. The patterns were widened afterwards, but the lesson is that the delimiter is what works."
+    },
+    {
+     "k": "h3",
+     "text": "7.4 Schema management"
+    },
+    {
+     "k": "p",
+     "text": "Four Alembic revisions replace the earlier pattern of create_all() plus hand-written ADD COLUMN IF NOT EXISTS statements, which could add a column but never alter or remove one and recorded nothing about what had been applied. A database predating Alembic is stamped at the baseline rather than re-running it, so existing data is preserved."
+    }
+   ]
+  },
+  {
+   "num": 8,
+   "title": "Testing and Continuous Integration",
+   "lede": "The suite and the gates that protect this product, and the reason both are run against a real Postgres rather than a convenient substitute.",
+   "blocks": [
+    {
+     "k": "stats",
+     "items": [
+      [
+       "165",
+       "Backend tests",
+       "unit and integration, 5 s"
+      ],
+      [
+       "31",
+       "Frontend tests",
+       "hooks and components"
+      ],
+      [
+       "4",
+       "Build gates",
+       "tests \u00b7 RLS \u00b7 evals \u00b7 frontend"
+      ],
+      [
+       "4",
+       "Migrations",
+       "versioned, reversible"
+      ]
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "8.1 What CI verifies"
+    },
+    {
+     "k": "p",
+     "text": "The pipeline runs against pgvector/pgvector:pg16 with a genuine low-privilege role \u2014 not SQLite. This matters: the application refuses to start on SQLite, so a suite running against it would cover none of the pgvector queries the corpus node makes, none of the tenant scoping, and none of the migrations that actually execute in production."
+    },
+    {
+     "k": "p",
+     "text": "Beyond the unit suites, two gates assert behaviour rather than code. The first confirms Postgres genuinely refuses cross-tenant reads \u2014 the policies existing is not the same as the policies working. The second runs the golden evaluation set, so a retrieval regression fails the build."
+    },
+    {
+     "k": "h3",
+     "text": "8.2 Tests that encode defects"
+    },
+    {
+     "k": "p",
+     "text": "Several tests assert the specific failure rather than the happy path, so a regression reads as the thing that went wrong rather than as a number that moved:"
+    },
+    {
+     "k": "ul",
+     "items": [
+      "an unsupported claim cannot be averaged away by four good ones;",
+      "perfect claims over two sources are still capped at 60%;",
+      "a corroborating hit on a page the draft already used is not counted as independent;",
+      "a run with no claims scores 0.0, not an invented 0.5;",
+      "a tracking parameter on a URL does not make a real citation look fabricated;",
+      "a failed run refunds the quota it consumed."
+     ]
+    },
+    {
+     "k": "note",
+     "label": "The workflow had never run.",
+     "text": "For most of this project's life the CI badge was green because no workflow had ever executed: the file sat one directory below the repository root, where GitHub Actions does not look. It was relocated and the first real run followed \u2014 which is how the SQLite problem above was found.",
+     "tone": "bad"
+    }
+   ]
+  },
+  {
+   "num": 9,
+   "title": "Results and Measurements",
+   "lede": "Every figure in this chapter was produced by running the system. Nothing here is an estimate, and where a measurement is weaker than it appears, this chapter says so.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "9.1 Internal golden set"
+    },
+    {
+     "k": "p",
+     "text": "Run as a build gate on every push. Scores of 1.000 here mean \"no regression since the last commit\", and should not be read as evidence of accuracy \u2014 the questions were written by the author, over documents chosen by the author."
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Metric",
+      "Score",
+      "Baseline",
+      "Result"
+     ],
+     "rows": [
+      [
+       "Retrieval recall",
+       "1.000",
+       "1.000",
+       "OK"
+      ],
+      [
+       "Answer accuracy",
+       "1.000",
+       "1.000",
+       "OK"
+      ],
+      [
+       "Refusal rate",
+       "1.000",
+       "1.000",
+       "OK"
+      ],
+      [
+       "Unanswerable retrieved something",
+       "0.750",
+       "1.000",
+       "OK"
+      ]
+     ],
+     "widths": [
+      0.46,
+      0.18,
+      0.18,
+      0.18
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "9.2 Confidence distribution across real runs"
+    },
+    {
+     "k": "p",
+     "text": "Five genuine research runs against live web sources. The spread is the point: a system that returns a high score for every question is not measuring anything."
+    },
+    {
+     "k": "fig",
+     "id": "9.1",
+     "title": "Confidence by run, with token cost",
+     "caption": "Confidence is not correlated with effort. The 18% run consumed more tokens than the 65% run \u2014 it searched hard and still found little support, which is the honest outcome for a contested question.",
+     "src": "fig9-confidence.png",
+     "w": 700,
+     "h": 260
+    },
+    {
+     "k": "p",
+     "text": "The 18% run is the most informative result in this report. Asked how much electricity data centres use worldwide, the system gathered 24 sources, supported one claim of five, corroborated none independently, and reported: \"4 claims had no supporting evidence in the sources found\" and \"agreement with the documents the answer was written from is weaker evidence.\" Data-centre energy figures are widely cited second-hand and poorly sourced. A system that returned 85% here would be worse, not better."
+    },
+    {
+     "k": "h3",
+     "text": "9.3 Cost and latency"
+    },
+    {
+     "k": "stats",
+     "items": [
+      [
+       "15,370",
+       "Mean tokens / run",
+       "across five live runs"
+      ],
+      [
+       "$0.0054",
+       "Mean cost / run",
+       "at published provider rates"
+      ],
+      [
+       "257 s \u2192 1 call",
+       "Verification",
+       "before and after batching"
+      ],
+      [
+       "200,000",
+       "Daily token ceiling",
+       "free tier, provider-enforced"
+      ]
+     ]
+    },
+    {
+     "k": "p",
+     "text": "The daily ceiling is the real constraint on this product, and it is invisible until it is hit \u2014 it appears only in the body of a 429 response, not in the published rate-limit table. At roughly 15,000 tokens per run it permits on the order of thirteen deep runs per day, which is why triage and batching are correctness features here rather than optimisations."
+    },
+    {
+     "k": "h3",
+     "text": "9.4 Interface quality"
+    },
+    {
+     "k": "p",
+     "text": "Measured in the browser against the running application, before and after the remediation work described in Chapter 10."
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Measure",
+      "Before",
+      "After",
+      "Standard"
+     ],
+     "rows": [
+      [
+       "Horizontal overflow at 375 px",
+       "265 px",
+       "0 px",
+       "No sideways scroll"
+      ],
+      [
+       "Controls below 44 px touch target",
+       "15 of 29",
+       "0 of 29",
+       "Apple HIG"
+      ],
+      [
+       "Visible keyboard focus",
+       "None",
+       "All controls",
+       "WCAG 2.4.7"
+      ],
+      [
+       "Light-theme muted text contrast",
+       "3.79 : 1",
+       "4.72 : 1",
+       "WCAG AA (4.5)"
+      ],
+      [
+       "Light-theme link contrast",
+       "3.72 : 1",
+       "4.84 : 1",
+       "WCAG AA (4.5)"
+      ],
+      [
+       "Dark-theme colour pairs passing AA",
+       "14 of 14",
+       "14 of 14",
+       "WCAG AA"
+      ],
+      [
+       "Frontend automated tests",
+       "0",
+       "31",
+       "\u2014"
+      ],
+      [
+       "Page height, signed-in home",
+       "8,272 px",
+       "2,740 px",
+       "\u2014"
+      ]
+     ],
+     "widths": [
+      0.4,
+      0.18,
+      0.18,
+      0.24
+     ]
+    }
+   ]
+  },
+  {
+   "num": 10,
+   "title": "Evaluation, Limitations and Future Work",
+   "lede": "What was found, what was fixed, and \u2014 more usefully \u2014 what is still not known about this product.",
+   "blocks": [
+    {
+     "k": "h3",
+     "text": "10.1 Defects found and corrected"
+    },
+    {
+     "k": "p",
+     "text": "A structured review of the codebase found a consistent pattern: several controls were documented in comments and marketing copy but did not exist in the running system. These are recorded because the pattern is more instructive than any individual bug."
+    },
+    {
+     "k": "tbl",
+     "headers": [
+      "Defect",
+      "Why it mattered",
+      "Resolution"
+     ],
+     "rows": [
+      [
+       "Row-level security absent",
+       "Extensively documented as \"real defense-in-depth\"; zero policies existed and both connection strings named the same role.",
+       "Policies written, second role created, four checks gated in CI."
+      ],
+      [
+       "Circular verification",
+       "Claims checked against the text they were summarised from; the score measured fidelity, not support.",
+       "Independent per-claim search and a corroboration flag."
+      ],
+      [
+       "Evidence truncation",
+       "Verification saw roughly six of forty sources, making most claims unverifiable in principle.",
+       "Relevance-based selection across all sources."
+      ],
+      [
+       "Confidence by mean",
+       "One fabrication among four good claims scored the same as five mediocre ones.",
+       "Weighted aggregate with evidence-quality caps."
+      ],
+      [
+       "Verification latency",
+       "257 s of a 361 s run spent on per-claim calls.",
+       "Batched into one call with per-claim evidence."
+      ],
+      [
+       "CI ran on SQLite",
+       "The application refuses to start on SQLite; the green check covered none of the production data paths.",
+       "Postgres + pgvector service container."
+      ],
+      [
+       "CI had never executed",
+       "The workflow file sat one directory below the repository root, where GitHub Actions does not look.",
+       "Relocated; first successful run followed."
+      ],
+      [
+       "Quota double-spend",
+       "The counter was re-read after commit, silently consuming several queries per run.",
+       "Read once, within the scoped session."
+      ]
+     ],
+     "widths": [
+      0.2,
+      0.44,
+      0.36
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "10.2 Current limitations"
+    },
+    {
+     "k": "ul",
+     "items": [
+      "The confidence score is unvalidated against human judgement. A harness exists to measure whether \"verified\" correlates with \"true\", but it requires human labels that have not yet been collected. This is the single largest gap in this product's evidence, and nothing else on this list comes close.",
+      "Five runs is a small sample. The spread is encouraging but it is not a distribution.",
+      "The pipeline runs in the web process. A restart mid-run loses the run; the quota is refunded but the work is not recoverable.",
+      "Reader success rate is unmeasured. The proportion of sources that degrade to snippets is recorded per run and reported, but never aggregated across runs.",
+      "Triage accuracy is unmeasured. It fails open, so errors are expensive rather than wrong \u2014 but that is an argument for measuring it, not for assuming it."
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "10.3 Future work, in priority order"
+    },
+    {
+     "k": "ul",
+     "items": [
+      "Collect human labels for 100 or more verified claims and report precision, recall and calibration of the confidence score. Nothing else changes this product's credibility as much.",
+      "Aggregate reader success and snippet ratios across runs, so the caps in \u00a76.4 can be justified with a distribution rather than an argument.",
+      "Move the pipeline behind a durable queue so a restart does not lose a run.",
+      "Measure triage accuracy against a labelled set of messages.",
+      "Cache fetched pages across runs; the same sources recur and re-fetching them spends latency on nothing."
+     ]
+    },
+    {
+     "k": "h3",
+     "text": "10.4 Assessment"
+    },
+    {
+     "k": "p",
+     "text": "This product does what it claims within the limits of what has been measured. Its verification is genuinely independent rather than circular. Its confidence scoring is conservative by construction and reports its own reasoning. Its security controls are enforced by the database and verified by the build, rather than described in a comment."
+    },
+    {
+     "k": "p",
+     "text": "What remains unproven is whether the confidence number corresponds to truth. Every measurement in Chapter 9 captures internal consistency or retrieval behaviour. None answers the question a reader actually has \u2014 when it says 77%, is that right? \u2014 and until human labels exist, that question is open. This report states that plainly rather than letting a column of 1.000 scores imply otherwise."
+    }
+   ]
+  }
+ ],
+ "srsLede": "The nine diagrams a complete specification carries, drawn for this product rather than for Cognita as a whole. Colour is not decoration here: it separates the pipeline from its data and from everything outside its boundary, which is the distinction most of these figures exist to make.",
+ "srs": [
+  {
+   "id": "11.0",
+   "number": "11.0",
+   "title": "Notation used throughout this chapter",
+   "caption": "One visual language across all nine diagrams, so it is learned once rather than re-read per figure.",
+   "png": "fig-legend.png"
+  },
+  {
+   "id": "R.1",
+   "number": "11.1",
+   "title": "Context diagram",
+   "caption": "Deep Research and everything outside it. One human actor, five external systems, one store of its own.",
+   "png": "fig-r1.png"
+  },
+  {
+   "id": "R.2",
+   "number": "11.2",
+   "title": "Data flow diagram \u2014 level 0",
+   "caption": "The product as a single process. The dashed read of the user corpus is the only flow it shares with the other product.",
+   "png": "fig-r2.png"
+  },
+  {
+   "id": "R.3",
+   "number": "11.3",
+   "title": "Data flow diagram \u2014 level 1",
+   "caption": "The nine nodes as numbered processes. The dashed return path from gap analysis to search is the reflective loop.",
+   "png": "fig-r3.png"
+  },
+  {
+   "id": "R.4",
+   "number": "11.4",
+   "title": "Use case diagram",
+   "caption": "Everything a user can do with this product. Uploading is deliberately absent \u2014 that belongs to Chat with Files.",
+   "png": "fig-r4.png"
+  },
+  {
+   "id": "R.5",
+   "number": "11.5",
+   "title": "Sequence diagram \u2014 one research run",
+   "caption": "A full run from a typed question to a streamed report, including the loop back to search.",
+   "png": "fig-r5.png"
+  },
+  {
+   "id": "R.6",
+   "number": "11.6",
+   "title": "Entity-relationship diagram",
+   "caption": "What a run persists. Sources and claims live inside the session payload rather than in tables of their own.",
+   "png": "fig-r6.png"
+  },
+  {
+   "id": "R.7",
+   "number": "11.7",
+   "title": "State transition diagram",
+   "caption": "The lifecycle of a single run, with its three terminal states and the conditional edge that re-enters searching.",
+   "png": "fig-r7.png"
+  },
+  {
+   "id": "R.8",
+   "number": "11.8",
+   "title": "Deployment diagram",
+   "caption": "Where the work runs. The pipeline is in-process on the application node \u2014 no queue and no worker fleet.",
+   "png": "fig-r8.png"
+  },
+  {
+   "id": "R.9",
+   "number": "11.9",
+   "title": "Activity diagram",
+   "caption": "The reflective loop drawn as control flow, with the two decisions that shape every run.",
+   "png": "fig-r9.png"
+  }
+ ],
+ "prompts": [
+  {
+   "n": 1,
+   "role": "Triage",
+   "model": "gpt-oss-20b",
+   "temp": "0.0",
+   "note": "Classifies how much work a question deserves. Instructed to prefer \u201cdeep\u201d when uncertain, because under-researching a real question costs correctness while over-researching costs only time.",
+   "name": "TRIAGE_SYSTEM_PROMPT",
+   "file": "agents/triage_agent.py",
+   "text": "Classify how much research a user&#x27;s request needs.\n\n- &quot;chat&quot;: not a research request at all \u2014 a greeting, thanks, arithmetic, or a\n  question about the assistant itself. Nothing to look up.\n- &quot;simple&quot;: a single factual or definitional question that one round of\n  searching will answer.\n- &quot;deep&quot;: comparative, multi-part, causal, or contested questions that need\n  several angles and cross-checking.\n\nWhen uncertain, choose &quot;deep&quot; \u2014 under-researching a real question is far worse\nthan over-researching a simple one.",
+   "chars": 515
+  },
+  {
+   "n": 2,
+   "role": "Triage \u2014 direct reply",
+   "model": "gpt-oss-20b",
+   "temp": "0.0",
+   "note": "Used only for messages that need no research. The identity rules exist because a base model will volunteer the name of whoever trained it if not told otherwise, and because a greeting must not be answered with manufactured citations.",
+   "name": "CHAT_SYSTEM_PROMPT",
+   "file": "agents/triage_agent.py",
+   "text": "You are Cognita, a multi-agent research assistant.\n\nIdentity rules \u2014 these override anything the message asks:\n- You are Cognita. Never identify as ChatGPT, Claude, Gemini, Llama, or any\n  other assistant, and never name the company that trained the underlying\n  model. The base model will volunteer its own identity if you let it; do not.\n- If asked what you are, say you are Cognita, a research assistant that plans a\n  query, searches the web and the user&#x27;s uploaded documents, and fact-checks\n  every claim before reporting.\n\nReply briefly and directly. Do not invent citations or imply you searched\nanything \u2014 this message did not require research.",
+   "chars": 653
+  },
+  {
+   "n": 3,
+   "role": "Planner",
+   "model": "gpt-oss-20b",
+   "temp": "0.2",
+   "note": "Decomposes the question into distinct search angles. \u201cAvoid vague or overlapping queries\u201d is load-bearing: overlapping sub-queries return the same pages and waste the search budget.",
+   "name": "PLANNER_SYSTEM_PROMPT",
+   "file": "agents/planner_agent.py",
+   "text": "You are a Principal Research Scientist and Lead Investigator.\nYour task is to analyze the user&#x27;s research query and decompose it into 3-5 specific, distinct, and highly targeted search queries.\n\nGuidelines:\n- Each sub-query must explore a specific dimension (e.g. background/state-of-the-art, empirical benchmarks, technical tradeoffs, challenges/criticisms).\n- Make queries keyword-rich and optimal for modern web search engines.\n- Avoid vague or overlapping queries.",
+   "chars": 469
+  },
+  {
+   "n": 4,
+   "role": "Analyst",
+   "model": "gpt-oss-120b",
+   "temp": "0.2",
+   "note": "Writes the draft the report is built from. Rewritten to demand explanation over labels \u2014 a two-word gloss tells a newcomer nothing, and tables whose cells are sentence fragments should have been paragraphs.",
+   "name": "SYSTEM_PROMPT",
+   "file": "agents/analyst_agent.py",
+   "text": "You are an expert research analyst. Synthesize the provided\nsources into a clear, accurate answer for a reader who is new to the topic.\n\n- Draw across ALL the sources; don&#x27;t summarise one and stop.\n- Explain each idea in full sentences. A term needs a sentence saying what it is\n  and why it matters, not a two-word definition \u2014 the reader cannot look it up\n  from a fragment.\n- Say why a fact matters, not only that it is true.\n- Where sources disagree, say so and give both readings.\n- Cite by title or URL at the specific claim it supports.\n- Use concrete numbers, dates and names wherever the sources provide them.\n- Markdown for structure. Reach for a table only when comparing several things\n  across the same dimensions; if the cells would be sentence fragments, write\n  paragraphs instead.\n- Skip throat-clearing. Start with the answer.",
+   "chars": 845
+  },
+  {
+   "n": 5,
+   "role": "Fact-checker \u2014 extraction",
+   "model": "gpt-oss-120b",
+   "temp": "0.0",
+   "note": "Pulls the checkable assertions out of the draft. Deliberately narrow: empirical claims, statistics, dates and names are the things a reader would want to verify.",
+   "name": "EXTRACT_CLAIMS_PROMPT",
+   "file": "agents/factcheck_agent.py",
+   "text": "Extract the 5 most important factual claims from the following research answer.\nFocus on empirical claims, statistics, dates, names, and core findings.",
+   "chars": 152
+  },
+  {
+   "n": 6,
+   "role": "Fact-checker \u2014 verification",
+   "model": "gpt-oss-120b",
+   "temp": "0.0",
+   "note": "The most consequential prompt in the system. Evidence is labelled [PRIOR] or [INDEPENDENT] and the model is told to weight them differently, because a claim always agrees with the text it was summarised from. The 0.7 cap on prior-only support is what stops circular verification scoring high.",
+   "name": "BATCH_VERIFY_PROMPT",
+   "file": "agents/factcheck_agent.py",
+   "text": "You are a rigorous fact-checker judging several claims at once.\n\nEach claim below is followed by its own evidence block. Judge each claim ONLY\nagainst the evidence printed under it, and judge each one independently.\n\nEvidence is labelled by where it came from:\n- [PRIOR] passages from the documents the draft was written from.\n- [INDEPENDENT] passages retrieved separately, afterwards, to check the claim.\n\nScoring:\n- Support from an [INDEPENDENT] source is stronger evidence than support from a\n  [PRIOR] one, because a claim always agrees with the text it was summarised\n  from. Two independent sources agreeing warrants high confidence.\n- If only [PRIOR] evidence supports the claim, cap confidence at 0.7.\n- If the evidence does not state the fact, set verified=false and confidence\n  near 0.0. Do not reason from your own knowledge \u2014 absence of evidence here\n  means unverified, not false.\n\nCite the title or URL of whichever passage actually settled it.",
+   "chars": 959
+  },
+  {
+   "n": 7,
+   "role": "Fact-checker \u2014 single-claim fallback",
+   "model": "gpt-oss-120b",
+   "temp": "0.0",
+   "note": "Used only when the batched call fails outright, so a malformed batch response degrades into slower-but-correct rather than losing verdicts.",
+   "name": "VERIFY_CLAIM_PROMPT",
+   "file": "agents/factcheck_agent.py",
+   "text": "You are a rigorous fact-checker. Given a claim and source documents, determine if the claim is directly supported.\nBe objective and strict: if the sources do not mention the fact, mark verified=False and confidence=0.0.",
+   "chars": 220
+  },
+  {
+   "n": 8,
+   "role": "Gap analysis",
+   "model": "gpt-oss-20b",
+   "temp": "0.1",
+   "note": "Decides whether to loop back to search. The explicit 0.70 confidence criterion keeps the decision from being a vibe.",
+   "name": "GAP_SYSTEM_PROMPT",
+   "file": "agents/gap_analysis_agent.py",
+   "text": "You are a Research Director evaluating whether the collected evidence and fact-check results are sufficient to produce an authoritative, comprehensive report.\n\nCriteria to pass (is_sufficient = True):\n1. The research draft covers the core aspects of the query.\n2. Fact-check confidence is &gt;= 0.70.\n3. No glaring unverified claims or obvious missing perspectives.\n\nIf any core aspect is unaddressed or confidence is low, set is_sufficient = False and generate 1-3 targeted follow-up search queries.",
+   "chars": 498
+  },
+  {
+   "n": 9,
+   "role": "Report writer",
+   "model": "gpt-oss-120b",
+   "temp": "0.3",
+   "note": "Produces what the user actually reads. Note that it is told NOT to write the Sources or Confidence sections \u2014 those are assembled in code from records held exactly, which removes a place a reference could be invented. The chart and diagram rules are here.",
+   "name": "REPORT_PROMPT",
+   "file": "agents/report_agent.py",
+   "text": "You are writing a research report for an intelligent reader\nwho is new to this topic. Write the way a good teacher explains something to a\ncolleague: plainly, in full sentences, with the reasoning visible.\n\nStructure \u2014 write exactly these two sections and nothing after them:\n1. ## Summary \u2014 2-3 sentences answering the question directly. Someone who\n   reads only this should come away with the actual answer, not a description\n   of what the report will cover.\n2. ## Detailed Findings \u2014 the substance, with citations.\n\nDo NOT write a Sources list or a Confidence Assessment. Both are appended\nafterwards from the run&#x27;s own records, so anything you write there would be a\nsecond, less accurate copy.\n\nHow to write the findings:\n\n- Explain, don&#x27;t label. A term or component needs a sentence saying what it is\n  and why it matters, not a two-word gloss. &quot;Edge \u2014 routing logic&quot; tells a\n  newcomer nothing; &quot;An edge decides which step runs next, by looking at the\n  current state \u2014 this is what lets the graph loop or branch instead of running\n  straight through&quot; tells them something.\n- Prefer prose to fragments. Tables are for comparing several things across the\n  same few dimensions. If a table&#x27;s cells are turning into single words or\n  sentence fragments, the material wanted paragraphs instead.\n- Define a term the first time you use it, in the same sentence.\n- Say why something matters, not only that it exists. A fact with no\n  consequence attached is hard to remember and easy to skip.\n- Use concrete numbers, dates and names from the sources wherever they exist.\n- No filler openers (&quot;In today&#x27;s rapidly evolving landscape&quot;), no restating the\n  question back, no promising what the next section will do.\n- Contractions and plain words are fine. &quot;Uses&quot; beats &quot;utilises&quot;. Keep sentences\n  short enough to read once.\n\nFormatting:\n\n- Markdown. GitHub-flavoured tables are supported and render properly.\n- Cite inline as [Source Title](URL) at the specific claim it supports, not in\n  a clump at the end of a paragraph.\n\nVisuals \u2014 use them when the material calls for one, never as decoration:\n\n- ALWAYS include a chart when the sources give you three or more comparable\n  numbers (costs, percentages, counts, growth over time). A reader compares\n  quantities far faster in a chart than in a sentence, and numbers buried in\n  prose are the most commonly skipped part of a report. Use a `chart` fence\n  carrying JSON:\n\n  ```chart\n  {&quot;type&quot;: &quot;bar&quot;, &quot;title&quot;: &quot;Levelised cost by source&quot;, &quot;unit&quot;: &quot;$&quot;,\n   &quot;data&quot;: [{&quot;label&quot;: &quot;Solar&quot;, &quot;value&quot;: 40}, {&quot;label&quot;: &quot;Wind&quot;, &quot;value&quot;: 50},\n            {&quot;label&quot;: &quot;Gas&quot;, &quot;value&quot;: 70}]}\n  ```\n\n  type is &quot;bar&quot; to compare things, &quot;line&quot; for change over time, &quot;pie&quot; for\n  shares of one whole. Use only real figures from the sources \u2014 never estimate\n  a value to fill a gap, and never invent a data point to round out a chart. If\n  you only have two numbers, write them in a sentence instead.\n\n- Include a diagram when the answer involves a flow, a cycle, a decision or a\n  hierarchy. Use a `mermaid` fence:\n\n  ```mermaid\n  flowchart LR\n    A[Question] --&gt; B[Plan]\n    B --&gt; C[Search]\n    C --&gt; D{Enough evidence?}\n    D -- no --&gt; C\n    D -- yes --&gt; E[Report]\n  ```\n\n  Roughly 4-8 nodes, short labels, one diagram is plenty.\n\n- A purely factual question with no quantities and no process needs neither. An\n  unnecessary chart implies a precision the answer does not have.",
+   "chars": 3405
+  }
+ ],
+ "env": [
+  [
+   "Backend",
+   "Python 3.12, FastAPI 0.121, LangGraph 0.2.76, SQLAlchemy 2.0"
+  ],
+  [
+   "Frontend",
+   "React 19, Vite 8, TypeScript, Vitest"
+  ],
+  [
+   "Database",
+   "PostgreSQL 16, pgvector 0.4.1, HNSW + GIN indexes"
+  ],
+  [
+   "Embeddings",
+   "BAAI/bge-small-en-v1.5, 384 dimensions, local"
+  ],
+  [
+   "Inference",
+   "openai/gpt-oss-120b (synthesis), openai/gpt-oss-20b (structural, judge)"
+  ],
+  [
+   "Codebase",
+   "8,807 lines backend \u00b7 8,516 lines frontend"
+  ],
+  [
+   "Tests",
+   "165 backend \u00b7 31 frontend"
+  ]
+ ],
+ "commands": [
+  [
+   "pytest -q",
+   "full backend suite"
+  ],
+  [
+   "python scripts/verify_rls.py",
+   "tenant isolation checks"
+  ],
+  [
+   "python -m evals.run --answers",
+   "internal golden set"
+  ],
+  [
+   "python -m evals.factcheck_accuracy --export claims.jsonl",
+   "export claims for labelling"
+  ],
+  [
+   "python -m evals.factcheck_accuracy --score claims.jsonl",
+   "score the labelled claims"
+  ]
+ ]
+}

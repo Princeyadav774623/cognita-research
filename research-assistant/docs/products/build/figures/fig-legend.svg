@@ -1,0 +1,21 @@
+<svg viewBox="0 0 860 92" width="860" height="92" xmlns="http://www.w3.org/2000/svg" role="img">
+<rect width="860" height="92" fill="#ffffff"/>
+<style>
+ .lk{{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;fill:#16150f;font-weight:600}}
+ .ld{{font-family:'JetBrains Mono',monospace;font-size:8.5px;fill:#7c7566}}
+</style>
+<rect x="24" y="22" width="96" height="30" rx="8" fill="#fff" stroke="#a06b21" stroke-width="1.6"/>
+<text class="lk" x="42" y="41">Process</text><text class="ld" x="24" y="70">the system itself</text>
+<path d="M176,29 a48,7 0 0,1 96,0 v16 a48,7 0 0,1 -96,0 z" fill="#f7f4ed" stroke="#1d5f63" stroke-width="1.5"/>
+<path d="M176,29 a48,7 0 0,0 96,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/>
+<text class="lk" x="196" y="44">Data store</text><text class="ld" x="176" y="70">data at rest</text>
+<path d="M340,22 L424,22 L412,52 L328,52 z" fill="#faf6f8" stroke="#6b3352" stroke-width="1.5"/>
+<text class="lk" x="346" y="41">External</text><text class="ld" x="328" y="70">outside the boundary</text>
+<rect x="480" y="22" width="96" height="30" rx="8" fill="#eef5f1" stroke="#1f6b4a" stroke-width="1.6"/>
+<text class="lk" x="502" y="41">Success</text><text class="ld" x="480" y="70">terminal state</text>
+<rect x="632" y="22" width="96" height="30" rx="8" fill="#fbf0ef" stroke="#9c2f26" stroke-width="1.6"/>
+<text class="lk" x="658" y="41">Failure</text><text class="ld" x="632" y="70">terminal state</text>
+<path d="M776,30 L836,30" stroke="#7c7566" stroke-width="1.4" stroke-dasharray="4 3"/>
+<path d="M776,46 L836,46" stroke="#7c7566" stroke-width="1.4"/>
+<text class="ld" x="776" y="70">dashed = conditional</text>
+</svg>

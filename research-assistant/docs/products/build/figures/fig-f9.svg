@@ -1,0 +1,33 @@
+<svg viewBox="0 0 880 566" width="880" height="566" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
+  <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
+  <marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+</defs>
+<style>
+  .t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
+  .tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
+  .s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
+  .sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
+  .lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
+  .lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
+  .cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
+  .ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#ab) }
+  .lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#at) }
+  .lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#ap) }
+  .dash{ stroke-dasharray:4 3 }
+  .proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
+  .store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
+  .ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
+  .band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
+  .ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
+  .bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
+</style><rect width="880" height="566" fill="#ffffff"/><circle cx="150" cy="40" r="9" fill="#16150f"/><path class="lnb" d="M150,49 L150,72"/><rect class="proc" x="60" y="72" width="180" height="46" rx="8"/><text class="tc" x="150.0" y="92.0">Contextualise</text><text class="sc" x="150.0" y="106.0">resolve against history</text><path class="lnb" d="M150,118 L150,146"/><rect class="proc" x="60" y="146" width="180" height="46" rx="8"/><text class="tc" x="150.0" y="166.0">Vector search</text><text class="sc" x="150.0" y="180.0">cosine, top 20</text><path class="lnb" d="M150,192 L150,220"/><rect class="proc" x="60" y="220" width="180" height="46" rx="8"/><text class="tc" x="150.0" y="240.0">Keyword search</text><text class="sc" x="150.0" y="254.0">websearch_to_tsquery</text><path class="lnb" d="M150,266 L150,294"/><rect class="proc" x="60" y="294" width="180" height="46" rx="8"/><text class="tc" x="150.0" y="314.0">Fuse rankings</text><text class="sc" x="150.0" y="328.0">RRF, k = 60</text><path class="lnb" d="M240,317 L344,317"/><rect class="proc" x="350" y="294" width="190" height="46" rx="8"/><text class="tc" x="445.0" y="319.0">Grade the passages</text><path class="lnb" d="M400,294 L422,246"/><path class="proc" d="M450,189.0 L550.0,220 L450,251.0 L350.0,220 z"/><text class="tc" x="450" y="223">do they answer it?</text><path class="lnb" d="M550,220 L634,220"/><text class="lb" x="576" y="212" fill="#a06b21">yes</text><rect class="ok" x="640" y="196" width="190" height="48" rx="8"/><text class="tc" x="735.0" y="217.0">Answer from them</text><text class="sc" x="735.0" y="231.0">with citations</text><path class="lnb" d="M735,196 L735,160"/><rect class="proc" x="640" y="104" width="190" height="48" rx="8"/><text class="tc" x="735.0" y="125.0">Judge the answer</text><text class="sc" x="735.0" y="139.0">faithful? relevant?</text><path class="lnt" d="M735,104 L735,68"/><circle cx="735" cy="50" r="11" fill="none" stroke="#16150f" stroke-width="2"/><circle cx="735" cy="50" r="6" fill="#16150f"/><path class="lnb dash" d="M350,220 L300,220 L300,404 L344,404"/><text class="lb" x="238" y="290" fill="#a06b21">no - and no</text><text class="lb" x="238" y="303" fill="#a06b21">retry yet</text><rect class="proc" x="350" y="380" width="190" height="48" rx="8"/><text class="tc" x="445.0" y="401.0">Rewrite the question</text><text class="sc" x="445.0" y="415.0">different wording</text><path class="lnb dash" d="M445,428 L445,466 L150,466 L150,346"/><text class="lb" x="300" y="484" fill="#7c7566">retry retrieval, once only</text><path class="lnb dash" d="M480,244 L600,244 L600,404 L634,404"/><text class="lb" x="608" y="330" fill="#a06b21">no - and</text><text class="lb" x="608" y="343" fill="#a06b21">already retried</text><rect class="ok" x="640" y="380" width="190" height="48" rx="8"/><text class="tc" x="735.0" y="401.0">Decline to answer</text><text class="sc" x="735.0" y="415.0">say what is missing</text><text class="lb" x="60" y="520" fill="#7c7566">Declining is drawn as a success because that is what it is. A system that answers</text><text class="lb" x="60" y="533" fill="#7c7566">every question from a corpus that does not contain the answer is not more useful —</text><text class="lb" x="60" y="546" fill="#7c7566">it is the failure this product exists to avoid.</text></svg>

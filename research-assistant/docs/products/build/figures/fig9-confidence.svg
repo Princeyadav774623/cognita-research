@@ -1,0 +1,34 @@
+<svg width="700" height="260" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart of confidence scores across five research runs"><rect width="100%" height="100%" fill="#ffffff"/>
+        <style>
+          .qq{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;fill:#474338}
+          .vv{font-family:'JetBrains Mono',monospace;font-size:10.5px;fill:#16150f;font-weight:500}
+          .tk{font-family:'JetBrains Mono',monospace;font-size:9px;fill:#7c7566}
+          .grid{stroke:#eae4d8;stroke-width:1}
+          .gl{font-family:'JetBrains Mono',monospace;font-size:8.5px;fill:#a89f8c}
+        </style>
+        <line class="grid" x1="300" y1="14" x2="300" y2="236"/><text class="gl" x="292" y="250">0%</text>
+        <line class="grid" x1="400" y1="14" x2="400" y2="236"/><text class="gl" x="388" y="250">25%</text>
+        <line class="grid" x1="500" y1="14" x2="500" y2="236"/><text class="gl" x="488" y="250">50%</text>
+        <line class="grid" x1="600" y1="14" x2="600" y2="236"/><text class="gl" x="588" y="250">75%</text>
+        <line class="grid" x1="690" y1="14" x2="690" y2="236"/><text class="gl" x="676" y="250">100%</text>
+
+        <text class="qq" x="10" y="38">Solar cheapest electricity?</text>
+        <rect x="300" y="26" width="328" height="16" rx="2" fill="#1f6b4a"/><text class="vv" x="636" y="39">82%</text>
+        <text class="tk" x="10" y="52">23,779 tokens · $0.0076</text>
+
+        <text class="qq" x="10" y="90">LCOE: solar, wind, gas, nuclear</text>
+        <rect x="300" y="78" width="308" height="16" rx="2" fill="#1f6b4a"/><text class="vv" x="616" y="91">77%</text>
+        <text class="tk" x="10" y="104">15,711 tokens · $0.0052</text>
+
+        <text class="qq" x="10" y="142">Solar panel types &amp; efficiency</text>
+        <rect x="300" y="130" width="260" height="16" rx="2" fill="#a06b21"/><text class="vv" x="568" y="143">65%</text>
+        <text class="tk" x="10" y="156">10,365 tokens · $0.0043</text>
+
+        <text class="qq" x="10" y="194">DINOv2 algorithms</text>
+        <rect x="300" y="182" width="208" height="16" rx="2" fill="#a06b21"/><text class="vv" x="516" y="195">52%</text>
+        <text class="tk" x="10" y="208">12,150 tokens · $0.0039</text>
+
+        <text class="qq" x="10" y="232">Data-centre electricity use</text>
+        <rect x="300" y="220" width="72" height="16" rx="2" fill="#9c2f26"/><text class="vv" x="380" y="233">18%</text>
+        <text class="tk" x="10" y="246">14,847 tokens · $0.0061</text>
+      </svg>

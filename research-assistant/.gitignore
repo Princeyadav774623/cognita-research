@@ -36,8 +36,10 @@ backend/*.labels.jsonl
 # `python -m evals.squad --download`. No reason to carry it in the repo.
 backend/evals/squad-dev-v2.0.json
 
-# Generated report binary — rebuilt from the HTML source when needed.
+# Generated report binaries — rebuilt from the HTML source when needed.
 docs/*.docx
+docs/products/*.docx
 
 # Word lock files, created while a .docx is open
 docs/~$*
+docs/products/~$*

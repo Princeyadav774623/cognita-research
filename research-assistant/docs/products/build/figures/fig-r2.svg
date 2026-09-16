@@ -1,0 +1,33 @@
+<svg viewBox="0 0 880 430" width="880" height="430" xmlns="http://www.w3.org/2000/svg" role="img">
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#7c7566"/></marker>
+  <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#a06b21"/></marker>
+  <marker id="at" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#1d5f63"/></marker>
+  <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#6b3352"/></marker>
+  <marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <path d="M0,0 L10,5 L0,10" fill="none" stroke="#7c7566" stroke-width="1.4"/></marker>
+</defs>
+<style>
+  .t  { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600 }
+  .tc { font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; fill:#16150f; font-weight:600; text-anchor:middle }
+  .s  { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566 }
+  .sc { font-family:'JetBrains Mono',monospace; font-size:9px; fill:#7c7566; text-anchor:middle }
+  .lb { font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566 }
+  .lbc{ font-family:'JetBrains Mono',monospace; font-size:8.5px; fill:#7c7566; text-anchor:middle }
+  .cap{ font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.1em; text-anchor:middle }
+  .ln { stroke:#7c7566; stroke-width:1.3; fill:none; marker-end:url(#a) }
+  .lnb{ stroke:#a06b21; stroke-width:1.4; fill:none; marker-end:url(#ab) }
+  .lnt{ stroke:#1d5f63; stroke-width:1.4; fill:none; marker-end:url(#at) }
+  .lnp{ stroke:#6b3352; stroke-width:1.4; fill:none; marker-end:url(#ap) }
+  .dash{ stroke-dasharray:4 3 }
+  .proc{ fill:#fff; stroke:#a06b21; stroke-width:1.6 }
+  .store{ fill:#f7f4ed; stroke:#1d5f63; stroke-width:1.5 }
+  .ext { fill:#faf6f8; stroke:#6b3352; stroke-width:1.5 }
+  .band{ fill:#faf7f1; stroke:#ddd6c8; stroke-width:1 }
+  .ok  { fill:#eef5f1; stroke:#1f6b4a; stroke-width:1.6 }
+  .bad { fill:#fbf0ef; stroke:#9c2f26; stroke-width:1.6 }
+</style><rect width="880" height="430" fill="#ffffff"/><path class="ext" d="M52,150 L198,150 L186,206 L40,206 z"/><text class="tc" x="119.0" y="175.0">Researcher</text><text class="sc" x="119.0" y="189.0">types a question</text><rect class="proc" x="300" y="140" width="260" height="92" rx="12"/><text class="tc" x="430.0" y="183.0">1.0  Deep Research</text><text class="sc" x="430.0" y="197.0">plan · search · read · verify</text><path class="ext" d="M688,56 L844,56 L832,110 L676,110 z"/><text class="tc" x="760.0" y="80.0">Web</text><text class="sc" x="760.0" y="94.0">search and fetch</text><path class="ext" d="M688,168 L844,168 L832,222 L676,222 z"/><text class="tc" x="760.0" y="192.0">Groq</text><text class="sc" x="760.0" y="206.0">inference</text><path class="lnb" d="M200,168 L296,168"/><text class="lbc" x="248.0" y="160">question</text><path class="ln dash" d="M296,214 L250,214 L250,250 L119,250 L119,210"/><text class="lb" x="140" y="268" fill="#7c7566">cited report + confidence breakdown</text><path class="lnp" d="M562,162 L620,162 L620,84 L672,84"/><text class="lb" x="600" y="120" fill="#7c7566">sub-queries</text><path class="lnp" d="M562,196 L672,196"/><text class="lb" x="592" y="188" fill="#7c7566">prompts</text><path class="store" d="M300,327 a75.0,7 0 0,1 150,0 v40 a75.0,7 0 0,1 -150,0 z"/><path d="M300,327 a75.0,7 0 0,0 150,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="tc" x="375.0" y="349.0">D1  sessions</text><text class="sc" x="375.0" y="363.0">runs and reports</text><path class="store" d="M490,327 a75.0,7 0 0,1 150,0 v40 a75.0,7 0 0,1 -150,0 z"/><path d="M490,327 a75.0,7 0 0,0 150,0" fill="none" stroke="#1d5f63" stroke-width="1.5"/><text class="tc" x="565.0" y="349.0">D2  user corpus</text><text class="sc" x="565.0" y="363.0">another product's store</text><path class="lnt" d="M375,234 L375,316"/><path class="lnt" d="M565,318 L565,236"/><text class="lb" x="596" y="268" fill="#7c7566">read only — the corpus node</text><text class="lb" x="596" y="281" fill="#7c7566">borrows what Chat with Files stored</text><rect x="40" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#a06b21" stroke-width="1.6"/><text class="lb" x="57" y="411">process</text><rect x="99.80000000000001" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#1d5f63" stroke-width="1.6"/><text class="lb" x="116.80000000000001" y="411">data store</text><rect x="175.8" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#6b3352" stroke-width="1.6"/><text class="lb" x="192.8" y="411">external entity</text><rect x="278.8" y="402" width="11" height="11" rx="3" fill="#fff" stroke="#7c7566" stroke-width="1.6"/><text class="lb" x="295.8" y="411">dashed = conditional</text></svg>
