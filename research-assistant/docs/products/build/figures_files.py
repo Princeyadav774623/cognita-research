@@ -301,8 +301,7 @@ def f7():
     b += note(360, 274, ["process restarted mid-ingest"], AMBER)
 
     b += box(600, 186, 200, 52, "deleted", "chunks cascade", cls="ok")
-    b += arrow(510, 212, 596, 212, "lnb")
-    b += note(520, 174, ["on request"], BRONZE)
+    b += arrow(510, 212, 596, 212, "lnb", "on request", ly=204)
 
     b += note(120, 396,
               ["There is no durable queue behind this. A restart between 'uploaded' and 'ready'",
