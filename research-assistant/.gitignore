@@ -38,3 +38,6 @@ backend/evals/squad-dev-v2.0.json
 
 # Generated report binary — rebuilt from the HTML source when needed.
 docs/*.docx
+
+# Word lock files, created while a .docx is open
+docs/~$*
