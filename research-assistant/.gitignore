@@ -31,3 +31,7 @@ frontend/build/
 # text and session ids pulled from the database, not source code.
 backend/claims*.jsonl
 backend/*.labels.jsonl
+
+# SQuAD dev set: 4.4MB of public benchmark data, re-downloadable with
+# `python -m evals.squad --download`. No reason to carry it in the repo.
+backend/evals/squad-dev-v2.0.json

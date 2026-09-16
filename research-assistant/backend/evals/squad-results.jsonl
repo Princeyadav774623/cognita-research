@@ -1,0 +1,2 @@
+{"timestamp": "2026-09-16T08:23:52", "questions": 25, "top_k": 4, "retrieval": {"questions": 25, "recall@4": 1.0, "mrr": 1.0, "found_by": {"vector": 16, "keyword": 0, "both": 9}, "seconds": 0.3}}
+{"timestamp": "2026-09-16T08:24:36", "questions": 25, "top_k": 4, "retrieval": {"questions": 25, "recall@4": 1.0, "mrr": 1.0, "found_by": {"vector": 16, "keyword": 0, "both": 9}, "seconds": 0.3}, "answers": {"answerable": 25, "answer_accuracy": 0.88, "unanswerable": 6, "refusal_rate": 0.167, "judge_verdicts": {"PASS": 25}, "seconds": 336.6}}
