@@ -64,7 +64,14 @@ class Settings:
     asr_min_claim_confidence: float = _float("ASR_MIN_CLAIM_CONFIDENCE", 0.70)
 
     # ---- media ----------------------------------------------------------
+    # "local" keeps files on this machine's disk, which means the API and the
+    # worker have to be the same machine. "s3" is what decouples them.
+    storage_backend: str = os.getenv("STORAGE_BACKEND", "local")
     media_root: str = os.getenv("MEDIA_ROOT", "/tmp/veracity-media")
+    s3_bucket: str = os.getenv("S3_BUCKET", "")
+    s3_prefix: str = os.getenv("S3_PREFIX", "media")
+    s3_endpoint_url: str = os.getenv("S3_ENDPOINT_URL", "")
+    s3_region: str = os.getenv("S3_REGION", "")
     max_upload_bytes: int = _int("MAX_UPLOAD_BYTES", 2 * 1024 * 1024 * 1024)
     max_duration_seconds: int = _int("MAX_DURATION_SECONDS", 4 * 60 * 60)
     # Fetching from a third-party host is off unless switched on deliberately:

@@ -23,10 +23,9 @@ log = logging.getLogger("app")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)-7s %(name)-16s %(message)s",
-    )
+    from app.observability import configure
+    configure(level=os.getenv("LOG_LEVEL", "INFO"),
+              json_logs=os.getenv("LOG_FORMAT", "json") == "json")
     from app.db.bootstrap import init
     from app.db import rls
 
@@ -68,6 +67,54 @@ app.add_middleware(
 )
 
 @app.middleware("http")
+async def _observe(request, call_next):
+    """Give every request an identity, then time it.
+
+    The id is echoed back so a user reporting a problem can quote it and be
+    found in one grep, and is accepted from an inbound header so a trace that
+    started upstream is not broken here.
+    """
+    import time as _time
+
+    from app.observability import metrics, new_request_id, request_id
+
+    rid = request.headers.get("x-request-id") or new_request_id()
+    token = request_id.set(rid)
+    started = _time.monotonic()
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+    except Exception:
+        # Counted before re-raising: an unhandled exception is the metric you
+        # most want and the one a response-based hook never sees.
+        metrics.count("veracity_requests_total",
+                      "HTTP requests handled",
+                      route=_route(request), method=request.method,
+                      status="500")
+        raise
+    finally:
+        request_id.reset(token)
+
+    elapsed = _time.monotonic() - started
+    route = _route(request)
+    metrics.count("veracity_requests_total", "HTTP requests handled",
+                  route=route, method=request.method, status=str(status_code))
+    metrics.observe("veracity_request_seconds", elapsed,
+                    "Time to handle a request", route=route,
+                    method=request.method)
+    response.headers["X-Request-ID"] = rid
+    return response
+
+
+def _route(request) -> str:
+    """Collapse ids so each media item is not its own metric series."""
+    parts = []
+    for segment in request.url.path.strip("/").split("/"):
+        parts.append(":id" if len(segment) >= 32 and "-" in segment else segment)
+    return "/" + "/".join(parts)
+
+
+@app.middleware("http")
 async def _rate_limit(request, call_next):
     """Applied as middleware rather than a route dependency so it runs before
     the body is read. A dependency would let a 2 GB upload stream to disk first
@@ -91,6 +138,40 @@ app.include_router(routes_ask.router)
 app.include_router(routes_quota.router)
 
 
+@app.get("/metrics", tags=["meta"], include_in_schema=False)
+async def prometheus_metrics():
+    """Scrape endpoint.
+
+    Queue depth is read here rather than tracked incrementally: a counter
+    maintained by the workers drifts whenever one dies mid-job, and the whole
+    point of this number is to be trusted during an incident.
+    """
+    from fastapi.responses import PlainTextResponse
+    from sqlalchemy import text
+
+    from app.db.session import owner_engine
+    from app.observability import metrics
+
+    try:
+        with owner_engine.connect() as conn:
+            for state, count in conn.execute(text(
+                "SELECT state, count(*) FROM jobs GROUP BY state"
+            )):
+                metrics.gauge("veracity_jobs", float(count),
+                              "Jobs by state", state=state)
+            stuck = conn.execute(text(
+                "SELECT count(*) FROM media_items WHERE state = 'failed'"
+            )).scalar()
+            metrics.gauge("veracity_media_failed", float(stuck or 0),
+                          "Media items that failed ingestion")
+    except Exception:                       # pragma: no cover
+        # A scrape must never take the service down.
+        pass
+
+    return PlainTextResponse(metrics.render(),
+                             media_type="text/plain; version=0.0.4")
+
+
 @app.get("/health", tags=["meta"])
 async def health():
     """Liveness plus the facts a deployment check actually wants."""
@@ -110,6 +191,7 @@ async def health():
         "database": database,
         "tenant_isolation": "enforced" if not rls.verify() else "NOT ENFORCED",
         "asr_backend": settings().asr_backend,
+        "storage": settings().storage_backend,
         "remote_fetch": settings().allow_remote_fetch,
         "guest_mode": settings().allow_guest,
     }

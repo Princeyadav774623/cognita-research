@@ -123,6 +123,11 @@ async def enforce(request: Request) -> None:
         return
 
     if not allowed:
+        from app.observability import metrics
+        metrics.count("veracity_rate_limited_total",
+                      "Requests refused by the rate limiter",
+                      route=_bucket_path(request.url.path),
+                      method=request.method)
         log.info("[rate_limit] %s over %s (%d used)", key, limit.label, used)
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,

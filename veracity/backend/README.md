@@ -51,6 +51,72 @@ all, so every `Word.measured` is `False` there and `True` under faster-whisper.
 The distinction reaches the database because a fact-checker that verifies a
 misheard number will report high confidence in a claim nobody made.
 
+## Storage
+
+```
+STORAGE_BACKEND=local          # one machine, no credentials, the default
+STORAGE_BACKEND=s3             # API and worker can be separate hosts
+```
+
+Workers already scaled — jobs are claimed with `FOR UPDATE SKIP LOCKED` — but
+the API wrote an upload to disk and the worker read it back, so both had to be
+the same machine. Media is now addressed by a storage *key* rather than a
+filesystem path, and that word choice is the whole point: a path is only
+meaningful on the host that wrote it.
+
+The interface is file-oriented, not stream-oriented. Everything downstream is
+ffmpeg, which wants a path it can seek in, so `local_path()` yields one for the
+duration of a block — a no-op on the local backend, a temp download on S3 that
+is cleaned up on the way out. Callers take a path once and do all their work
+inside one block rather than reaching for the file repeatedly.
+
+An upload is buffered to a temp file first, not streamed straight to the bucket:
+the size cap has to be enforced against bytes actually seen, and probing needs a
+seekable file. It reaches storage only once it is known to be real media and
+paid for, so a refusal leaves no orphan behind.
+
+Works against anything S3-compatible. `docker compose --profile s3 up` runs
+MinIO and creates the bucket.
+
+## Observability
+
+```
+GET /metrics       Prometheus text format
+```
+
+Every request gets an id, echoed back as `X-Request-ID` and accepted from an
+inbound header so a trace that started upstream is not broken here. It rides a
+ContextVar, so a log line five frames deep still knows which request it belongs
+to without every function taking a context argument. Jobs carry `job_id` the
+same way.
+
+Logs are JSON by default (`LOG_FORMAT=text` for local work). Prose is pleasant
+to read and useless in aggregate — you cannot filter "every error for this user
+in the last hour" out of it.
+
+| Metric | |
+|---|---|
+| `veracity_requests_total` | by route, method, status |
+| `veracity_request_seconds` | histogram by route |
+| `veracity_jobs_total` | by kind and outcome |
+| `veracity_job_seconds` | histogram by kind |
+| `veracity_jobs` | queue depth by state |
+| `veracity_media_failed` | items that failed ingestion |
+| `veracity_rate_limited_total` | requests refused by the limiter |
+| `veracity_quota_exceeded_total` | requests refused for want of allowance |
+
+Route labels collapse ids, so one media item does not become its own metric
+series. Queue depth is read at scrape time rather than tracked incrementally: a
+counter maintained by the workers drifts whenever one dies mid-job, and the
+whole point of that number is to be trusted during an incident.
+
+**The caveat.** The registry is in-process, so with several uvicorn workers each
+holds its own counts and a scrape hits one of them. Run one worker per container
+and let the orchestrator scale, or put a real exporter in front. This is a few
+hundred lines rather than `prometheus_client` because the multiprocess mode that
+would actually fix it needs a shared directory and a collector process; when
+this needs real cardinality it should be swapped wholesale rather than grown.
+
 ## Rate limiting
 
 Distinct from quotas. A quota meters consumption over a month; this meters

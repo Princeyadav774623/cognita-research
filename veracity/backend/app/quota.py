@@ -124,6 +124,9 @@ def consume(session: Session, user_id: str, *, meter: str,
         state = session.execute(text(f"""
             SELECT {meter}, tier, period_start FROM user_quotas WHERE user_id = :u
         """), {"u": user_id}).first()
+        from app.observability import metrics
+        metrics.count("veracity_quota_exceeded_total",
+                      "Requests refused for want of allowance", meter=meter)
         tier = TIERS.get(state[1] if state else "free", TIERS["free"])
         raise QuotaExceeded(meter, float(state[0]) if state else 0.0,
                             getattr(tier, meter),

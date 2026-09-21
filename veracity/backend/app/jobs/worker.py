@@ -63,6 +63,8 @@ def run(kinds: tuple[str, ...] | None = None, *, once: bool = False) -> int:
                 queue.fail(session, live, f"no handler for kind {job.kind!r}")
                 continue
 
+            from app.observability import job_id as job_ctx, metrics
+            token = job_ctx.set(job.id)
             started = time.monotonic()
             try:
                 handler(session, job.payload,
@@ -70,11 +72,20 @@ def run(kinds: tuple[str, ...] | None = None, *, once: bool = False) -> int:
             except Exception as exc:
                 log.exception("[worker] %s %s raised", job.kind, job.id)
                 queue.fail(session, live, f"{type(exc).__name__}: {exc}")
+                metrics.count("veracity_jobs_total", "Jobs finished",
+                              kind=job.kind, outcome="failed")
             else:
                 queue.complete(session, live)
                 processed += 1
+                elapsed = time.monotonic() - started
+                metrics.count("veracity_jobs_total", "Jobs finished",
+                              kind=job.kind, outcome="done")
+                metrics.observe("veracity_job_seconds", elapsed,
+                                "Time to run a job", kind=job.kind)
                 log.info("[worker] %s %s done in %.1fs",
-                         job.kind, job.id, time.monotonic() - started)
+                         job.kind, job.id, elapsed)
+            finally:
+                job_ctx.reset(token)
         if once:
             break
 
@@ -83,10 +94,11 @@ def run(kinds: tuple[str, ...] | None = None, *, once: bool = False) -> int:
 
 
 def main() -> None:  # pragma: no cover
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
+    import os
+
+    from app.observability import configure
+    configure(level=os.getenv("LOG_LEVEL", "INFO"),
+              json_logs=os.getenv("LOG_FORMAT", "json") == "json")
     kinds = tuple(sys.argv[1:]) or None
     run(kinds)
 

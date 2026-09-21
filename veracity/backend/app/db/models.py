@@ -103,10 +103,10 @@ class MediaItem(Base):
     has_video = Column(Boolean, nullable=False, default=False)
     bytes = Column(BigInteger, nullable=True)
 
-    # Where the normalised audio landed. Kept separate from the original so the
-    # original can be discarded once transcription succeeds.
-    audio_path = Column(Text, nullable=True)
-    source_path = Column(Text, nullable=True)
+    # A storage key, not a filesystem path. The distinction is the whole point:
+    # a path is only meaningful on the machine that wrote it, which is what tied
+    # the API and the worker to the same host.
+    source_key = Column(Text, nullable=True)
 
     language = Column(String, nullable=True)
     asr_backend = Column(String, nullable=True)

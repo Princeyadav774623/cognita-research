@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import tempfile
 from datetime import datetime, timezone
 from typing import Callable
 
@@ -38,7 +39,9 @@ def _now():
 
 
 def _work_dir(media_id: str) -> str:
-    return os.path.join(settings().media_root, media_id)
+    """Scratch space for one job. Local by definition — ffmpeg needs a real
+    path — and deleted when the job finishes, whatever the backend."""
+    return os.path.join(tempfile.gettempdir(), "veracity-work", media_id)
 
 
 def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
@@ -59,115 +62,115 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
     work = _work_dir(media_id)
     os.makedirs(work, exist_ok=True)
 
+    from app.storage import StorageError, storage
+
     try:
-        source = media.source_path
-        if not source or not os.path.exists(source):
-            raise HandlerError("the source file is missing")
+        if not media.source_key:
+            raise HandlerError("this item has no stored file")
+        try:
+            ctx = storage().local_path(media.source_key)
+        except StorageError as exc:
+            raise HandlerError(str(exc)) from exc
 
-        # ---- probe ------------------------------------------------------
-        _set_state(session, media, MediaState.probing)
-        info = probe(source)
-        if info.duration_ms > settings().max_duration_seconds * 1000:
-            raise HandlerError(
-                f"this is {info.duration_ms // 60000} minutes long; the limit "
-                f"is {settings().max_duration_seconds // 60}"
+        with ctx as source:
+            # ---- probe ------------------------------------------------------
+            _set_state(session, media, MediaState.probing)
+            info = probe(source)
+            if info.duration_ms > settings().max_duration_seconds * 1000:
+                raise HandlerError(
+                    f"this is {info.duration_ms // 60000} minutes long; the limit "
+                    f"is {settings().max_duration_seconds // 60}"
+                )
+            # Reconcile: a URL submission was charged a nominal minute before its
+            # length could be known. Charge the difference now, or give it back.
+            _reconcile_minutes(session, media, info.duration_ms)
+            media.duration_ms = info.duration_ms
+            media.container = info.container
+            media.has_video = info.has_video
+            media.bytes = os.path.getsize(source)
+            media.title = media.title or info.title
+            media.author = media.author or info.artist
+            session.add(media)
+            session.commit()
+            heartbeat()
+
+            # ---- audio ------------------------------------------------------
+            _set_state(session, media, MediaState.extracting)
+            wav = audio_mod.extract(source, os.path.join(work, "audio.wav"))
+            heartbeat()
+
+            parts = audio_mod.segment(
+                wav, os.path.join(work, "parts"),
+                seconds=settings().asr_segment_seconds,
+                max_bytes=settings().asr_max_upload_bytes,
             )
-        # Reconcile: a URL submission was charged a nominal minute before its
-        # length could be known. Charge the difference now, or give it back.
-        _reconcile_minutes(session, media, info.duration_ms)
-        media.duration_ms = info.duration_ms
-        media.container = info.container
-        media.has_video = info.has_video
-        media.bytes = os.path.getsize(source)
-        media.title = media.title or info.title
-        media.author = media.author or info.artist
-        session.add(media)
-        session.commit()
-        heartbeat()
+            log.info("[ingest] %s split into %d part(s)", media_id, len(parts))
 
-        # ---- audio ------------------------------------------------------
-        _set_state(session, media, MediaState.extracting)
-        wav = audio_mod.extract(source, os.path.join(work, "audio.wav"))
-        media.audio_path = wav
-        session.add(media)
-        session.commit()
-        heartbeat()
+            # ---- transcribe -------------------------------------------------
+            _set_state(session, media, MediaState.transcribing)
+            transcript = transcribe_parts(parts, language=media.language)
+            if not transcript.segments:
+                raise HandlerError(
+                    "nothing was transcribed — the audio may be silent or music only"
+                )
+            heartbeat()
 
-        parts = audio_mod.segment(
-            wav, os.path.join(work, "parts"),
-            seconds=settings().asr_segment_seconds,
-            max_bytes=settings().asr_max_upload_bytes,
-        )
-        log.info("[ingest] %s split into %d part(s)", media_id, len(parts))
+            media.language = transcript.language
+            media.asr_backend = transcript.backend
+            media.asr_model = transcript.model
+            media.asr_mean_confidence = round(transcript.mean_confidence, 4)
 
-        # ---- transcribe -------------------------------------------------
-        _set_state(session, media, MediaState.transcribing)
-        transcript = transcribe_parts(parts, language=media.language)
-        if not transcript.segments:
-            raise HandlerError(
-                "nothing was transcribed — the audio may be silent or music only"
+            session.query(TranscriptSegment).filter_by(media_id=media_id).delete()
+            for i, seg in enumerate(transcript.segments):
+                session.add(TranscriptSegment(
+                    media_id=media_id, ordinal=i,
+                    start_ms=seg.start_ms, end_ms=seg.end_ms,
+                    text=seg.text,
+                    confidence=round(seg.confidence, 4),
+                    words=[{"w": w.text, "s": w.start_ms, "e": w.end_ms,
+                            "c": round(w.confidence, 3), "m": w.measured}
+                           for w in seg.words] or None,
+                ))
+            session.commit()
+            heartbeat()
+
+            # ---- chunk ------------------------------------------------------
+            _set_state(session, media, MediaState.chunking)
+            chunks = chunk_transcript(
+                transcript.segments,
+                target_chars=settings().chunk_target_chars,
+                overlap_chars=settings().chunk_overlap_chars,
             )
-        heartbeat()
+            session.query(TranscriptChunk).filter_by(media_id=media_id).delete()
 
-        media.language = transcript.language
-        media.asr_backend = transcript.backend
-        media.asr_model = transcript.model
-        media.asr_mean_confidence = round(transcript.mean_confidence, 4)
+            # Embedded in one batch rather than per chunk: the model amortises
+            # badly across calls, and a two-hour transcript is a few hundred chunks.
+            from app.ingest.embed import embed_passages
+            vectors = embed_passages([c.text for c in chunks])
 
-        session.query(TranscriptSegment).filter_by(media_id=media_id).delete()
-        for i, seg in enumerate(transcript.segments):
-            session.add(TranscriptSegment(
-                media_id=media_id, ordinal=i,
-                start_ms=seg.start_ms, end_ms=seg.end_ms,
-                text=seg.text,
-                confidence=round(seg.confidence, 4),
-                words=[{"w": w.text, "s": w.start_ms, "e": w.end_ms,
-                        "c": round(w.confidence, 3), "m": w.measured}
-                       for w in seg.words] or None,
-            ))
-        session.commit()
-        heartbeat()
+            for c, vector in zip(chunks, vectors):
+                session.add(TranscriptChunk(
+                    media_id=media_id, ordinal=c.ordinal,
+                    start_ms=c.start_ms, end_ms=c.end_ms, text=c.text,
+                    confidence=c.confidence, embedding=vector,
+                ))
+            session.commit()
 
-        # ---- chunk ------------------------------------------------------
-        _set_state(session, media, MediaState.chunking)
-        chunks = chunk_transcript(
-            transcript.segments,
-            target_chars=settings().chunk_target_chars,
-            overlap_chars=settings().chunk_overlap_chars,
-        )
-        session.query(TranscriptChunk).filter_by(media_id=media_id).delete()
+            # ---- done -------------------------------------------------------
+            media.state = MediaState.ready
+            media.ready_at = _now()
+            media.error = None
+            session.add(media)
+            session.commit()
+            log.info("[ingest] %s ready: %d segments, %d chunks, confidence %.3f",
+                     media_id, len(transcript.segments), len(chunks),
+                     transcript.mean_confidence)
 
-        # Embedded in one batch rather than per chunk: the model amortises
-        # badly across calls, and a two-hour transcript is a few hundred chunks.
-        from app.ingest.embed import embed_passages
-        vectors = embed_passages([c.text for c in chunks])
-
-        for c, vector in zip(chunks, vectors):
-            session.add(TranscriptChunk(
-                media_id=media_id, ordinal=c.ordinal,
-                start_ms=c.start_ms, end_ms=c.end_ms, text=c.text,
-                confidence=c.confidence, embedding=vector,
-            ))
-        session.commit()
-
-        # ---- done -------------------------------------------------------
-        media.state = MediaState.ready
-        media.ready_at = _now()
-        media.error = None
-        session.add(media)
-        session.commit()
-        log.info("[ingest] %s ready: %d segments, %d chunks, confidence %.3f",
-                 media_id, len(transcript.segments), len(chunks),
-                 transcript.mean_confidence)
-
-        # The normalised audio is large and nothing downstream reads it again.
-        _discard(os.path.join(work, "parts"))
-        _discard(wav)
-        media.audio_path = None
-        session.add(media)
-        session.commit()
+                # Scratch is large and nothing downstream reads it again.
+            _discard(work)
 
     except Exception as exc:
+        _discard(_work_dir(media_id))
         # Record where it died before re-raising, so the row is informative even
         # while the queue is still deciding whether to retry.
         media = session.get(MediaItem, media_id)
@@ -317,7 +320,9 @@ def fetch(session, payload: dict, heartbeat: Heartbeat) -> None:
     media = session.get(MediaItem, media_id)
     if media is None:
         raise HandlerError(f"media {media_id} no longer exists")
-    if media.source_path and os.path.exists(media.source_path):
+    from app.storage import source_key, storage
+
+    if media.source_key and storage().exists(media.source_key):
         log.info("[fetch] %s already downloaded", media_id)
     else:
         if not media.source_url:
@@ -334,11 +339,18 @@ def fetch(session, payload: dict, heartbeat: Heartbeat) -> None:
             session.commit()
             raise HandlerError(str(exc)) from exc
 
-        media.source_path = got.path
+        key = source_key(media_id, os.path.basename(got.path))
+        # Size read before the local copy is discarded, not after. The obvious
+        # order — upload, clean up, record — stats a file that no longer exists.
+        size = os.path.getsize(got.path)
+        storage().put(key, got.path)
+        _discard(os.path.dirname(got.path))
+
+        media.source_key = key
         media.title = media.title or got.title
         media.author = media.author or got.author
         media.source_url = got.webpage_url or media.source_url
-        media.bytes = os.path.getsize(got.path)
+        media.bytes = size
         media.state = MediaState.pending
         session.add(media)
         session.commit()

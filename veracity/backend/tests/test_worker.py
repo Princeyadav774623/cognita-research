@@ -21,16 +21,32 @@ def clean(db):
     yield
 
 
-def _queue_media(user: str, source_path: str):
+def _queue_media(user: str, source_path: str | None):
+    """Put a file in storage and queue it, as the upload route does.
+
+    `None` stands for a row whose file is missing — the race where a worker
+    picks a job up before the upload finished, or the file was deleted under it.
+    """
     from app.db.session import app_session, owner_session
     from app.db.models import MediaItem, MediaState
     from app.jobs import queue
+    from app.storage import source_key, storage
+
     with app_session(user) as s:
         m = MediaItem(user_id=user, source_kind="upload",
-                      original_filename=os.path.basename(source_path),
-                      source_path=source_path, state=MediaState.pending)
+                      original_filename=(os.path.basename(source_path)
+                                         if source_path else "gone.mp4"),
+                      state=MediaState.pending)
         s.add(m); s.flush()
         media_id = m.id
+
+    if source_path:
+        key = source_key(media_id, os.path.basename(source_path))
+        storage().put(key, source_path)
+        with app_session(user) as s:
+            item = s.get(MediaItem, media_id)
+            item.source_key = key
+            s.add(item)
     with owner_session() as s:
         queue.enqueue(s, "ingest", {"media_id": media_id})
     return media_id
@@ -63,13 +79,13 @@ class TestIngestJob:
         from app.db.models import MediaItem, MediaState, Job
         from app.jobs import worker
 
-        media_id = _queue_media("user-w2", "/nonexistent/gone.mp4")
+        media_id = _queue_media("user-w2", None)
         worker.run(kinds=("ingest",), once=True)
 
         with app_session("user-w2") as s:
             m = s.get(MediaItem, media_id)
             assert m.state == MediaState.failed
-            assert "source file is missing" in m.error
+            assert "no stored file" in m.error
 
         with owner_session() as s:
             job = s.query(Job).first()
@@ -77,7 +93,7 @@ class TestIngestJob:
             # with an upload still being written, not a permanent condition.
             assert job.state == "queued"
             assert job.attempts == 1
-            assert "missing" in job.last_error
+            assert "no stored file" in job.last_error
 
     def test_a_silent_file_is_refused_before_any_transcription(self, db, silent_media):
         from app.db.session import app_session

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
+import tempfile
 
 from fastapi import (APIRouter, Depends, File, HTTPException, Query, UploadFile,
                      status)
@@ -16,6 +16,7 @@ from app.db.models import MediaItem, MediaState, TranscriptSegment
 from app.db.session import app_session, owner_session
 from app.ingest import resolve
 from app.ingest.probe import ProbeError, probe
+from app.storage import source_key, storage
 from app.jobs import queue
 from app.quota import QuotaExceeded, consume, refund, snapshot
 
@@ -47,9 +48,14 @@ async def upload(file: UploadFile = File(...),
         session.flush()
         media_id = media.id
 
-    work = os.path.join(settings().media_root, media_id)
-    os.makedirs(work, exist_ok=True)
-    dest = os.path.join(work, "source" + _suffix(file.filename))
+    # Buffered to a temp file first, not straight to storage. The size cap has
+    # to be enforced against bytes actually seen, and probing needs a seekable
+    # file — neither works on a stream being written to a bucket.
+    key = source_key(media_id, file.filename)
+    tmp = tempfile.NamedTemporaryFile(delete=False,
+                                      suffix=_suffix(file.filename))
+    dest = tmp.name
+    tmp.close()
 
     written = 0
     try:
@@ -67,15 +73,11 @@ async def upload(file: UploadFile = File(...),
                     )
                 out.write(chunk)
     except Exception:
-        shutil.rmtree(work, ignore_errors=True)
-        with owner_session() as session:
-            session.query(MediaItem).filter_by(id=media_id).delete()
+        _discard(dest, media_id)
         raise
 
     if written == 0:
-        shutil.rmtree(work, ignore_errors=True)
-        with owner_session() as session:
-            session.query(MediaItem).filter_by(id=media_id).delete()
+        _discard(dest, media_id)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "that file is empty")
 
     # Charged now that the length is knowable, and before the job exists, so a
@@ -83,9 +85,7 @@ async def upload(file: UploadFile = File(...),
     try:
         duration_ms = probe(dest).duration_ms
     except ProbeError as exc:
-        shutil.rmtree(work, ignore_errors=True)
-        with owner_session() as session:
-            session.query(MediaItem).filter_by(id=media_id).delete()
+        _discard(dest, media_id)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
 
     minutes = duration_ms / 60_000
@@ -94,14 +94,19 @@ async def upload(file: UploadFile = File(...),
             consume(session, principal.user_id,
                     meter="transcription_minutes", amount=minutes)
     except QuotaExceeded as exc:
-        shutil.rmtree(work, ignore_errors=True)
-        with owner_session() as session:
-            session.query(MediaItem).filter_by(id=media_id).delete()
+        _discard(dest, media_id)
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
+    # Handed to storage only once it is known to be real media and paid for.
+    # Uploading first would leave orphans in the bucket for every refusal.
+    try:
+        storage().put(key, dest)
+    finally:
+        _remove(dest)
 
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)
-        media.source_path = dest
+        media.source_key = key
         media.bytes = written
         media.duration_ms = duration_ms
         media.state = MediaState.pending
@@ -217,9 +222,22 @@ async def delete_media(media_id: str,
         if media is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "no such media")
         session.delete(media)          # segments and chunks cascade
-    shutil.rmtree(os.path.join(settings().media_root, media_id),
-                  ignore_errors=True)
+    storage().delete_prefix(media_id)
     return None
+
+
+def _remove(path: str) -> None:
+    try:
+        os.remove(path)
+    except OSError:                         # pragma: no cover
+        pass
+
+
+def _discard(path: str, media_id: str) -> None:
+    """Undo a failed upload completely: the buffer and the row."""
+    _remove(path)
+    with owner_session() as session:
+        session.query(MediaItem).filter_by(id=media_id).delete()
 
 
 def _suffix(filename: str) -> str:
