@@ -64,7 +64,13 @@ def db():
     """Bring a real database up, or skip. These tests are worthless mocked."""
     try:
         from app.db.bootstrap import init
-        init()
+        from app.db.models import Base
+        from app.db.session import owner_engine
+        # create_all rather than migrating: the suite wants the schema the code
+        # declares right now, not the history of how it got there. Whether the
+        # migrations actually produce that schema is its own test.
+        Base.metadata.create_all(owner_engine)
+        init(run_migrations=False)
     except Exception as exc:                      # pragma: no cover
         pytest.skip(f"no database: {exc}")
     yield

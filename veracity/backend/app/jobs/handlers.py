@@ -253,7 +253,57 @@ def analyze(session, payload: dict, heartbeat: Heartbeat) -> None:
         raise
 
 
+def fetch(session, payload: dict, heartbeat: Heartbeat) -> None:
+    """Download media from a URL, then hand it to ingest.
+
+    A separate job from ingest rather than a first step inside it, for two
+    reasons. Downloading fails differently — a dead link, a geo-block, a site
+    that changed its markup — and those deserve their own retry budget rather
+    than eating the one ingestion needs. And a download that succeeded should
+    not be repeated because transcription later failed.
+    """
+    from app.ingest import resolve as resolve_mod
+
+    media_id = payload["media_id"]
+    media = session.get(MediaItem, media_id)
+    if media is None:
+        raise HandlerError(f"media {media_id} no longer exists")
+    if media.source_path and os.path.exists(media.source_path):
+        log.info("[fetch] %s already downloaded", media_id)
+    else:
+        if not media.source_url:
+            raise HandlerError("this item has no URL to fetch")
+
+        _set_state(session, media, MediaState.fetching)
+        work = _work_dir(media_id)
+        try:
+            got = resolve_mod.fetch(media.source_url, work)
+        except resolve_mod.ResolveError as exc:
+            media.state = MediaState.failed
+            media.error = str(exc)[:2000]
+            session.add(media)
+            session.commit()
+            raise HandlerError(str(exc)) from exc
+
+        media.source_path = got.path
+        media.title = media.title or got.title
+        media.author = media.author or got.author
+        media.source_url = got.webpage_url or media.source_url
+        media.bytes = os.path.getsize(got.path)
+        media.state = MediaState.pending
+        session.add(media)
+        session.commit()
+        log.info("[fetch] %s downloaded %s", media_id,
+                 os.path.basename(got.path))
+    heartbeat()
+
+    # Chained in-process rather than enqueued: the file is on this worker's
+    # disk, and another worker picking up the ingest job would not find it.
+    ingest(session, {"media_id": media_id}, heartbeat)
+
+
 HANDLERS: dict[str, Callable] = {
     "ingest": ingest,
+    "fetch": fetch,
     "analyze": analyze,
 }

@@ -46,17 +46,44 @@ def _jwks():
     return _jwks_client
 
 
+def _decode(token: str) -> dict:
+    """Verify a token and return its claims.
+
+    Two ways to be configured, and the choice is about who issues tokens:
+
+      asymmetric  Supabase signs, we verify against its published JWKS. We hold
+                  no secret, so a leak of this service's environment cannot mint
+                  a token. This is what production should use.
+      symmetric   A shared HS256 secret, for a deployment with no Supabase. The
+                  secret both signs and verifies, so anything able to read the
+                  environment can issue a token for any user.
+
+    Algorithms are pinned per mode and never taken from the token's own header.
+    A verifier that trusts `alg` accepts a token that says `alg: none`, or one
+    signed with HS256 using the public RSA key as the shared secret — the two
+    classic JWT forgeries, both of which are the verifier's fault.
+    """
+    import jwt
+
+    secret = settings().jwt_secret
+    if secret:
+        return jwt.decode(
+            token, secret, algorithms=["HS256"],
+            audience=settings().supabase_audience,
+            options={"require": ["exp", "sub"], "verify_exp": True},
+        )
+    key = _jwks().get_signing_key_from_jwt(token).key
+    return jwt.decode(
+        token, key, algorithms=["RS256", "ES256"],
+        audience=settings().supabase_audience,
+        options={"require": ["exp", "sub"], "verify_exp": True},
+    )
+
+
 def _verify(token: str) -> Principal:
     import jwt
     try:
-        key = _jwks().get_signing_key_from_jwt(token).key
-        claims = jwt.decode(
-            token, key, algorithms=["RS256", "ES256"],
-            audience=settings().supabase_audience,
-            # Defaults, but stated: a token with no expiry, or one whose subject
-            # we do not check, is not an identity.
-            options={"require": ["exp", "sub"], "verify_exp": True},
-        )
+        claims = _decode(token)
     except jwt.ExpiredSignatureError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "token has expired")
     except jwt.InvalidTokenError as exc:

@@ -122,3 +122,69 @@ class TestIngestJob:
             job = s.query(Job).first()
             assert job.state == "failed"
             assert "no handler" in job.last_error
+
+
+class TestFetchJob:
+    def test_a_url_item_is_downloaded_then_ingested(self, db, tone_media,
+                                                    stub_asr, monkeypatch):
+        """Fetch chains into ingest in the same worker, because the file it
+        downloaded is on this worker's disk and nowhere else."""
+        import shutil
+
+        from app.db.session import app_session, owner_session
+        from app.db.models import MediaItem, MediaState
+        from app.ingest import resolve as resolve_mod
+        from app.jobs import queue, worker
+
+        def fake_fetch(url, dest_dir, **_):
+            import os
+            os.makedirs(dest_dir, exist_ok=True)
+            dest = os.path.join(dest_dir, "source.mp4")
+            shutil.copy(tone_media, dest)
+            return resolve_mod.Resolved(path=dest, title="A Talk",
+                                        author="Someone", duration_ms=30_000,
+                                        webpage_url=url)
+
+        monkeypatch.setattr(resolve_mod, "fetch", fake_fetch)
+
+        with app_session("user-f1") as s:
+            m = MediaItem(user_id="user-f1", source_kind="url",
+                          source_url="https://example.com/talk",
+                          state=MediaState.pending)
+            s.add(m); s.flush()
+            media_id = m.id
+        with owner_session() as s:
+            queue.enqueue(s, "fetch", {"media_id": media_id})
+
+        assert worker.run(kinds=("fetch",), once=True) == 1
+        with app_session("user-f1") as s:
+            m = s.get(MediaItem, media_id)
+            assert m.state == MediaState.ready
+            assert m.title == "A Talk"
+            assert m.author == "Someone"
+
+    def test_a_refused_url_fails_the_media_with_the_reason(self, db, monkeypatch):
+        from app.db.session import app_session, owner_session
+        from app.db.models import MediaItem, MediaState
+        from app.ingest import resolve as resolve_mod
+        from app.jobs import queue, worker
+
+        def refuse(url, dest_dir, **_):
+            raise resolve_mod.ResolveError("that video is unavailable")
+
+        monkeypatch.setattr(resolve_mod, "fetch", refuse)
+
+        with app_session("user-f2") as s:
+            m = MediaItem(user_id="user-f2", source_kind="url",
+                          source_url="https://example.com/gone",
+                          state=MediaState.pending)
+            s.add(m); s.flush()
+            media_id = m.id
+        with owner_session() as s:
+            queue.enqueue(s, "fetch", {"media_id": media_id})
+
+        worker.run(kinds=("fetch",), once=True)
+        with app_session("user-f2") as s:
+            m = s.get(MediaItem, media_id)
+            assert m.state == MediaState.failed
+            assert "unavailable" in m.error

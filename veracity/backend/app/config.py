@@ -84,6 +84,10 @@ class Settings:
 
     # ---- auth -----------------------------------------------------------
     supabase_jwks_url: str = os.getenv("SUPABASE_JWKS_URL", "")
+    # An alternative to JWKS for deployments with no Supabase. Symmetric, so
+    # anything that can read this environment can mint a token for any user;
+    # prefer the asymmetric path in production.
+    jwt_secret: str = os.getenv("JWT_SECRET", "")
     supabase_audience: str = os.getenv("SUPABASE_AUDIENCE", "authenticated")
     allow_guest: bool = os.getenv("ALLOW_GUEST", "false").lower() == "true"
 

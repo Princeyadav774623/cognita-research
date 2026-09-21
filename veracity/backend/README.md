@@ -51,6 +51,52 @@ all, so every `Word.measured` is `False` there and `True` under faster-whisper.
 The distinction reaches the database because a fact-checker that verifies a
 misheard number will report high confidence in a claim nobody made.
 
+## Migrations
+
+```bash
+set -a; . ./.env; set +a
+./venv/bin/alembic upgrade head
+./venv/bin/alembic revision --autogenerate -m "what changed"
+```
+
+Startup migrates automatically, so the usual case needs no command.
+
+**Autogenerate against an empty database.** Alembic diffs the models against
+whatever is connected; run it against a database that already has the tables and
+it finds no difference and writes `pass`. The migration looks fine and does
+nothing, and nobody notices until a fresh install.
+
+**A database predating Alembic is stamped, not migrated.** Running the initial
+migration against existing tables fails on the first CREATE TABLE, and the
+obvious workaround — dropping first — destroys the data it was meant to
+preserve. Startup detects that case, stamps the baseline, and says so loudly.
+
+Four tests cover this, each against a throwaway database: upgrade builds the
+whole schema from nothing, the vector extension is created before the tables
+that need it, downgrade removes what upgrade added, and — the one that catches
+real drift — the schema the migration builds matches the schema the models
+declare, column for column.
+
+## Authentication
+
+Two modes, and the choice is about who issues tokens.
+
+| | |
+|---|---|
+| `SUPABASE_JWKS_URL` | Supabase signs, we verify against its published keys. This service holds no secret, so leaking its environment cannot mint a token. **Use this in production.** |
+| `JWT_SECRET` | A shared HS256 secret, for deployments with no Supabase. The same secret signs and verifies, so anything that can read the environment can issue a token for any user. |
+| `ALLOW_GUEST` | Every unauthenticated request becomes one shared identity. Development only — with a single tenant, row-level security separates nothing. Startup warns. |
+
+Algorithms are pinned per mode and never read from the token's own header. A
+verifier that trusts `alg` accepts `alg: none`, and accepts an HS256 token
+signed with the public RSA key as the shared secret. Both are the verifier's
+fault, and both have tests.
+
+Also tested: an expired token, a token signed with the wrong key, a token for
+another audience, and a token with no `sub` — the last because a missing subject
+would otherwise produce a principal with `user_id=None`, which scopes the
+database session to nothing and fails open in the one place it must not.
+
 ## The API
 
 ```bash
