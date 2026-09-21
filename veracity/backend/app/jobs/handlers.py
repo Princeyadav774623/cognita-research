@@ -116,7 +116,7 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
             session.add(TranscriptSegment(
                 media_id=media_id, ordinal=i,
                 start_ms=seg.start_ms, end_ms=seg.end_ms,
-                text=seg.text, speaker=seg.speaker,
+                text=seg.text,
                 confidence=round(seg.confidence, 4),
                 words=[{"w": w.text, "s": w.start_ms, "e": w.end_ms,
                         "c": round(w.confidence, 3), "m": w.measured}
@@ -133,11 +133,17 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
             overlap_chars=settings().chunk_overlap_chars,
         )
         session.query(TranscriptChunk).filter_by(media_id=media_id).delete()
-        for c in chunks:
+
+        # Embedded in one batch rather than per chunk: the model amortises
+        # badly across calls, and a two-hour transcript is a few hundred chunks.
+        from app.ingest.embed import embed_passages
+        vectors = embed_passages([c.text for c in chunks])
+
+        for c, vector in zip(chunks, vectors):
             session.add(TranscriptChunk(
                 media_id=media_id, ordinal=c.ordinal,
                 start_ms=c.start_ms, end_ms=c.end_ms, text=c.text,
-                confidence=c.confidence, speakers=c.speakers or None,
+                confidence=c.confidence, embedding=vector,
             ))
         session.commit()
 

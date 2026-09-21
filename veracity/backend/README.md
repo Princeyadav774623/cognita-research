@@ -142,6 +142,33 @@ A URL resolving to a private, loopback or link-local address is refused —
 otherwise "paste a link" is a server-side request forgery primitive, and
 `http://169.254.169.254/latest/meta-data/` reads cloud credentials.
 
+## Asking questions of a transcript
+
+```
+POST /api/media/{id}/ask   {"question": "how long does the reef stretch for?"}
+```
+
+Chunks are embedded locally at ingest with `bge-small-en-v1.5`, and retrieval is
+hybrid — vector search fused with Postgres full-text by Reciprocal Rank Fusion.
+Neither half is reliable alone: embeddings put "shut it down" and "start it up"
+close together, and keyword search has no notion of paraphrase. RRF fuses by
+rank rather than score, because cosine distance and `ts_rank` are different
+scales with no meaningful conversion between them.
+
+Local embedding is why measurement is practical: retrieval costs nothing per
+query, so it can be evaluated as often as you like. A per-query fee turns
+evaluation into something you run once and quote forever.
+
+Two indexes, both added by migration. HNSW on the vector using
+`vector_cosine_ops` — an index built for a different operator is silently not
+used — and a GIN expression index matching the `to_tsvector()` in the query.
+Without them every retrieval is a sequential scan, which looks fine on a
+ten-minute clip and falls over on a library.
+
+Declining is a first-class outcome. Asked something the transcript does not
+cover, the answer is "the excerpts do not provide information about…" rather
+than a fluent paragraph assembled from whatever was topically nearest.
+
 ## Analysis
 
 ```
@@ -244,3 +271,19 @@ wrong: a rate limit during one claim of six silently reported that claim as
 unverified, which reads to a user as "we looked and found nothing". Scoring now
 excludes failed checks entirely rather than counting them against the score, and
 the factors say how many there were and that re-running will pick them up.
+
+
+## Diarization: removed rather than faked
+
+`transcript_segments.speaker`, `transcript_chunks.speakers` and `claims.speaker`
+existed and were never populated by anything — every value was NULL, while the
+schema and the API response both implied the system knew who was talking.
+
+They are gone. Real diarization needs `pyannote.audio`, a gated model download
+and a Hugging Face token, which is a substantial dependency to add unverified;
+Whisper does not do it and neither does Groq's hosted version. A column that is
+always NULL is worse than no column, because it makes a promise the product
+cannot keep, and on a debate or an interview — the obvious use case — a reader
+would reasonably assume attribution was available.
+
+Adding it properly is worthwhile future work. Implying it is not.

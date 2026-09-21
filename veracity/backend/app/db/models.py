@@ -150,7 +150,6 @@ class TranscriptSegment(Base):
     end_ms = Column(BigInteger, nullable=False)
     text = Column(Text, nullable=False)
 
-    speaker = Column(String, nullable=True)      # set only if diarization ran
     confidence = Column(Float, nullable=True)    # mean over the words
     # [{"w": "ninety", "s": 12340, "e": 12520, "c": 0.81}, ...]
     words = Column(JSONB, nullable=True)
@@ -177,7 +176,6 @@ class TranscriptChunk(Base):
     start_ms = Column(BigInteger, nullable=False)
     end_ms = Column(BigInteger, nullable=False)
     text = Column(Text, nullable=False)
-    speakers = Column(JSONB, nullable=True)
     confidence = Column(Float, nullable=True)
 
     embedding = Column(Vector(settings().embedding_dim), nullable=True)
@@ -246,7 +244,6 @@ class Claim(Base):
 
     start_ms = Column(BigInteger, nullable=False)
     end_ms = Column(BigInteger, nullable=False)
-    speaker = Column(String, nullable=True)
 
     spoken_text = Column(Text, nullable=False)
     proposition = Column(Text, nullable=False)

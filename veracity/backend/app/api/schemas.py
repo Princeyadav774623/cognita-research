@@ -78,13 +78,12 @@ class SegmentOut(BaseModel):
     end_ms: int
     at: str
     text: str
-    speaker: str | None = None
     confidence: float | None = None
 
     @classmethod
     def of(cls, s) -> "SegmentOut":
         return cls(ordinal=s.ordinal, start_ms=s.start_ms, end_ms=s.end_ms,
-                   at=timecode(s.start_ms), text=s.text, speaker=s.speaker,
+                   at=timecode(s.start_ms), text=s.text,
                    confidence=s.confidence)
 
 

@@ -28,7 +28,6 @@ class Chunk:
     end_ms: int
     text: str
     confidence: float
-    speakers: list[str] = field(default_factory=list)
 
     @property
     def duration_ms(self) -> int:
@@ -85,17 +84,12 @@ def _build(ordinal: int, segs: list[Segment]) -> Chunk:
     # two-word aside should not counterbalance a minute of difficult audio.
     conf = (sum(s.confidence * max(0, s.end_ms - s.start_ms) for s in segs) / total
             if total else (sum(s.confidence for s in segs) / len(segs)))
-    speakers: list[str] = []
-    for s in segs:
-        if s.speaker and s.speaker not in speakers:
-            speakers.append(s.speaker)
     return Chunk(
         ordinal=ordinal,
         start_ms=min(s.start_ms for s in segs),
         end_ms=max(s.end_ms for s in segs),
         text=text,
         confidence=round(conf, 4),
-        speakers=speakers,
     )
 
 
