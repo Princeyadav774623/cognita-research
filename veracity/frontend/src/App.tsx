@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api, VERDICTS,
-  type Analysis, type Claim, type Media, type Transcript,
+  type Analysis, type AskAnswer, type Claim, type Media, type Transcript,
 } from "./api";
 
 const MODES = [
@@ -250,6 +250,8 @@ function Detail({ media, onError }: { media: Media; onError: (m: string) => void
         </div>
       </div>
 
+      <AskPanel mediaId={media.id} onError={onError} />
+
       {analysis && <AnalysisView analysis={analysis} />}
 
       {transcript && (
@@ -273,6 +275,80 @@ function Detail({ media, onError }: { media: Media; onError: (m: string) => void
         </div>
       )}
     </>
+  );
+}
+
+function AskPanel({ mediaId, onError }: {
+  mediaId: string; onError: (m: string) => void;
+}) {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<AskAnswer | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // A new item means a new transcript; keeping the previous answer on screen
+  // would attribute it to media it did not come from.
+  useEffect(() => { setAnswer(null); setQuestion(""); }, [mediaId]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = question.trim();
+    if (!q || busy) return;
+    setBusy(true);
+    try {
+      setAnswer(await api.ask(mediaId, q));
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <h2>Ask this transcript</h2>
+      <form onSubmit={submit} className="row" style={{ gap: 8 }}>
+        <input
+          className="ask" value={question} disabled={busy}
+          placeholder="What did they say about…?"
+          onChange={(e) => setQuestion(e.target.value)}
+        />
+        <button className="mode" type="submit" disabled={busy || !question.trim()}>
+          {busy ? <span className="spin" /> : "Ask"}
+        </button>
+      </form>
+
+      {answer && (
+        <div style={{ marginTop: 14 }}>
+          <div className="row" style={{ marginBottom: 8 }}>
+            <span className={answer.answered ? "pill ok" : "pill warn"}>
+              {answer.answered ? "Answered" : "Not in this transcript"}
+            </span>
+          </div>
+          <p style={{ fontFamily: "var(--serif)", margin: "0 0 10px" }}>
+            {answer.answer}
+          </p>
+          {answer.passages.some((p) => p.used) && (
+            <>
+              <div className="hint" style={{ marginBottom: 6 }}>
+                Answered from these moments — click a timestamp to see the words.
+              </div>
+              {answer.passages.filter((p) => p.used).map((p) => (
+                <div className="seg" key={p.start_ms}>
+                  <div className="t">{p.at}</div>
+                  <div className="x">{p.text}</div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+      {!answer && (
+        <div className="hint" style={{ marginTop: 10 }}>
+          Answers come only from what was actually said. If the transcript does
+          not cover it, you get told so rather than a plausible guess.
+        </div>
+      )}
+    </div>
   );
 }
 

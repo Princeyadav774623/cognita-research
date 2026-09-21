@@ -41,6 +41,16 @@ export interface Claim {
   evidence: { title: string; url: string; snippet: string }[];
 }
 
+export interface AskPassage {
+  at: string; start_ms: number; end_ms: number; text: string; used: boolean;
+}
+
+export interface AskAnswer {
+  answered: boolean;
+  answer: string;
+  passages: AskPassage[];
+}
+
 export interface Analysis {
   id: string; mode: "summary" | "deep" | "report";
   state: "queued" | "running" | "complete" | "failed";
@@ -102,6 +112,13 @@ export const api = {
 
   analysis: (mediaId: string, id: string) =>
     fetch(`/api/media/${mediaId}/analysis/${id}`).then(json<Analysis>),
+
+  ask: (mediaId: string, question: string) =>
+    fetch(`/api/media/${mediaId}/ask`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    }).then(json<AskAnswer>),
 };
 
 /** How a verdict should read. The wording matters more than the colour. */
