@@ -56,6 +56,27 @@ right reason.
 
 ## Running it
 
+### With Docker
+
+```bash
+cp .env.example .env     # fill in the passwords and GROQ_API_KEY
+docker compose up --build
+```
+
+Four services: Postgres with pgvector, the API, a worker, and the built
+frontend behind nginx. The API and worker are the same image with different
+commands — they share code, configuration and migrations, and two images would
+be two things to keep in step for no benefit.
+
+Workers scale horizontally today (`WORKER_REPLICAS`), because jobs are claimed
+with `FOR UPDATE SKIP LOCKED` and two workers never take the same one. The
+**machine** does not, yet: the API writes an upload to a shared volume and the
+worker reads it, so both must see the same filesystem. Object storage is the
+fix and is not done — until then this is a co-located deployment by
+construction, and `docker-compose.yml` says so where the volume is declared.
+
+### Without Docker
+
 Three processes. Postgres 16 with pgvector, and `ffmpeg` on the PATH.
 
 ```bash

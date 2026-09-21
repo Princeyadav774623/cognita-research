@@ -302,6 +302,27 @@ class UserQuota(Base):
                         server_default=func.now())
 
 
+class RateLimit(Base):
+    """One counter per client per window.
+
+    Not policied by row-level security and deliberately so: the limiter runs
+    before authentication, has no tenant to scope to, and counts unauthenticated
+    callers by address.
+    """
+
+    __tablename__ = "rate_limits"
+
+    bucket = Column(String, primary_key=True)
+    window_start = Column(BigInteger, primary_key=True)
+    hits = Column(Integer, nullable=False, server_default="0")
+
+    __table_args__ = (
+        # The cleanup delete scans on this; without it the sweep gets slower as
+        # the table grows, which is the opposite of what a sweep is for.
+        Index("ix_rate_limits_window", "window_start"),
+    )
+
+
 class Job(Base):
     """A unit of background work.
 

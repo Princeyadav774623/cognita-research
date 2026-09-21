@@ -51,6 +51,40 @@ all, so every `Word.measured` is `False` there and `True` under faster-whisper.
 The distinction reaches the database because a fact-checker that verifies a
 misheard number will report high confidence in a claim nobody made.
 
+## Rate limiting
+
+Distinct from quotas. A quota meters consumption over a month; this meters
+requests over seconds, and they catch different problems — a quota stops an
+expensive month, a rate limit stops one client saturating the service in a
+minute, including before it has spent anything.
+
+| Routes | Limit |
+|---|---|
+| upload, URL submit, start an analysis | 10 / min |
+| ask, delete | 30 / min |
+| everything else | 240 / min |
+
+Priced by what a request costs us rather than by how it is spelled: starting a
+transcription is minutes of somebody's compute, listing media is an indexed read.
+
+Counters live in Postgres, not process memory. In-memory works perfectly on one
+instance and silently multiplies the effective limit by the number of instances
+the moment you scale out — which is exactly when a limit matters. One indexed
+upsert per request is not the bottleneck at this volume, and it avoids running
+Redis.
+
+Applied as middleware rather than a route dependency, so it runs **before** the
+body is read. A dependency would let a two-gigabyte upload stream to disk and
+only then be refused.
+
+It fails open. A limiter that takes the service down when its own storage
+hiccups is worse than one that briefly lets traffic through — but it logs at
+error level, so failing open is visible rather than silent.
+
+Unauthenticated callers are counted by peer address and deliberately not by a
+forwarded header, which a client sets itself and can rotate to get an unlimited
+number of buckets. Behind a trusted proxy, resolve the real address before this.
+
 ## Quotas
 
 Two meters, because the two costs are unrelated. Transcription scales with the

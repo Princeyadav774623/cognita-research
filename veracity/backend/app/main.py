@@ -11,7 +11,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (routes_analysis, routes_ask, routes_media,
@@ -66,6 +66,24 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def _rate_limit(request, call_next):
+    """Applied as middleware rather than a route dependency so it runs before
+    the body is read. A dependency would let a 2 GB upload stream to disk first
+    and only then be refused."""
+    from fastapi.responses import JSONResponse
+
+    from app.rate_limit import enforce
+    if request.url.path.startswith("/api"):
+        try:
+            await enforce(request)
+        except HTTPException as exc:
+            return JSONResponse({"detail": exc.detail},
+                                status_code=exc.status_code,
+                                headers=exc.headers)
+    return await call_next(request)
+
 
 app.include_router(routes_media.router)
 app.include_router(routes_analysis.router)
