@@ -150,9 +150,20 @@ def _segment_at(segments, start_ms: int | None):
     """
     if start_ms is None:
         return None
+    # Half-open on purpose. Transcript segments abut exactly — one ends at the
+    # millisecond the next begins — so an inclusive upper bound makes both match
+    # and the earlier one wins, which puts every claim that starts on a boundary
+    # one segment too early. It then also inherits that segment's transcription
+    # confidence, so a claim from unclear audio can be fact-checked because its
+    # predecessor was clear.
     for s in segments:
-        if s.start_ms <= start_ms <= s.end_ms:
+        if s.start_ms <= start_ms < s.end_ms:
             return s
+    # The final segment is closed at its end, or a claim at the very last
+    # instant of the media would be unplaceable.
+    last = segments[-1] if segments else None
+    if last is not None and start_ms == last.end_ms:
+        return last
     nearest, gap = None, None
     for s in segments:
         d = abs(s.start_ms - start_ms)
