@@ -20,6 +20,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.models import AnalysisMode
 
 log = logging.getLogger("quota")
@@ -44,12 +45,29 @@ class Tier:
     cost_usd: float
 
 
-TIERS = {
-    "free": Tier("free", transcription_minutes=120, analysis_credits=60,
-                 cost_usd=1.00),
-    "pro": Tier("pro", transcription_minutes=3000, analysis_credits=1500,
-                cost_usd=25.00),
-}
+def _tiers() -> dict[str, Tier]:
+    """Limits from the environment, with the production defaults inline.
+
+    Read from config rather than hardcoded so a developer can be generous
+    locally without that generosity being what ships. Editing the numbers in
+    this file to get through an afternoon of testing is how a free tier ends up
+    a hundred times larger than intended in production, and nobody notices until
+    the bill.
+    """
+    cfg = settings()
+    return {
+        "free": Tier("free",
+                     transcription_minutes=cfg.free_transcription_minutes,
+                     analysis_credits=cfg.free_analysis_credits,
+                     cost_usd=cfg.free_cost_usd),
+        "pro": Tier("pro",
+                    transcription_minutes=cfg.pro_transcription_minutes,
+                    analysis_credits=cfg.pro_analysis_credits,
+                    cost_usd=cfg.pro_cost_usd),
+    }
+
+
+TIERS = _tiers()
 
 
 class QuotaExceeded(RuntimeError):

@@ -89,6 +89,16 @@ class Settings:
     job_max_attempts: int = _int("JOB_MAX_ATTEMPTS", 3)
     worker_poll_seconds: float = _float("WORKER_POLL_SECONDS", 2.0)
 
+    # ---- quotas ---------------------------------------------------------
+    # The defaults are the production allowance. Raise them in .env for local
+    # work; do not raise them here, or the change ships.
+    free_transcription_minutes: float = _float("FREE_TRANSCRIPTION_MINUTES", 120)
+    free_analysis_credits: int = _int("FREE_ANALYSIS_CREDITS", 60)
+    free_cost_usd: float = _float("FREE_COST_USD", 1.0)
+    pro_transcription_minutes: float = _float("PRO_TRANSCRIPTION_MINUTES", 3000)
+    pro_analysis_credits: int = _int("PRO_ANALYSIS_CREDITS", 1500)
+    pro_cost_usd: float = _float("PRO_COST_USD", 25.0)
+
     # ---- auth -----------------------------------------------------------
     supabase_jwks_url: str = os.getenv("SUPABASE_JWKS_URL", "")
     # An alternative to JWKS for deployments with no Supabase. Symmetric, so
