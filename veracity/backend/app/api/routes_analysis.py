@@ -12,6 +12,7 @@ from app.db.models import (Analysis, AnalysisMode, AnalysisState, Claim,
                            MediaItem, MediaState)
 from app.db.session import app_session, owner_session
 from app.jobs import queue
+from app.quota import CREDITS, QuotaExceeded, consume
 
 log = logging.getLogger("api.analysis")
 router = APIRouter(prefix="/api/media/{media_id}/analysis", tags=["analysis"])
@@ -44,6 +45,14 @@ async def request_analysis(media_id: str, body: AnalysisRequest,
         if existing is not None:
             return {"id": existing.id, "state": existing.state.value,
                     "mode": existing.mode.value, "reused": True}
+
+        # Priced by depth, not by run: report searches for and judges every
+        # claim separately and costs roughly fifteen times a summary.
+        try:
+            consume(session, principal.user_id, meter="analysis_credits",
+                    amount=CREDITS[body.mode])
+        except QuotaExceeded as exc:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
 
         analysis = Analysis(media_id=media_id, user_id=principal.user_id,
                             mode=body.mode, state=AnalysisState.queued)

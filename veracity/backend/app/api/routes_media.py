@@ -15,7 +15,9 @@ from app.config import settings
 from app.db.models import MediaItem, MediaState, TranscriptSegment
 from app.db.session import app_session, owner_session
 from app.ingest import resolve
+from app.ingest.probe import ProbeError, probe
 from app.jobs import queue
+from app.quota import QuotaExceeded, consume, refund, snapshot
 
 log = logging.getLogger("api.media")
 router = APIRouter(prefix="/api/media", tags=["media"])
@@ -76,10 +78,32 @@ async def upload(file: UploadFile = File(...),
             session.query(MediaItem).filter_by(id=media_id).delete()
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "that file is empty")
 
+    # Charged now that the length is knowable, and before the job exists, so a
+    # user out of allowance never has work queued on their behalf.
+    try:
+        duration_ms = probe(dest).duration_ms
+    except ProbeError as exc:
+        shutil.rmtree(work, ignore_errors=True)
+        with owner_session() as session:
+            session.query(MediaItem).filter_by(id=media_id).delete()
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+    minutes = duration_ms / 60_000
+    try:
+        with app_session(principal.user_id) as session:
+            consume(session, principal.user_id,
+                    meter="transcription_minutes", amount=minutes)
+    except QuotaExceeded as exc:
+        shutil.rmtree(work, ignore_errors=True)
+        with owner_session() as session:
+            session.query(MediaItem).filter_by(id=media_id).delete()
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
+
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)
         media.source_path = dest
         media.bytes = written
+        media.duration_ms = duration_ms
         media.state = MediaState.pending
         session.add(media)
         session.flush()
@@ -108,6 +132,16 @@ async def submit_url(body: SubmitUrl,
         resolve.check_url_is_fetchable(body.url)
     except resolve.ResolveError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+    # A URL's length is unknown until it downloads. Charging a nominal minute
+    # up front stops an empty allowance from queueing a download at all; the
+    # fetch handler reconciles to the real duration once it knows it.
+    try:
+        with app_session(principal.user_id) as session:
+            consume(session, principal.user_id,
+                    meter="transcription_minutes", amount=1.0)
+    except QuotaExceeded as exc:
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, str(exc))
 
     with app_session(principal.user_id) as session:
         media = MediaItem(user_id=principal.user_id, source_kind="url",

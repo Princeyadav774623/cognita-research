@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger, Boolean, CheckConstraint, Column, DateTime, Enum, Float,
-    ForeignKey, Index, Integer, String, Text, UniqueConstraint,
+    ForeignKey, Index, Integer, String, Text, UniqueConstraint, func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -266,6 +266,40 @@ class Claim(Base):
         UniqueConstraint("analysis_id", "ordinal", name="uq_claim_ordinal"),
         Index("ix_claim_analysis_start", "analysis_id", "start_ms"),
     )
+
+
+class UserQuota(Base):
+    """What one user has spent this period.
+
+    Two meters, because the two costs are unrelated. Transcription scales with
+    the *length* of what you upload; analysis scales with the *depth* you ask
+    for, and report depth is roughly fifteen times summary depth. A single
+    counter would let someone spend a month's budget on one long file, or on
+    forty deep analyses of a thirty-second clip, and be surprised either way.
+
+    A cost ceiling sits behind both as a backstop. The meters are the contract;
+    the ceiling is what stops a pricing change or a runaway retry turning a
+    generous allowance into a bill.
+    """
+
+    __tablename__ = "user_quotas"
+
+    # server_default, not default. SQLAlchemy's `default=` is applied by the
+    # ORM in Python, so anything writing this table with raw SQL — which the
+    # quota accounting does, because it has to be atomic — inserts NULL and
+    # trips the NOT NULL constraint. A default that only exists in the ORM is
+    # not a default the database has.
+    user_id = Column(String, primary_key=True)
+    tier = Column(String, nullable=False, server_default="free")
+
+    period_start = Column(DateTime(timezone=True), nullable=False,
+                          server_default=func.now())
+    transcription_minutes = Column(Float, nullable=False, server_default="0")
+    analysis_credits = Column(Integer, nullable=False, server_default="0")
+    cost_usd = Column(Float, nullable=False, server_default="0")
+
+    updated_at = Column(DateTime(timezone=True), nullable=False,
+                        server_default=func.now())
 
 
 class Job(Base):

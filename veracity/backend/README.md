@@ -51,6 +51,43 @@ all, so every `Word.measured` is `False` there and `True` under faster-whisper.
 The distinction reaches the database because a fact-checker that verifies a
 misheard number will report high confidence in a claim nobody made.
 
+## Quotas
+
+Two meters, because the two costs are unrelated. Transcription scales with the
+*length* of what you upload; analysis scales with the *depth* you ask for, and a
+report is roughly fifteen times a summary. One counter would let someone spend a
+month on a single long file, or on forty deep analyses of a thirty-second clip,
+and be surprised either way. A cost ceiling sits behind both as a backstop.
+
+| Meter | Free | Pro |
+|---|---|---|
+| Transcription minutes | 120 | 3,000 |
+| Analysis credits | 60 | 1,500 |
+| Cost ceiling | $1 | $25 |
+
+Analysis is priced in credits — summary 1, deep 4, report 15 — mirroring the
+ratios the interface advertises.
+
+**Every consume is a single UPDATE whose WHERE clause contains the limit.** The
+read-compare-write version is not a limit at all: two requests that read at the
+same time both see room and both proceed, and that failure appears exactly when
+someone is hammering the service. Verified with ten threads racing for one
+remaining credit — one succeeded.
+
+The period rolls inside the same statement that charges. Resetting first and
+charging second would let a request slip between the two and be charged against
+a period that no longer exists.
+
+Consumed on entry, refunded on failure, and only on the *final* attempt —
+refunding on every attempt would give allowance back for work about to be
+retried. A URL submission is charged a nominal minute up front, since its length
+cannot be known until it downloads, and the fetch handler reconciles to the real
+duration.
+
+`GET /api/quota` never raises on an exhausted allowance: it is what the interface
+calls to decide what to offer, and refusing to report a spent quota would hide
+the state the user most needs to see.
+
 ## Migrations
 
 ```bash
@@ -60,6 +97,15 @@ set -a; . ./.env; set +a
 ```
 
 Startup migrates automatically, so the usual case needs no command.
+
+**The raw-SQL indexes are excluded from autogenerate.** An HNSW index with an
+operator class and an expression index over `to_tsvector()` cannot be expressed
+in model metadata, so alembic finds them in the database, does not find them in
+the models, and proposes dropping them — every single time. `include_object` in
+`env.py` filters them out, and `ensure_indexes()` recreates them at startup if
+anything removed them anyway. Both guards exist because a dropped index does not
+fail: retrieval keeps working, on a sequential scan, and the slowdown gets
+attributed to anything but this.
 
 **Autogenerate against an empty database.** Alembic diffs the models against
 whatever is connected; run it against a database that already has the tables and

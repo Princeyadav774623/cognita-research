@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   api, VERDICTS,
-  type Analysis, type AskAnswer, type Claim, type Media, type Transcript,
+  type Analysis, type AskAnswer, type Claim, type Health, type Media,
+  type Quota, type Transcript,
 } from "./api";
 
 const MODES = [
@@ -18,6 +19,17 @@ export function App() {
   const [items, setItems] = useState<Media[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [health, setHealth] = useState<Health | null>(null);
+  const [quota, setQuota] = useState<Quota | null>(null);
+
+  const refreshQuota = useCallback(async () => {
+    try { setQuota(await api.quota()); } catch { /* not fatal */ }
+  }, []);
+
+  useEffect(() => {
+    api.health().then(setHealth).catch(() => undefined);
+    void refreshQuota();
+  }, [refreshQuota]);
 
   const refresh = useCallback(async () => {
     try {
@@ -56,7 +68,12 @@ export function App() {
 
       <div className="grid">
         <div>
-          <Uploader onDone={refresh} onError={setError} />
+          <Uploader
+            onDone={() => { void refresh(); void refreshQuota(); }}
+            onError={setError}
+            allowUrl={health?.remote_fetch ?? false}
+          />
+          {quota && <QuotaCard quota={quota} />}
           <div className="card" style={{ marginTop: 16 }}>
             <h2>Your media</h2>
             {items.length === 0 ? (
@@ -79,7 +96,8 @@ export function App() {
 
         <div>
           {current ? (
-            <Detail media={current} onError={setError} />
+            <Detail media={current} onError={setError}
+                    onSpend={refreshQuota} />
           ) : (
             <div className="card">
               <div className="empty">Pick something on the left, or upload a file.</div>
@@ -91,12 +109,29 @@ export function App() {
   );
 }
 
-function Uploader({ onDone, onError }: {
-  onDone: () => void; onError: (m: string) => void;
+function Uploader({ onDone, onError, allowUrl }: {
+  onDone: () => void; onError: (m: string) => void; allowUrl: boolean;
 }) {
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [url, setUrl] = useState("");
   const input = useRef<HTMLInputElement>(null);
+
+  const sendUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = url.trim();
+    if (!value || busy) return;
+    setBusy(true);
+    try {
+      await api.submitUrl(value);
+      setUrl("");
+      onDone();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const send = async (file: File | undefined) => {
     if (!file) return;
@@ -137,6 +172,59 @@ function Uploader({ onDone, onError }: {
           </>
         )}
       </div>
+
+      {/* Shown only when the server will actually fetch. An input that always
+          returns 501 is worse than no input — it looks like a broken feature
+          rather than a deliberate one. */}
+      {allowUrl && (
+        <form onSubmit={sendUrl} className="row" style={{ gap: 8, marginTop: 12 }}>
+          <input
+            className="ask" value={url} disabled={busy} type="url"
+            placeholder="…or paste a link"
+            onChange={(e) => setUrl(e.target.value)}
+          />
+          <button className="mode" type="submit" disabled={busy || !url.trim()}>
+            Fetch
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function QuotaCard({ quota: q }: { quota: Quota }) {
+  const rows: [string, number, number, string][] = [
+    ["Transcription", q.transcription_minutes.used,
+     q.transcription_minutes.limit, "min"],
+    ["Analysis", q.analysis_credits.used, q.analysis_credits.limit, "credits"],
+  ];
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <h2>Allowance · {q.tier}</h2>
+      {rows.map(([label, used, limit, unit]) => {
+        const pct = limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
+        return (
+          <div key={label} style={{ marginBottom: 12 }}>
+            <div className="row" style={{ justifyContent: "space-between" }}>
+              <span style={{ fontSize: "0.84rem" }}>{label}</span>
+              <span className="meter-n">
+                {Math.round(used)} / {limit} {unit}
+              </span>
+            </div>
+            <div className="bar">
+              <div className="bar__fill"
+                   style={{ width: `${pct}%`,
+                            background: pct > 90 ? "var(--bad)"
+                              : pct > 70 ? "var(--warn)" : "var(--ok)" }} />
+            </div>
+          </div>
+        );
+      })}
+      <div className="hint">
+        Resets {new Date(q.resets_at).toLocaleDateString()}. A report costs{" "}
+        {q.credits_per_mode.report} credits, deep {q.credits_per_mode.deep},
+        summary {q.credits_per_mode.summary}.
+      </div>
     </div>
   );
 }
@@ -164,7 +252,9 @@ function MediaRow({ media, active, onPick, onDelete }: {
   );
 }
 
-function Detail({ media, onError }: { media: Media; onError: (m: string) => void }) {
+function Detail({ media, onError, onSpend }: {
+  media: Media; onError: (m: string) => void; onSpend: () => void;
+}) {
   const [transcript, setTranscript] = useState<Transcript | null>(null);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [pending, setPending] = useState<string | null>(null);
@@ -201,6 +291,7 @@ function Detail({ media, onError }: { media: Media; onError: (m: string) => void
       const { id } = await api.analyse(media.id, mode);
       setAnalysis(null);
       setPending(id);
+      onSpend();
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     }

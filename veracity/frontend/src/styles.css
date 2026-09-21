@@ -161,3 +161,9 @@ header.top { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px
 .ask::placeholder { color: var(--ink-3); }
 .ask:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .ask:disabled { opacity: 0.5; }
+
+.meter-n { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3); }
+.bar { height: 5px; background: var(--surface-2); border-radius: var(--r-pill);
+       overflow: hidden; margin-top: 5px; }
+.bar__fill { height: 100%; border-radius: var(--r-pill); transition: width .3s; }
+@media (prefers-reduced-motion: reduce) { .bar__fill { transition: none; } }

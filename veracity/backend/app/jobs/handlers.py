@@ -72,6 +72,9 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
                 f"this is {info.duration_ms // 60000} minutes long; the limit "
                 f"is {settings().max_duration_seconds // 60}"
             )
+        # Reconcile: a URL submission was charged a nominal minute before its
+        # length could be known. Charge the difference now, or give it back.
+        _reconcile_minutes(session, media, info.duration_ms)
         media.duration_ms = info.duration_ms
         media.container = info.container
         media.has_video = info.has_video
@@ -172,8 +175,48 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
             media.state = MediaState.failed
             media.error = str(exc)[:2000]
             session.add(media)
+            # Refunded only when the queue has given up. Refunding on every
+            # attempt would hand back allowance for work that is about to be
+            # retried, and the user would end up paying for none of three tries.
+            if _final_attempt(session, "ingest", media_id):
+                from app.quota import refund
+                refund(session, media.user_id, meter="transcription_minutes",
+                       amount=(media.duration_ms or 0) / 60_000 or 1.0)
             session.commit()
         raise
+
+
+def _final_attempt(session, kind: str, media_id: str) -> bool:
+    """True when the job for this media has no attempts left."""
+    from sqlalchemy import text
+    row = session.execute(text("""
+        SELECT attempts, max_attempts FROM jobs
+        WHERE kind = :k AND payload->>'media_id' = :m
+        ORDER BY created_at DESC LIMIT 1
+    """), {"k": kind, "m": media_id}).first()
+    return bool(row) and row[0] >= row[1]
+
+
+def _reconcile_minutes(session, media: MediaItem, actual_ms: int) -> None:
+    """Settle up once the real duration is known."""
+    from app.quota import QuotaExceeded, consume, refund
+
+    charged = (media.duration_ms or 0) / 60_000
+    if media.source_kind == "url" and not media.duration_ms:
+        charged = 1.0          # the nominal minute taken at submission
+    actual = actual_ms / 60_000
+    delta = round(actual - charged, 4)
+    if abs(delta) < 0.01:
+        return
+    if delta > 0:
+        try:
+            consume(session, media.user_id,
+                    meter="transcription_minutes", amount=delta)
+        except QuotaExceeded as exc:
+            raise HandlerError(str(exc)) from exc
+    else:
+        refund(session, media.user_id,
+               meter="transcription_minutes", amount=-delta)
 
 
 def _set_state(session, media: MediaItem, state: MediaState) -> None:

@@ -28,10 +28,27 @@ config.set_main_option("sqlalchemy.url", url)
 
 target_metadata = Base.metadata
 
+# Indexes created in raw SQL because they cannot be expressed in model
+# metadata: an HNSW index with an operator class, and an expression index over
+# to_tsvector(). Alembic compares the database against the models, does not find
+# them there, and proposes dropping them on every single autogenerate. Left to
+# itself it would eventually get one past review, and the symptom would be
+# retrieval quietly falling back to a sequential scan — slower, never wrong, and
+# attributed to anything but this.
+_RAW_SQL_INDEXES = {"ix_chunks_embedding_hnsw", "ix_chunks_text_fts"}
+
+
+def include_object(obj, name, type_, reflected, compare_to):
+    if type_ == "index" and name in _RAW_SQL_INDEXES:
+        return False
+    return True
+
 
 def run_migrations_offline() -> None:
     context.configure(url=url, target_metadata=target_metadata,
-                      literal_binds=True, compare_type=True)
+                      literal_binds=True, compare_type=True,
+                      compare_server_default=True,
+                      include_object=include_object)
     with context.begin_transaction():
         context.run_migrations()
 
@@ -43,7 +60,8 @@ def run_migrations_online() -> None:
     )
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata,
-                          compare_type=True)
+                          compare_type=True, compare_server_default=True,
+                          include_object=include_object)
         with context.begin_transaction():
             context.run_migrations()
 

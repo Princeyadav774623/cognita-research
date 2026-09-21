@@ -41,6 +41,24 @@ export interface Claim {
   evidence: { title: string; url: string; snippet: string }[];
 }
 
+export interface Health {
+  status: string;
+  remote_fetch: boolean;
+  guest_mode: boolean;
+  tenant_isolation: string;
+}
+
+export interface Meter { used: number; limit: number }
+
+export interface Quota {
+  tier: string;
+  resets_at: string;
+  transcription_minutes: Meter;
+  analysis_credits: Meter;
+  cost_usd: Meter;
+  credits_per_mode: Record<string, number>;
+}
+
 export interface AskPassage {
   at: string; start_ms: number; end_ms: number; text: string; used: boolean;
 }
@@ -112,6 +130,17 @@ export const api = {
 
   analysis: (mediaId: string, id: string) =>
     fetch(`/api/media/${mediaId}/analysis/${id}`).then(json<Analysis>),
+
+  health: () => fetch("/health").then(json<Health>),
+
+  quota: () => fetch("/api/quota").then(json<Quota>),
+
+  submitUrl: (url: string) =>
+    fetch("/api/media/url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    }).then(json<Media>),
 
   ask: (mediaId: string, question: string) =>
     fetch(`/api/media/${mediaId}/ask`, {

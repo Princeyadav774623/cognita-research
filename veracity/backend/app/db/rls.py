@@ -21,7 +21,7 @@ from app.config import settings
 log = logging.getLogger("rls")
 
 # table -> its own user column
-_DIRECT = ("media_items", "analyses")
+_DIRECT = ("media_items", "analyses", "user_quotas")
 
 # table -> (its fk column, parent table, parent key)
 _DERIVED = {

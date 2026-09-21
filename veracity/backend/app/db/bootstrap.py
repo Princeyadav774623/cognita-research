@@ -75,12 +75,42 @@ def migrate() -> None:
     command.upgrade(cfg, "head")
 
 
+# Indexes that cannot be expressed in model metadata, and which alembic
+# therefore proposes dropping on every autogenerate. Asserted at startup so a
+# migration that removed them is caught by the next deploy rather than by a
+# gradual slowdown nobody attributes to anything.
+_REQUIRED_INDEXES = {
+    "ix_chunks_embedding_hnsw": (
+        "CREATE INDEX IF NOT EXISTS ix_chunks_embedding_hnsw "
+        "ON transcript_chunks USING hnsw (embedding vector_cosine_ops)"
+    ),
+    "ix_chunks_text_fts": (
+        "CREATE INDEX IF NOT EXISTS ix_chunks_text_fts "
+        "ON transcript_chunks USING gin (to_tsvector('english', text))"
+    ),
+}
+
+
+def ensure_indexes() -> None:
+    """Recreate the raw-SQL indexes if anything removed them."""
+    with owner_engine.begin() as conn:
+        present = {r[0] for r in conn.execute(text(
+            "SELECT indexname FROM pg_indexes WHERE tablename = 'transcript_chunks'"
+        ))}
+        for name, ddl in _REQUIRED_INDEXES.items():
+            if name not in present:
+                log.warning("[DB] %s is missing — recreating. Retrieval would "
+                            "otherwise run as a sequential scan.", name)
+                conn.execute(text(ddl))
+
+
 def init(*, run_migrations: bool = True) -> None:
     ping()
     with owner_engine.begin() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
     if run_migrations:
         migrate()
+    ensure_indexes()
     rls.install()
     for problem in rls.verify():
         log.error("[RLS] %s", problem)

@@ -66,9 +66,12 @@ def db():
         from app.db.bootstrap import init
         from app.db.models import Base
         from app.db.session import owner_engine
-        # create_all rather than migrating: the suite wants the schema the code
-        # declares right now, not the history of how it got there. Whether the
-        # migrations actually produce that schema is its own test.
+        # Dropped first, then created. create_all does not alter a table that
+        # already exists, so a suite run after a model change would test last
+        # week's schema and pass — which is exactly what happened when server
+        # defaults were added to user_quotas. The database name is asserted to
+        # end in `_test` above, so this cannot reach anything that matters.
+        Base.metadata.drop_all(owner_engine)
         Base.metadata.create_all(owner_engine)
         init(run_migrations=False)
     except Exception as exc:                      # pragma: no cover
