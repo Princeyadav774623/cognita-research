@@ -96,6 +96,66 @@ A URL resolving to a private, loopback or link-local address is refused —
 otherwise "paste a link" is a server-side request forgery primitive, and
 `http://169.254.169.254/latest/meta-data/` reads cloud credentials.
 
+## Analysis
+
+```
+POST /api/media/{id}/analysis  {"mode": "summary" | "deep" | "report"}
+GET  /api/media/{id}/analysis/{analysis_id}
+```
+
+Measured on a 17-second clip at report depth: 6 claims, 11,792 tokens, $0.0032,
+about two minutes — most of it the per-claim searches, which run concurrently.
+
+### Verification is independent, or it is circular
+
+The naive design is to extract claims from the transcript and check them against
+the transcript. A claim faithfully drawn from what somebody said always agrees
+with what they said, including when they were wrong, so that system measures
+transcription fidelity and calls the result verification.
+
+Every claim is therefore searched for separately, and the verdict is formed only
+from what that search returned. The speaker's own words are context for reading
+the evidence, never evidence themselves. The judge is told in as many words not
+to use its own knowledge — if the excerpts do not settle it, the answer is
+`unsupported` however confident the model feels.
+
+That rule has a visible cost, and it is the right cost. On a test clip, "the
+Eiffel Tower was built in 1889 for the World's Fair" came back `unsupported`:
+true, but the retrieved sources did not establish it. A system that had answered
+`supported` there would have been answering from the model's memory, which is
+the thing being guarded against.
+
+Measured on a clip with two deliberate falsehoods among six claims:
+
+```
+supported     The Eiffel Tower is located in Paris, France.
+supported     The Eiffel Tower stands about 330 meters tall.
+contradicted  The Eiffel Tower is made entirely of solid gold.
+unsupported   The Eiffel Tower was built in 1889 for the World's Fair.
+contradicted  The Eiffel Tower is taller than the Burj Khalifa in Dubai.
+supported     Around 7 million people visit the Eiffel Tower every year.
+
+confidence 0.41 — "2 claim(s) are contradicted by independent sources."
+```
+
+The same pipeline over six true claims scores 0.97. The number moves for the
+right reason.
+
+### Claims are gated on transcription confidence
+
+A claim assembled out of words the transcriber was unsure of is not checked at
+all; it is reported as `unclear_audio`. Verifying a misheard number produces
+high confidence in something that was never said, which is worse than no verdict
+— and it is the failure that would be hardest for a reader to catch.
+
+### Perspectives are searched for, not generated
+
+"Give me other perspectives" asked of a model produces both-sides mush. Instead,
+each substantive claim gets a search for material that would *contradict* it,
+and what comes back is reported with who holds the position. A claim with no
+credible counter-argument returns nothing — manufacturing dissent for a settled
+fact is its own dishonesty.
+
 ## The queue
 
 Jobs live in Postgres, not in memory and not in a broker. A worker claims one by

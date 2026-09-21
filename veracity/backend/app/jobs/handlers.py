@@ -17,7 +17,8 @@ from datetime import datetime, timezone
 from typing import Callable
 
 from app.config import settings
-from app.db.models import MediaItem, MediaState, TranscriptChunk, TranscriptSegment
+from app.db.models import (Analysis, AnalysisState, Claim, MediaItem,
+                           MediaState, TranscriptChunk, TranscriptSegment)
 from app.ingest import audio as audio_mod
 from app.ingest.chunk import chunk_transcript
 from app.ingest.probe import probe
@@ -185,6 +186,74 @@ def _discard(path: str) -> None:
         log.warning("[ingest] could not clean up %s: %s", path, exc)
 
 
+def analyze(session, payload: dict, heartbeat: Heartbeat) -> None:
+    """Run one analysis at one depth and persist it.
+
+    The analysis row exists before the work starts, so the interface has
+    something to show a spinner against and a failure has somewhere to land.
+    """
+    from app.analysis.pipeline import run as run_pipeline
+    from app.llm import ledger
+
+    analysis_id = payload["analysis_id"]
+    analysis = session.get(Analysis, analysis_id)
+    if analysis is None:
+        raise HandlerError(f"analysis {analysis_id} no longer exists")
+    if analysis.state == AnalysisState.complete:
+        log.info("[analyze] %s already complete", analysis_id)
+        return
+
+    media = session.get(MediaItem, analysis.media_id)
+    if media is None or media.state != MediaState.ready:
+        raise HandlerError("the media is not transcribed yet")
+
+    analysis.state = AnalysisState.running
+    analysis.error = None
+    session.add(analysis)
+    session.commit()
+
+    try:
+        segments = (session.query(TranscriptSegment)
+                    .filter_by(media_id=media.id)
+                    .order_by(TranscriptSegment.ordinal).all())
+        heartbeat()
+
+        with ledger() as book:
+            out = run_pipeline(segments, analysis.mode,
+                               asr_confidence=media.asr_mean_confidence)
+
+        analysis.summary_md = out.get("summary") or None
+        analysis.key_points = out.get("key_points") or None
+        analysis.topics = out.get("topics") or None
+        analysis.overall_confidence = out.get("overall_confidence")
+        analysis.confidence_factors = out.get("confidence_factors")
+        analysis.perspectives = out.get("perspectives") or None
+        analysis.tokens_used = book.total
+        analysis.cost_usd = book.cost_usd()
+
+        session.query(Claim).filter_by(analysis_id=analysis_id).delete()
+        for row in out.get("claims") or []:
+            session.add(Claim(analysis_id=analysis_id, **row))
+
+        analysis.state = AnalysisState.complete
+        analysis.completed_at = _now()
+        session.add(analysis)
+        session.commit()
+        log.info("[analyze] %s %s complete: %d claims, %d tokens, $%.4f",
+                 analysis.mode.value, analysis_id,
+                 len(out.get("claims") or []), book.total, book.cost_usd())
+
+    except Exception as exc:
+        analysis = session.get(Analysis, analysis_id)
+        if analysis is not None:
+            analysis.state = AnalysisState.failed
+            analysis.error = str(exc)[:2000]
+            session.add(analysis)
+            session.commit()
+        raise
+
+
 HANDLERS: dict[str, Callable] = {
     "ingest": ingest,
+    "analyze": analyze,
 }
