@@ -2,9 +2,30 @@ import os
 import subprocess
 import pytest
 
-os.environ.setdefault("DATABASE_URL", "postgresql://localhost:5432/veracity_test")
-os.environ.setdefault("DATABASE_URL_APP", "postgresql://localhost:5432/veracity_test")
+# Point at the test database BEFORE app.config is imported anywhere, and
+# override rather than setdefault: a developer's .env is normally exported into
+# the shell, and setdefault would then quietly hand the suite the development
+# database. The teardown truncates, so that costs you your work — which is
+# exactly what happened once before this guard existed.
+_USER = os.environ.get("USER", "postgres")
+os.environ["DATABASE_URL"] = os.environ.get(
+    "TEST_DATABASE_URL", f"postgresql://{_USER}@localhost:5432/veracity_test")
+os.environ["DATABASE_URL_APP"] = os.environ.get(
+    "TEST_DATABASE_URL_APP",
+    "postgresql://veracity_app:veracity_local@localhost:5432/veracity_test")
 os.environ.setdefault("GROQ_API_KEY", "test-key-not-used")
+os.environ.setdefault("MEDIA_ROOT", "/tmp/veracity-test-media")
+# Set here rather than in a fixture: Settings is an lru_cached frozen dataclass
+# built on first import, so monkeypatching the environment inside a test is too
+# late and silently has no effect.
+os.environ["ALLOW_GUEST"] = "true"
+os.environ["ALLOW_REMOTE_FETCH"] = "false"
+
+if not os.environ["DATABASE_URL"].rstrip("/").endswith("_test"):
+    raise RuntimeError(
+        "refusing to run: the test database name must end in '_test'. "
+        f"Got {os.environ['DATABASE_URL']!r}. The suite truncates tables."
+    )
 
 
 @pytest.fixture(scope="session")
@@ -80,3 +101,40 @@ def alice_media(db, alice):
     from app.db.session import owner_session
     with owner_session() as s:
         s.query(MediaItem).filter_by(id=media_id).delete()
+
+
+@pytest.fixture
+def stub_asr(monkeypatch):
+    """Transcription that does not leave the machine.
+
+    The worker tests are about the pipeline — state transitions, persistence,
+    redelivery — not about the accuracy of a vendor's model. Depending on a
+    live paid API made them slow, non-deterministic, and silently green only
+    while someone's key happened to be exported into the shell.
+
+    The real transcribers are exercised by hand against real audio; what is
+    checked here is that whatever they return is shifted, stored and chunked
+    correctly.
+    """
+    from app.ingest.transcribe import Segment, Transcript, Word
+
+    class StubTranscriber:
+        name = "stub"
+        model = "stub-v1"
+
+        def transcribe(self, path, *, language=None):
+            # Deliberately starts at zero: the offset shifting in
+            # transcribe_parts is the thing under test, so a stub that already
+            # knew its position would hide a bug there.
+            words = [Word("the", 0, 300, 0.9, True),
+                     Word("reef", 300, 800, 0.9, True)]
+            return Transcript(
+                segments=[Segment(start_ms=0, end_ms=800,
+                                  text="the reef", confidence=0.9,
+                                  words=words)],
+                language="en", backend="stub", model="stub-v1",
+            )
+
+    monkeypatch.setattr("app.ingest.transcribe.get_transcriber",
+                        lambda: StubTranscriber())
+    return StubTranscriber()

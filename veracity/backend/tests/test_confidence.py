@@ -77,3 +77,31 @@ class TestScoring:
             asr_confidence=0.5)
         assert len(s.factors) >= 2
         assert all(f.strip().endswith(".") for f in s.factors)
+
+
+class TestFailedChecks:
+    def test_a_failed_check_is_not_counted_as_evidence(self):
+        """An outage is not a finding. A claim whose check never completed must
+        not drag the score down as though sources had been searched and come
+        back empty."""
+        from app.analysis.confidence import score_analysis
+        from app.db.models import ClaimVerdict
+
+        clean = score_analysis(
+            [r(ClaimVerdict.supported) for _ in range(6)], asr_confidence=0.9)
+        with_outage = score_analysis(
+            [r(ClaimVerdict.supported) for _ in range(6)]
+            + [{"verdict": ClaimVerdict.check_failed,
+                "verdict_confidence": None}],
+            asr_confidence=0.9)
+        assert with_outage.value == clean.value
+
+    def test_a_failed_check_is_reported_and_says_it_is_re_runnable(self):
+        from app.analysis.confidence import score_analysis
+        from app.db.models import ClaimVerdict
+        s = score_analysis(
+            [r(ClaimVerdict.supported),
+             {"verdict": ClaimVerdict.check_failed, "verdict_confidence": None}],
+            asr_confidence=0.9)
+        assert any("could not be checked" in f for f in s.factors)
+        assert any("Re-running" in f for f in s.factors)

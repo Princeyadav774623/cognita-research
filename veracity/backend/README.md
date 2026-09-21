@@ -186,3 +186,15 @@ clipped — in testing, "outer space" across an 8 s boundary transcribed as
 second or two and reconciling the duplicated words at the seam. Until that
 exists, parts default to 10 minutes so the damage is one word per ten minutes,
 and it is recorded here rather than left to be discovered.
+
+## A failed check is not a finding
+
+`unsupported` means the sources were found and did not settle the claim — a
+statement about the evidence. When a request fails partway through an analysis,
+the verdict is `check_failed` instead, which is a statement about us.
+
+Collapsing the second into the first was the original behaviour and it was
+wrong: a rate limit during one claim of six silently reported that claim as
+unverified, which reads to a user as "we looked and found nothing". Scoring now
+excludes failed checks entirely rather than counting them against the score, and
+the factors say how many there were and that re-running will pick them up.

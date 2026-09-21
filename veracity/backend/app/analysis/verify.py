@@ -142,10 +142,22 @@ def _skipped(claim: ExtractedClaim) -> dict:
 
 
 def _errored(claim: ExtractedClaim, exc: Exception) -> dict:
+    """A claim whose check did not complete.
+
+    Not `unsupported`: that means the sources were found and did not settle it,
+    which is a statement about the evidence. This is a statement about us, and
+    a reader has to be able to tell the two apart before deciding whether to
+    re-run.
+    """
+    reason = str(exc).strip() or type(exc).__name__
+    if "rate limit" in reason.lower() or "429" in reason:
+        detail = "the inference provider was rate limiting; try again shortly"
+    else:
+        detail = f"{type(exc).__name__}: {reason[:160]}"
     return {
-        "verdict": ClaimVerdict.unsupported,
-        "verdict_confidence": 0.0,
-        "reasoning": f"Could not check this claim: {type(exc).__name__}.",
+        "verdict": ClaimVerdict.check_failed,
+        "verdict_confidence": None,
+        "reasoning": f"This claim was not checked — {detail}.",
         "evidence": [],
         "independently_corroborated": False,
     }

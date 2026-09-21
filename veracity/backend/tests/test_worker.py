@@ -37,7 +37,7 @@ def _queue_media(user: str, source_path: str):
 
 
 class TestIngestJob:
-    def test_media_reaches_ready_with_timed_chunks(self, db, tone_media):
+    def test_media_reaches_ready_with_timed_chunks(self, db, tone_media, stub_asr):
         """Tone rather than speech: the point is that the pipeline completes and
         the timing survives, not what the words were."""
         from app.db.session import app_session
@@ -91,7 +91,7 @@ class TestIngestJob:
             assert m.state == MediaState.failed
             assert "no audio track" in m.error
 
-    def test_redelivery_of_a_finished_item_is_a_no_op(self, db, tone_media):
+    def test_redelivery_of_a_finished_item_is_a_no_op(self, db, tone_media, stub_asr):
         """A lease can expire on a job whose work already landed. Re-running it
         must not transcribe the media a second time and bill for it twice."""
         from app.db.session import app_session, owner_session

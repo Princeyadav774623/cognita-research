@@ -48,7 +48,17 @@ def score_analysis(results: list[dict], *,
 
     checked = [r for r in results
                if _key(r) in ("supported", "contradicted", "unsupported")]
+    failed = counts.get("check_failed", 0)
     factors: list[str] = []
+
+    if failed:
+        # Surfaced first because it is actionable in a way the others are not:
+        # re-running fixes it, and until then the score rests on less than it
+        # appears to.
+        factors.append(
+            f"{failed} claim(s) could not be checked at all because a request "
+            f"failed. Re-running will pick them up."
+        )
 
     if not checked:
         factors.append(

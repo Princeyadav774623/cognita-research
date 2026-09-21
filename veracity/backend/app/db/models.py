@@ -71,6 +71,11 @@ class ClaimVerdict(str, enum.Enum):
     unsupported = "unsupported"        # searched, found nothing either way
     unclear_audio = "unclear_audio"    # never checked: the ASR was unsure
     not_checkable = "not_checkable"    # opinion, prediction, value judgement
+    # Distinct from `unsupported` on purpose. "We searched and found nothing"
+    # and "we never managed to search" are different statements about the
+    # world, and collapsing the second into the first reports a finding where
+    # there was only an outage.
+    check_failed = "check_failed"
 
 
 class MediaItem(Base):

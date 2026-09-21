@@ -1,13 +1,13 @@
 # Veracity
 
-Paste a video or audio link, or upload a file. Get back a transcript anchored to
-timestamps, an analysis at the depth you asked for, and — at the deepest setting
-— every factual claim in it checked against sources the speaker never cited.
+Paste a video or audio file. Get a transcript anchored to timestamps, an
+analysis at the depth you asked for, and — at the deepest setting — every
+factual claim in it checked against sources the speaker never cited.
 
-It is a separate product from Cognita in the same repository. It borrows
-Cognita's verification core, because "is this claim actually supported" is the
-same problem whether the claim arrived as a web page or as something somebody
-said out loud. Everything above that line is new.
+A separate product from Cognita in the same repository. It borrows Cognita's
+verification idea, because "is this claim actually supported" is the same
+problem whether the claim arrived as a web page or as something somebody said
+out loud. Everything above that line is new.
 
 ## What it does, and what it deliberately does not
 
@@ -26,57 +26,56 @@ leaving the reader to assume.
 
 ## The three depths
 
-Each tier is a superset of the one above it, and roughly four times the cost, so
-the expensive one is opt-in and priced before it runs.
+Each is a superset of the one above and roughly four times the cost, so the
+expensive one is opt-in and priced before it runs.
 
 | Mode | Adds | Answers |
 |---|---|---|
 | `summary` | one pass over the transcript | what was said |
-| `deep` | structure, speakers, extracted claims, topic segmentation | what was argued |
-| `report` | independent verification per claim, confidence, counter-evidence | whether it holds up |
+| `deep` | structure, rhetorical moves, extracted claims | what was argued |
+| `report` | independent verification, confidence, counter-evidence | whether it holds up |
 
-## Pipeline
+## What it looks like working
+
+Seventeen seconds of speech with two deliberate falsehoods among six claims:
 
 ```
-url or upload
-  -> resolve      yt-dlp for a link, direct for an upload
-  -> probe        ffprobe: duration, streams, codec
-  -> audio        ffmpeg: 16 kHz mono, segmented under the ASR size limit
-  -> transcribe   word-level timestamps AND per-word confidence
-  -> chunk        timestamp-anchored, sentence-aligned, overlapping
-  -> embed        local, 384-d
-  -> analyse      per the requested mode
+supported     The Eiffel Tower is located in Paris, France.
+supported     The Eiffel Tower stands about 330 metres tall.
+contradicted  The Eiffel Tower is made entirely of solid gold.
+supported     The Eiffel Tower was built in 1889 for the World's Fair.
+contradicted  The Eiffel Tower is taller than the Burj Khalifa in Dubai.
+supported     Around 7 million people visit the Eiffel Tower every year.
+
+41%  ·  2 claim(s) are contradicted by independent sources.
+11,281 tokens  ·  $0.0028
 ```
 
-Every downstream artefact keeps its `start_ms`/`end_ms`, so a citation points at
-`12:34` in the media rather than at "chunk 7". That is the difference between a
-claim a reader can check in three seconds and one they have to take on trust.
+Six true claims through the same pipeline score 97%. The number moves for the
+right reason.
 
-## Why ASR confidence is load-bearing
+## Running it
 
-If the transcriber mishears a number, a fact-checker will happily verify a claim
-nobody made — and report high confidence in it, because internally everything
-agreed. Veracity carries per-word confidence from the ASR all the way into claim
-extraction, and a span below the threshold is never fact-checked. It is marked
-unclear instead, which is the honest outcome.
+Three processes. Postgres 16 with pgvector, and `ffmpeg` on the PATH.
+
+```bash
+cd backend && ./venv/bin/uvicorn app.main:app --port 8080
+cd backend && ./venv/bin/python -m app.jobs.worker
+cd frontend && npm run dev          # http://localhost:5174
+```
+
+See `backend/README.md` for configuration and the things that will bite.
 
 ## Layout
 
 ```
 backend/
   app/
-    api/         FastAPI routes
-    ingest/      resolve, probe, audio, transcribe, chunk, embed
-    analysis/    claims, verify, perspectives, confidence
-    jobs/        durable Postgres-backed queue and worker
+    api/         routes, auth, schemas
+    ingest/      probe, audio, transcribe, chunk, resolve
+    analysis/    claims, search, verify, perspectives, confidence, pipeline
+    jobs/        durable Postgres queue, worker, handlers
     db/          models, session, row-level security
-  migrations/    alembic
-  tests/
-docs/
+  tests/         57, against real Postgres and real ffmpeg
+frontend/        React 19 + Vite
 ```
-
-## Running it
-
-See `backend/README.md`. Postgres 16 with pgvector and `ffmpeg` on the PATH are
-the only hard prerequisites; transcription defaults to Groq's hosted Whisper so
-there is no model to download.
