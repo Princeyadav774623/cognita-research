@@ -51,6 +51,51 @@ all, so every `Word.measured` is `False` there and `True` under faster-whisper.
 The distinction reaches the database because a fact-checker that verifies a
 misheard number will report high confidence in a claim nobody made.
 
+## The API
+
+```bash
+set -a; . ./.env; set +a
+./venv/bin/uvicorn app.main:app --port 8080   # one terminal
+./venv/bin/python -m app.jobs.worker          # another
+```
+
+| | |
+|---|---|
+| `POST /api/media` | upload a file, returns `202` with an id |
+| `POST /api/media/url` | submit a link — `501` unless `ALLOW_REMOTE_FETCH` |
+| `GET /api/media` | your items, newest first |
+| `GET /api/media/{id}` | state and metadata |
+| `GET /api/media/{id}/transcript` | `409` until the state is `ready` |
+| `DELETE /api/media/{id}` | row, segments, chunks and files |
+| `GET /health` | database, isolation, configuration |
+
+Upload returns as soon as the row exists. Transcribing an hour takes minutes and
+holding the request open for it would exceed every proxy between here and the
+browser.
+
+Three things the routes do deliberately:
+
+- **The size cap counts bytes actually written**, not `Content-Length`, which
+  the client controls. The body streams to disk a megabyte at a time, so a
+  2 GB upload never sits in memory, and a refusal removes both the partial file
+  and its row.
+- **Another tenant's id returns `404`, not `403`.** A 403 confirms that an id
+  exists to somebody who cannot see it.
+- **A transcript that is not ready is `409`, not `200` with an empty list.**
+  "No transcript yet" and "a transcript with nothing in it" are different
+  answers to the same request.
+
+### URL submission is off by default
+
+Fetching from a third-party host generally breaches its terms of service:
+defensible for a tool someone runs themselves, a liability for a hosted service.
+`ALLOW_REMOTE_FETCH` makes that a deployer's decision.
+
+When it is on, submitted URLs are resolved and checked before yt-dlp sees them.
+A URL resolving to a private, loopback or link-local address is refused —
+otherwise "paste a link" is a server-side request forgery primitive, and
+`http://169.254.169.254/latest/meta-data/` reads cloud credentials.
+
 ## The queue
 
 Jobs live in Postgres, not in memory and not in a broker. A worker claims one by
