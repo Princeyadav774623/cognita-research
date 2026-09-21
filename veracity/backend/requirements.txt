@@ -1,0 +1,24 @@
+# Web
+fastapi==0.121.2
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+httpx==0.28.1
+
+# Data
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.10
+pgvector==0.4.1
+alembic==1.20.0
+
+# Retrieval
+fastembed==0.5.1
+
+# Auth
+PyJWT[crypto]==2.10.1
+
+# Ingestion. ffmpeg and yt-dlp are system binaries, not packages -- see README.
+# faster-whisper is optional and only needed for ASR_BACKEND=faster-whisper.
+
+# Dev
+pytest==8.3.4
+pytest-asyncio==0.25.2
