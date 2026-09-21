@@ -51,6 +51,28 @@ all, so every `Word.measured` is `False` there and `True` under faster-whisper.
 The distinction reaches the database because a fact-checker that verifies a
 misheard number will report high confidence in a claim nobody made.
 
+## The queue
+
+Jobs live in Postgres, not in memory and not in a broker. A worker claims one by
+setting a lease into the future; if it dies, the lease expires and the next
+worker to poll picks the job up. `FOR UPDATE SKIP LOCKED` is what makes that
+safe with several workers running — each locks the row it takes and skips rows
+someone else holds, so ten workers polling one table never hand out the same job
+twice. There is a test that asserts exactly that with ten threads.
+
+Keeping the queue in the same database as the rows means a media item and the
+job that processes it commit together: a job can never reference a row that was
+rolled back, and a row can never exist with no job to process it.
+
+```bash
+./venv/bin/python -m app.jobs.worker            # all kinds
+./venv/bin/python -m app.jobs.worker ingest     # one kind
+```
+
+Long stages call `heartbeat()` to push their lease out. Transcribing an hour of
+audio outlasts any lease short enough to recover quickly from a crash, and
+extending as you go gives both.
+
 ## Known limitation: words at a part boundary
 
 Splitting cuts on time, not on speech, so a word straddling a boundary is
