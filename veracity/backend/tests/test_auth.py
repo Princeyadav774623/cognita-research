@@ -90,15 +90,13 @@ class TestRejects:
 
 
 class TestGuestMode:
-    @pytest.mark.asyncio
-    async def test_no_token_is_refused_when_guest_mode_is_off(self, symmetric):
+    def test_no_token_is_refused_when_guest_mode_is_off(self, symmetric):
         with pytest.raises(HTTPException) as e:
-            await symmetric.current_principal(authorization=None)
+            symmetric.current_principal(authorization=None)
         assert e.value.status_code == 401
         assert e.value.headers["WWW-Authenticate"] == "Bearer"
 
-    @pytest.mark.asyncio
-    async def test_guest_mode_hands_out_one_shared_identity(self, monkeypatch):
+    def test_guest_mode_hands_out_one_shared_identity(self, monkeypatch):
         """Worth asserting rather than assuming: in guest mode every request is
         the same tenant, so row-level security separates nothing. It is a
         development affordance and startup warns about it."""
@@ -109,12 +107,11 @@ class TestGuestMode:
                                   allow_guest=True)
         monkeypatch.setattr(auth, "settings", lambda: cfg)
 
-        a = await auth.current_principal(authorization=None)
-        b = await auth.current_principal(authorization=None)
+        a = auth.current_principal(authorization=None)
+        b = auth.current_principal(authorization=None)
         assert a.is_guest and a.user_id == b.user_id
 
-    @pytest.mark.asyncio
-    async def test_a_bearer_token_still_wins_over_guest_mode(self, monkeypatch):
+    def test_a_bearer_token_still_wins_over_guest_mode(self, monkeypatch):
         import dataclasses
 
         import app.api.auth as auth
@@ -122,5 +119,5 @@ class TestGuestMode:
                                   allow_guest=True)
         monkeypatch.setattr(auth, "settings", lambda: cfg)
 
-        p = await auth.current_principal(authorization=f"Bearer {token()}")
+        p = auth.current_principal(authorization=f"Bearer {token()}")
         assert p.user_id == "user-123" and not p.is_guest

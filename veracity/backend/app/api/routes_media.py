@@ -28,7 +28,7 @@ UPLOAD_CHUNK = 1024 * 1024
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED,
              response_model=MediaSummary)
-async def upload(file: UploadFile = File(...),
+def upload(file: UploadFile = File(...),
                  principal: Principal = Depends(current_principal)):
     """Accept a file and queue it.
 
@@ -36,6 +36,10 @@ async def upload(file: UploadFile = File(...),
     minutes, and holding the request open for it would exceed every proxy
     timeout between here and the browser — the status endpoint is how progress
     is followed.
+
+    A plain function, like every route here that does I/O. Declared `async`, its
+    database calls, ffprobe and the storage upload would run on the event loop,
+    and every other request on the process would wait for them.
     """
     if not file.filename:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "no filename given")
@@ -63,7 +67,7 @@ async def upload(file: UploadFile = File(...),
         # takes the process down, and Content-Length is a claim by the client
         # rather than a fact, so the cap is enforced against bytes seen.
         with open(dest, "wb") as out:
-            while chunk := await file.read(UPLOAD_CHUNK):
+            while chunk := file.file.read(UPLOAD_CHUNK):
                 written += len(chunk)
                 if written > settings().max_upload_bytes:
                     raise HTTPException(
@@ -124,7 +128,7 @@ async def upload(file: UploadFile = File(...),
 
 @router.post("/url", status_code=status.HTTP_202_ACCEPTED,
              response_model=MediaSummary)
-async def submit_url(body: SubmitUrl,
+def submit_url(body: SubmitUrl,
                      principal: Principal = Depends(current_principal)):
     """Queue media at a URL, if this deployment permits fetching."""
     if not settings().allow_remote_fetch:
@@ -163,7 +167,7 @@ async def submit_url(body: SubmitUrl,
 
 
 @router.get("", response_model=MediaList)
-async def list_media(principal: Principal = Depends(current_principal),
+def list_media(principal: Principal = Depends(current_principal),
                      limit: int = Query(default=50, ge=1, le=200),
                      offset: int = Query(default=0, ge=0)):
     with app_session(principal.user_id) as session:
@@ -174,7 +178,7 @@ async def list_media(principal: Principal = Depends(current_principal),
 
 
 @router.get("/{media_id}", response_model=MediaSummary)
-async def get_media(media_id: str,
+def get_media(media_id: str,
                     principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)
@@ -187,7 +191,7 @@ async def get_media(media_id: str,
 
 
 @router.get("/{media_id}/transcript", response_model=TranscriptOut)
-async def get_transcript(media_id: str,
+def get_transcript(media_id: str,
                          principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)
@@ -215,7 +219,7 @@ async def get_transcript(media_id: str,
 
 
 @router.delete("/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_media(media_id: str,
+def delete_media(media_id: str,
                        principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)

@@ -151,3 +151,78 @@ class TestSsrfGuard:
     def test_a_public_url_passes_the_guard(self):
         from app.ingest.resolve import check_url_is_fetchable
         check_url_is_fetchable("https://example.com/watch?v=abc")
+
+
+class TestEventLoop:
+    """Blocking work must never run on the event loop.
+
+    The whole API process serves every request from one loop. A route declared
+    `async` that then makes a synchronous database call, runs ffprobe, or waits
+    on a model holds that loop, and every other user on the process waits with
+    it — for as long as a model call with retries takes, which is minutes.
+    """
+
+    def test_no_route_or_auth_dependency_is_async(self):
+        """Every route here does I/O through synchronous libraries, so none may
+        be a coroutine. A new one that is will fail this until it is not."""
+        import inspect
+
+        from fastapi.routing import APIRoute
+
+        from app.api.auth import current_principal
+        from app.main import app
+
+        offenders = [r.path for r in app.routes
+                     if isinstance(r, APIRoute)
+                     and inspect.iscoroutinefunction(r.endpoint)]
+        assert offenders == []
+        assert not inspect.iscoroutinefunction(current_principal)
+
+    def test_a_slow_question_does_not_stall_other_requests(self, client,
+                                                           monkeypatch):
+        """Timed from when both requests start. Were /ask on the event loop, the
+        quota request could not even begin until the model call returned."""
+        import asyncio
+        import time
+
+        import httpx
+
+        from app.db.models import MediaItem, MediaState
+        from app.db.session import app_session
+        from app.main import app
+
+        with app_session("guest-local") as s:
+            m = MediaItem(user_id="guest-local", source_kind="upload",
+                          original_filename="talk.mp4", state=MediaState.ready)
+            s.add(m); s.flush()
+            media_id = m.id
+
+        def slow_model(*_a, **_k):
+            time.sleep(1.5)
+            return {"answered": True, "answer": "It is large.", "used": [0]}
+
+        monkeypatch.setattr("app.api.routes_ask.complete_json", slow_model)
+        monkeypatch.setattr(
+            "app.analysis.retrieve.retrieve",
+            lambda *_a, **_k: [{"start_ms": 0, "end_ms": 1000,
+                                "text": "the reef is large"}])
+
+        async def scenario():
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(transport=transport,
+                                         base_url="http://test") as c:
+                started = time.monotonic()
+                ask = asyncio.create_task(c.post(
+                    f"/api/media/{media_id}/ask",
+                    json={"question": "how big is the reef?"}))
+                await asyncio.sleep(0.3)
+                quota = await c.get("/api/quota")
+                quota_at = time.monotonic() - started
+                answer = await ask
+            return quota, quota_at, answer
+
+        quota, quota_at, answer = asyncio.run(scenario())
+        assert quota.status_code == 200
+        assert answer.status_code == 200 and answer.json()["answered"] is True
+        assert quota_at < 1.0, (
+            f"the quota request waited {quota_at:.2f}s behind a slow question")

@@ -87,6 +87,11 @@ class Settings:
     # ---- jobs -----------------------------------------------------------
     job_lease_seconds: int = _int("JOB_LEASE_SECONDS", 900)
     job_max_attempts: int = _int("JOB_MAX_ATTEMPTS", 3)
+    # The lease is kept alive from a background thread for at most this long.
+    # Past it the worker is presumed hung, the lease lapses, and another worker
+    # takes the job. Set above the slowest legitimate job: a 30-minute download
+    # plus local transcription of the longest permitted media.
+    job_max_runtime_seconds: int = _int("JOB_MAX_RUNTIME_SECONDS", 3 * 60 * 60)
     worker_poll_seconds: float = _float("WORKER_POLL_SECONDS", 2.0)
 
     # ---- quotas ---------------------------------------------------------
