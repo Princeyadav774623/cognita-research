@@ -113,13 +113,13 @@ yourdomain.com {
          → APIs & Services → Credentials → **Create Credentials → OAuth client ID**.
          - Application type: **Web application**
          - Authorized redirect URI — must be exactly:
-           `https://ompwetifzchffuwlkgad.supabase.co/auth/v1/callback`
+           `https://birxycoynsaqlhreesoz.supabase.co/auth/v1/callback`
          - Save, then copy the **Client ID** and **Client Secret** it generates.
          - First time only: you'll be prompted to configure the **OAuth
            consent screen** first (app name, support email, and your domain
            once you have one).
       2. **Supabase Dashboard** →
-         [Authentication → Providers → Google](https://supabase.com/dashboard/project/ompwetifzchffuwlkgad/auth/providers)
+         [Authentication → Providers → Google](https://supabase.com/dashboard/project/birxycoynsaqlhreesoz/auth/providers)
          → toggle it on → paste the Client ID and Client Secret → Save.
 
       Nothing else to do — the frontend checks this setting itself and shows
