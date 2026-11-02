@@ -95,6 +95,14 @@ uvicorn api.main:app --reload --port 8000
 API is now live at: http://localhost:8000
 Docs at: http://localhost:8000/docs   ← Test all endpoints here
 
+Then, in a second terminal, the worker that actually runs the research. The API
+only queues a request; without a worker, research sits at "Researching" forever.
+
+```bash
+cd backend
+python -m worker
+```
+
 ## Step 6: Start the Frontend
 
 ```bash

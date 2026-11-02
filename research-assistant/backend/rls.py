@@ -43,6 +43,11 @@ _DIRECT_TABLES = (
     "rag_documents",
     "rag_conversations",
     "user_subscriptions",
+    "research_jobs",
+    # Carries user_id itself rather than deriving it from research_jobs: the
+    # WebSocket polls this table several times a second per open run, and a
+    # subquery per row on every poll is cost for no extra safety.
+    "research_events",
 )
 
 # Tables that reach their owner through a parent row. Chunks and messages have
@@ -55,10 +60,17 @@ _DERIVED_TABLES = {
 
 
 def _role_from_url(url: str) -> str | None:
+    """The Postgres role a URL logs in as.
+
+    Supabase's connection pooler takes the user as `<role>.<project-ref>` and
+    strips the suffix itself, so the role is the part before the dot. Role
+    names here never contain a dot, so this is a no-op for direct connections.
+    """
     try:
-        return urlsplit(url).username
+        username = urlsplit(url).username
     except Exception:
         return None
+    return username.split(".", 1)[0] if username else None
 
 
 def _direct_predicate() -> str:

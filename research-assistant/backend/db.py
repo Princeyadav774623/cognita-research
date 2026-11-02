@@ -149,7 +149,8 @@ def _alembic_config():
     cfg = Config(os.path.join(os.path.dirname(os.path.abspath(__file__)), "alembic.ini"))
     cfg.set_main_option("script_location",
                         os.path.join(os.path.dirname(os.path.abspath(__file__)), "migrations"))
-    cfg.set_main_option("sqlalchemy.url", DB_URL)
+    # ConfigParser reads % as interpolation; a percent-encoded password needs it doubled.
+    cfg.set_main_option("sqlalchemy.url", DB_URL.replace("%", "%%"))
     # Tells env.py it is running inside the app, not the CLI, so it leaves the
     # application's logging configuration alone.
     cfg.attributes["embedded"] = True

@@ -46,8 +46,8 @@ class Question(BaseModel):
 
 
 @router.post("")
-async def ask(media_id: str, body: Question,
-              principal: Principal = Depends(current_principal)):
+def ask(media_id: str, body: Question,
+        principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)
         if media is None:
@@ -61,31 +61,35 @@ async def ask(media_id: str, body: Question,
         from app.analysis.retrieve import retrieve
         passages = retrieve(session, media_id, body.question)
 
-        if not passages:
-            return {
-                "answered": False,
-                "answer": "Nothing in this transcript bears on that question.",
-                "passages": [],
-            }
-
-        excerpts = "\n\n".join(
-            f"[{timecode(p['start_ms'])}] {p['text']}" for p in passages
-        )
-        payload = complete_json(
-            SYSTEM,
-            f"Question: {body.question}\n\nExcerpts:\n\n{excerpts}",
-            model=settings().model_smart,
-        )
-
-        used = set(payload.get("used") or [])
+    # The session is closed before the model is called. The call can take
+    # minutes once retries are counted, and a request holding a pooled
+    # connection that long lets a handful of slow questions starve every other
+    # request of a connection.
+    if not passages:
         return {
-            "answered": bool(payload.get("answered")),
-            "answer": (payload.get("answer") or "").strip(),
-            "passages": [{
-                "at": timecode(p["start_ms"]),
-                "start_ms": p["start_ms"],
-                "end_ms": p["end_ms"],
-                "text": p["text"],
-                "used": p["start_ms"] in used,
-            } for p in passages],
+            "answered": False,
+            "answer": "Nothing in this transcript bears on that question.",
+            "passages": [],
         }
+
+    excerpts = "\n\n".join(
+        f"[{timecode(p['start_ms'])}] {p['text']}" for p in passages
+    )
+    payload = complete_json(
+        SYSTEM,
+        f"Question: {body.question}\n\nExcerpts:\n\n{excerpts}",
+        model=settings().model_smart,
+    )
+
+    used = set(payload.get("used") or [])
+    return {
+        "answered": bool(payload.get("answered")),
+        "answer": (payload.get("answer") or "").strip(),
+        "passages": [{
+            "at": timecode(p["start_ms"]),
+            "start_ms": p["start_ms"],
+            "end_ms": p["end_ms"],
+            "text": p["text"],
+            "used": p["start_ms"] in used,
+        } for p in passages],
+    }

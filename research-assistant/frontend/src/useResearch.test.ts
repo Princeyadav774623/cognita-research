@@ -9,16 +9,24 @@ import type { ProgressEvent } from "./api";
 // the error transitions all had no coverage at all.
 const mocks = vi.hoisted(() => ({
   emit: null as null | ((e: ProgressEvent) => void),
+  sessionId: "",
+  query: "",
   close: vi.fn(),
   fetchSession: vi.fn(),
+  cancelResearch: vi.fn(),
 }));
 
 vi.mock("./api", () => ({
-  runResearchStream: (_t: string, _q: string, onEvent: (e: ProgressEvent) => void) => {
+  runResearchStream: (
+    _t: string, q: string, onEvent: (e: ProgressEvent) => void, sessionId: string,
+  ) => {
     mocks.emit = onEvent;
+    mocks.sessionId = sessionId;
+    mocks.query = q;
     return mocks.close;
   },
   fetchSession: (...args: unknown[]) => mocks.fetchSession(...args),
+  cancelResearch: (...args: unknown[]) => mocks.cancelResearch(...args),
 }));
 
 const send = (e: ProgressEvent) => act(() => { mocks.emit!(e); });
@@ -28,6 +36,8 @@ describe("useResearch", () => {
     mocks.emit = null;
     mocks.close.mockClear();
     mocks.fetchSession.mockReset();
+    mocks.cancelResearch.mockReset().mockResolvedValue(undefined);
+    localStorage.clear();
   });
 
   it("starts idle and moves to running", () => {
@@ -63,22 +73,12 @@ describe("useResearch", () => {
 
     const { result } = renderHook(() => useResearch());
     act(() => result.current.start("tok", "q"));
-    send({ type: "start", session_id: "s1" });
     send({ type: "complete" });
 
     await waitFor(() => expect(result.current.phase).toBe("done"));
     expect(result.current.result).toEqual(record);
-    expect(mocks.fetchSession).toHaveBeenCalledWith("tok", "s1");
-  });
-
-  it("errors rather than hanging when completion carries no session id", async () => {
-    const { result } = renderHook(() => useResearch());
-    act(() => result.current.start("tok", "q"));
-    send({ type: "complete" });
-
-    await waitFor(() => expect(result.current.phase).toBe("error"));
-    expect(result.current.error).toMatch(/no session id/i);
-    expect(mocks.fetchSession).not.toHaveBeenCalled();
+    // The id the client chose when it started the run, not one the server sent.
+    expect(mocks.fetchSession).toHaveBeenCalledWith("tok", mocks.sessionId);
   });
 
   it("surfaces a server error message", () => {
@@ -96,7 +96,6 @@ describe("useResearch", () => {
 
     const { result } = renderHook(() => useResearch());
     act(() => result.current.start("tok", "q"));
-    send({ type: "start", session_id: "s1" });
     send({ type: "complete" });
 
     await waitFor(() => expect(result.current.phase).toBe("error"));
@@ -110,8 +109,6 @@ describe("useResearch", () => {
 
     act(() => result.current.reset());
 
-    // Closing is what triggers the server-side quota refund, so it must
-    // actually happen — not just clear the UI.
     expect(mocks.close).toHaveBeenCalled();
     expect(result.current.phase).toBe("idle");
     expect(result.current.streamedReport).toBe("");
@@ -127,5 +124,59 @@ describe("useResearch", () => {
 
     expect(result.current.streamedReport).toBe("");
     expect(result.current.phase).toBe("running");
+  });
+
+  it("drops progress from an abandoned attempt when the run restarts", () => {
+    const { result } = renderHook(() => useResearch());
+    act(() => result.current.start("tok", "q"));
+    send({ type: "progress", node: "search", data: { message: "Found 12 sources" } });
+    send({ type: "token", text: "half a report" });
+
+    send({ type: "restart", message: "Hit an error — retrying from the start" });
+
+    expect(result.current.streamedReport).toBe("");
+    expect(result.current.steps).toEqual([
+      { node: "restart", message: "Hit an error — retrying from the start" },
+    ]);
+    expect(result.current.phase).toBe("running");
+  });
+
+  it("stop cancels the run on the server", async () => {
+    const { result } = renderHook(() => useResearch());
+    act(() => result.current.start("tok", "q"));
+    const id = mocks.sessionId;
+
+    await act(() => result.current.stop("tok"));
+
+    // Closing the socket no longer stops the server-side run; only this does.
+    expect(mocks.cancelResearch).toHaveBeenCalledWith("tok", id);
+    expect(result.current.phase).toBe("idle");
+  });
+
+  it("resumes the run it was watching after a reload", () => {
+    const first = renderHook(() => useResearch());
+    act(() => first.result.current.start("tok", "why is the sky blue"));
+    const id = mocks.sessionId;
+    first.unmount();
+
+    // A fresh hook, as after a page reload.
+    const { result } = renderHook(() => useResearch());
+    act(() => result.current.resume("tok2"));
+
+    expect(result.current.phase).toBe("running");
+    expect(mocks.sessionId).toBe(id);
+    expect(mocks.query).toBe("why is the sky blue");
+  });
+
+  it("forgets the run once it finishes", async () => {
+    mocks.fetchSession.mockResolvedValue({ session_id: "x" });
+    const { result } = renderHook(() => useResearch());
+    act(() => result.current.start("tok", "q"));
+    send({ type: "complete" });
+    await waitFor(() => expect(result.current.phase).toBe("done"));
+
+    const next = renderHook(() => useResearch());
+    act(() => next.result.current.resume("tok"));
+    expect(next.result.current.phase).toBe("idle");
   });
 });

@@ -9,7 +9,7 @@ RUN npm ci
 # Vite inlines VITE_* vars into the bundle at build time, so they have to be
 # present during `npm run build` — passing them to the runtime container has
 # no effect. VITE_API_URL is intentionally allowed to be empty: that makes the
-# bundle use same-origin paths and go through nginx (see nginx.conf).
+# bundle use same-origin paths and go through nginx (see nginx.conf.template).
 ARG VITE_API_URL=""
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
@@ -24,7 +24,10 @@ RUN npm run build
 FROM nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+# Where /api and /ws are proxied to. The compose service by default; set it to
+# the API's URL anywhere else (e.g. a Cloud Run service URL).
+ENV BACKEND_URL=http://backend:8000
 
 EXPOSE 80
 

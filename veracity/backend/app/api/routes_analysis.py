@@ -23,7 +23,7 @@ class AnalysisRequest(BaseModel):
 
 
 @router.post("", status_code=status.HTTP_202_ACCEPTED)
-async def request_analysis(media_id: str, body: AnalysisRequest,
+def request_analysis(media_id: str, body: AnalysisRequest,
                            principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         media = session.get(MediaItem, media_id)
@@ -70,7 +70,7 @@ async def request_analysis(media_id: str, body: AnalysisRequest,
 
 
 @router.get("")
-async def list_analyses(media_id: str,
+def list_analyses(media_id: str,
                         principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         if session.get(MediaItem, media_id) is None:
@@ -84,7 +84,7 @@ async def list_analyses(media_id: str,
 
 
 @router.get("/{analysis_id}")
-async def get_analysis(media_id: str, analysis_id: str,
+def get_analysis(media_id: str, analysis_id: str,
                        principal: Principal = Depends(current_principal)):
     with app_session(principal.user_id) as session:
         analysis = session.get(Analysis, analysis_id)

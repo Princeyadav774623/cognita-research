@@ -139,7 +139,7 @@ app.include_router(routes_quota.router)
 
 
 @app.get("/metrics", tags=["meta"], include_in_schema=False)
-async def prometheus_metrics():
+def prometheus_metrics():
     """Scrape endpoint.
 
     Queue depth is read here rather than tracked incrementally: a counter
@@ -173,7 +173,7 @@ async def prometheus_metrics():
 
 
 @app.get("/health", tags=["meta"])
-async def health():
+def health():
     """Liveness plus the facts a deployment check actually wants."""
     from app.db import rls
     from app.db.session import owner_engine

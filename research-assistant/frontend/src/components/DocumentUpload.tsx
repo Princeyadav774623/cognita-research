@@ -10,7 +10,7 @@ const STATUS_LABEL: Record<RagDocument["status"], string> = {
 };
 
 // Mirrors MAX_FILE_SIZE_BYTES in backend/rag/ingest.py and client_max_body_size
-// in frontend/nginx.conf. Checked here purely so an oversized file is rejected
+// in frontend/nginx.conf.template. Checked here purely so an oversized file is rejected
 // instantly instead of after a long upload that the server will refuse anyway.
 const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024;
 
