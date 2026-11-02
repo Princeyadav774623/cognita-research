@@ -1,6 +1,6 @@
 // Empty base = same-origin relative paths, which is what a real deployment
 // wants: the browser calls /api/... on the frontend's own origin and nginx
-// reverse-proxies to the backend (see nginx.conf), so the backend port never
+// reverse-proxies to the backend (see nginx.conf.template), so the backend port never
 // has to be publicly reachable. Local `vite dev` sets VITE_API_URL to point
 // at http://localhost:8000 directly (see frontend/.env.example).
 export const API_BASE = import.meta.env.VITE_API_URL || "";
@@ -46,7 +46,11 @@ export interface SessionRecord extends ResearchResult {
 }
 
 export interface ProgressEvent {
-  type: "start" | "progress" | "complete" | "error" | "token";
+  /** "restart": the run is starting over (a retry, or a server restart) —
+   *  progress and streamed text from before it no longer apply. */
+  type: "start" | "progress" | "complete" | "error" | "token" | "restart" | "keepalive";
+  /** The server's event id; sent back as `after` to resume without repeats. */
+  seq?: number;
   /** Present on "token" events — a fragment of the report as it is written. */
   text?: string;
   node?: string;
@@ -81,42 +85,52 @@ export async function deleteSession(token: string, sessionId: string): Promise<v
   if (!res.ok) throw new Error(`Failed to delete session (${res.status})`);
 }
 
-// Bound the cold-start retries. A host that spins the backend down when idle
+export async function cancelResearch(token: string, sessionId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/research/${sessionId}/cancel`, {
+    method: "POST",
+    headers: authHeaders(token),
+  });
+  // 409: it finished before the request landed. Nothing left to stop.
+  if (!res.ok && res.status !== 409) throw new Error(`Failed to stop research (${res.status})`);
+}
+
+// Bound the reconnect retries. A host that spins the backend down when idle
 // (Render's free tier does so after 15 minutes) refuses the WebSocket
 // handshake outright until the instance is back, which takes up to a minute
 // — long enough that a single attempt reads as "the app is broken". Eight
-// attempts on exponential backoff spread ~60s of waiting across the gap.
+// consecutive failures on exponential backoff spread ~60s across the gap.
 const MAX_CONNECT_ATTEMPTS = 8;
 const RECONNECT_BASE_DELAY_MS = 1000;
 const RECONNECT_MAX_DELAY_MS = 15000;
 
 /**
- * Opens the research WebSocket, sends the query + auth token, and streams
- * progress events back through onEvent until completion or error. Browsers
- * can't set custom headers on a WebSocket handshake, so the token rides in
- * the first message payload instead.
+ * Opens the research WebSocket and streams the run's events back through
+ * onEvent until completion or error. Browsers can't set custom headers on a
+ * WebSocket handshake, so the token rides in the first message instead.
  *
- * Retries the handshake on backoff, but only while the server has stayed
- * silent — see `serverSpoke` for why a drop mid-run can't be retried.
+ * The research runs on the server whether or not this socket is open, so any
+ * drop — before the first byte or halfway through the report — is retried.
+ * Two things make that safe:
+ *   - `sessionId` is chosen here, not by the server. A retry names the same
+ *     run, so it attaches to it instead of queueing (and billing) another.
+ *   - `after` is the last event id received, so a resumed stream continues
+ *     where it left off rather than replaying text already on screen.
  */
 export function runResearchStream(
   token: string,
   query: string,
-  onEvent: (event: ProgressEvent) => void
+  onEvent: (event: ProgressEvent) => void,
+  sessionId: string = crypto.randomUUID()
 ): () => void {
   let socket: WebSocket | null = null;
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let attempts = 0;
+  let after = 0;
   // Once we've received a terminal event, the server closes its end on its
   // own — a client-side close right after that races with the server's
   // close and can surface as a spurious "error" event in the browser even
   // though the research already succeeded. This flag suppresses that noise.
   let finished = false;
-  // Whether the server has sent anything on this run. Reconnecting is only
-  // safe before it has: the backend reserves a query against the user's
-  // monthly quota as soon as the pipeline starts, so a retry after that
-  // point would run the research twice and bill for both.
-  let serverSpoke = false;
   let cancelled = false;
   let announcedWait = false;
 
@@ -125,13 +139,15 @@ export function runResearchStream(
     socket = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ query, token }));
+      ws.send(JSON.stringify({ token, query, session_id: sessionId, after }));
     };
 
     ws.onmessage = (msg) => {
-      serverSpoke = true;
+      attempts = 0;
       try {
         const event: ProgressEvent = JSON.parse(msg.data);
+        if (event.type === "keepalive") return;
+        if (typeof event.seq === "number") after = event.seq;
         if (event.type === "complete" || event.type === "error") {
           finished = true;
         }
@@ -144,16 +160,9 @@ export function runResearchStream(
 
     // A refused handshake fires onerror and then onclose, so onclose is the
     // single place that sees every failure — both a backend that isn't up
-    // yet and a connection dropped mid-stream — and can tell them apart.
+    // yet and a connection dropped mid-stream.
     ws.onclose = () => {
       if (cancelled || finished) return;
-      if (serverSpoke) {
-        onEvent({
-          type: "error",
-          message: "Connection lost while researching. Please try again.",
-        });
-        return;
-      }
       scheduleRetry();
     };
   };
@@ -163,7 +172,7 @@ export function runResearchStream(
     if (attempts >= MAX_CONNECT_ATTEMPTS) {
       onEvent({
         type: "error",
-        message: "Could not reach the server. Please try again in a moment.",
+        message: "Could not reach the server. Your research is still running — reload to check on it.",
       });
       return;
     }
@@ -177,8 +186,7 @@ export function runResearchStream(
         node: "connect",
         step: "Connecting",
         data: {
-          message:
-            "Waking up the server — this can take up to a minute after a period of inactivity.",
+          message: "Reconnecting to the server — your research keeps running meanwhile.",
         },
       });
     }

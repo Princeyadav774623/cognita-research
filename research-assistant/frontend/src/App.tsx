@@ -120,7 +120,9 @@ function AuthenticatedApp({
   onSignOut?: () => void;
 }) {
   const [tab, setTab] = useState<Tab>("research");
-  const { phase, steps, result, error, streamedReport, start, reset } = useResearch();
+  const { phase, steps, result, error, streamedReport, start, resume, reset, stop } = useResearch();
+  // A run started before a refresh is still going on the server.
+  useEffect(() => { resume(accessToken); }, [resume, accessToken]);
   const [historyKey, setHistoryKey] = useState(0);
   const [viewingHistorical, setViewingHistorical] = useState<SessionRecord | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -209,14 +211,17 @@ function AuthenticatedApp({
     setStopNotice(null);
   };
 
-  // Closing the socket is what triggers the refund: the server treats a
-  // disconnect before the report was saved exactly like a failed run and hands
-  // the reserved query back. Saying so matters — the user is watching a
+  // Cancelling on the server is what triggers the refund — closing the socket
+  // no longer stops anything. Saying so matters: the user is watching a
   // counter they only get ten of a month.
-  const handleStop = () => {
-    reset();
+  const handleStop = async () => {
     setViewingHistorical(null);
-    setStopNotice("Research stopped. That query has been returned to your monthly allowance.");
+    try {
+      await stop(accessToken);
+      setStopNotice("Research stopped. That query has been returned to your monthly allowance.");
+    } catch {
+      setStopNotice("Couldn't reach the server to stop the research — it may still finish and appear in your history.");
+    }
     refreshQuota();
   };
 

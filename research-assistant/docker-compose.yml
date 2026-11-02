@@ -30,6 +30,31 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Runs the research itself. Same image as the API, different command: the
+  # API only queues a request, and this drains the queue (see backend/jobs.py).
+  # Scale with `docker compose up --scale worker=N` — jobs are claimed with
+  # FOR UPDATE SKIP LOCKED, so two workers never take the same one.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["python", "-m", "worker"]
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@db:5432/postgres}
+      - APP_DATABASE_URL=${APP_DATABASE_URL:-postgresql://postgres:postgres@db:5432/postgres}
+      - ENV=production
+    depends_on:
+      # The API runs the migrations; the worker needs the tables they create.
+      backend:
+        condition: service_started
+      db:
+        condition: service_healthy
+    # Time to hand a running job back to the queue before being killed.
+    stop_grace_period: 15s
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend
@@ -38,7 +63,7 @@ services:
         # Vite inlines this at build time, so it must be supplied to the
         # build, not the runtime container. Defaults to a same-origin
         # relative base so the browser's calls go through this container's
-        # nginx reverse proxy (see frontend/nginx.conf) rather than
+        # nginx reverse proxy (see frontend/nginx.conf.template) rather than
         # requiring the backend port to be publicly reachable.
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}

@@ -74,6 +74,16 @@ class Settings(BaseSettings):
     price_fast_input_per_mtok: float = 0.10
     price_fast_output_per_mtok: float = 0.50
 
+    # Research jobs one worker process runs at once. Every run shares the one
+    # Groq tokens-per-minute budget, so raising this past what that budget
+    # sustains makes every run slower rather than more of them finish.
+    worker_concurrency: int = 1
+    # Run the research worker inside the API process instead of as its own.
+    # For single-service hosts (one Cloud Run service, one small VM) where a
+    # second always-on process costs more than it is worth. The queue behaves
+    # the same either way; a separate worker scales independently.
+    embedded_worker: bool = False
+
     # env_file is resolved relative to the process's working directory, which
     # is backend/ for both `uvicorn api.main:app` and `pytest` as documented
     # in SETUP.md.

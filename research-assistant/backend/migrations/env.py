@@ -17,6 +17,7 @@ from config import get_settings  # noqa: E402
 from db import Base  # noqa: E402
 import billing  # noqa: E402,F401  — registers user_subscriptions on Base
 import rag.store  # noqa: E402,F401  — registers the rag_* tables
+import jobs  # noqa: E402,F401  — registers research_jobs and research_events
 
 config = context.config
 # Only configure logging for the Alembic CLI. init_db() runs migrations inside
@@ -26,7 +27,9 @@ config = context.config
 if config.config_file_name is not None and not config.attributes.get("embedded"):
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# Doubled %: alembic's config is a ConfigParser, which reads % as interpolation,
+# and a password with symbols in it is percent-encoded in the URL.
+config.set_main_option("sqlalchemy.url", get_settings().database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 

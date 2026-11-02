@@ -15,8 +15,30 @@ Serverless container platforms are a poor fit for that shape:
   pick serverless in the first place.
 
 A plain VPS has no request timeout, handles long-lived WebSockets normally, and
-costs the same whether idle or busy. Revisit this after research moves to a job
-queue (see "Known limits" below).
+costs the same whether idle or busy.
+
+Research now runs on a job queue (`backend/jobs.py`, drained by
+`python -m worker`), so this choice is no longer forced. The API only queues a
+request and relays progress; the run itself survives a dropped connection, a
+refresh and a deploy. Cloud Run is now workable — run the API as one service
+and the worker as another with instance-based billing and min-instances=1, so
+it can work outside requests. Its timeout can be raised to 60 minutes, and the
+WebSocket reconnects and resumes when it is cut.
+
+## Processes
+
+Three, all from the same backend image:
+
+| Process | Command | Notes |
+|---|---|---|
+| API | `uvicorn api.main:app` | Runs migrations on startup. |
+| Worker | `python -m worker` | Runs the research. Scale by running more; jobs are claimed with `FOR UPDATE SKIP LOCKED`. `WORKER_CONCURRENCY` sets runs per process (default 1 — the Groq budget is the real limit). |
+| Frontend | nginx serving the built SPA | Proxies `/api/` and `/ws/` to the API. |
+
+On SIGTERM a worker hands its running job back to the queue without spending
+one of the job's attempts, and the next worker restarts it. A worker that dies
+without warning loses its lease after 90 seconds and the job is retried once;
+if that attempt dies too, the job fails and the query is refunded.
 
 ---
 
@@ -129,7 +151,7 @@ yourdomain.com {
       simultaneous research queries will contend. The free tier's 10
       queries/month cap limits exposure, but upgrade before promoting the site.
 - [ ] **Verify the compose build** on the server. Statically validated on the
-      dev machine: `nginx -t` passes on `frontend/nginx.conf` (with the compose
+      dev machine: `nginx -t` passes on `frontend/nginx.conf.template` (with the compose
       service name substituted, since `backend` only resolves inside the compose
       network), `docker-compose.yml` parses and asserts correctly, and the
       backend `CMD` carries `--proxy-headers`. What is *not* verified is an
@@ -149,7 +171,7 @@ Honest accounting of what is not production-grade yet:
 |---|---|
 | Research latency | ~134s/query. Fine for a single user, slow for a product. |
 | Concurrency | Bounded by 8,000 TPM shared across all users. |
-| Durability | Research runs in-request; a deploy kills in-flight queries. |
+| Durability | Fixed — research runs on a Postgres job queue in a separate worker. A deploy restarts an in-flight run from the beginning (the pipeline has no mid-run checkpoint), but the run is not lost and the user is not charged twice. |
 | Payments | Backend (checkout + signed webhook) is built, but no Stripe keys are set and **the frontend never calls it** — "Upgrade to Pro" has no handler. Users cannot pay. |
 | Evaluation | Golden set in `backend/evals/` — run `python -m evals.run --answers` before shipping retrieval changes. |
 | Monitoring | No error tracking. Add Sentry before you have real users. |
@@ -157,6 +179,3 @@ Honest accounting of what is not production-grade yet:
 | Cold starts | Fixed — the embedding model now warms during server startup instead of on whichever user's request happens to be first (was 2.2s, now ~0.002s post-startup). |
 | Silent quality loss | Fixed — a source that couldn't be scraped (403, paywall) and fell back to a search-engine snippet is now disclosed in the report footer ("Full text extracted: X/Y web sources") instead of looking identical to a fully-read source. |
 | LLM-as-a-judge latency | Still on the critical path in RAG chat — adds ~0.87s (measured) to every response. Moving it to run async after the answer returns is scoped but not built; it needs either a polling endpoint or a follow-up WebSocket message to deliver the updated score, which is a small API contract change, not just a backend tweak. |
-
-The highest-value next step is moving research onto a job queue so a deploy
-stops killing in-flight work.
