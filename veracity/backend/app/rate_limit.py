@@ -24,6 +24,7 @@ from dataclasses import dataclass
 
 from fastapi import HTTPException, Request, status
 from sqlalchemy import text
+from starlette.concurrency import run_in_threadpool
 
 from app.db.session import owner_session
 
@@ -115,7 +116,9 @@ async def enforce(request: Request) -> None:
     limit = limit_for(request.method, request.url.path)
     key = f"{identity(request)}|{request.method}|{_bucket_path(request.url.path)}"
     try:
-        allowed, used, resets_in = check(key, limit)
+        # On the thread pool: this runs before every API request, and a
+        # database round trip on the event loop would serialise all of them.
+        allowed, used, resets_in = await run_in_threadpool(check, key, limit)
     except Exception as exc:
         # A limiter that takes the service down when its own storage hiccups is
         # worse than one that briefly lets traffic through. Fail open, loudly.

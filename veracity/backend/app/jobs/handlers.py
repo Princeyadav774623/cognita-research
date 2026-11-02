@@ -24,6 +24,7 @@ from app.ingest import audio as audio_mod
 from app.ingest.chunk import chunk_transcript
 from app.ingest.probe import probe
 from app.ingest.transcribe import transcribe_parts
+from app.jobs.queue import LeaseLost
 
 log = logging.getLogger("jobs.handlers")
 
@@ -39,9 +40,14 @@ def _now():
 
 
 def _work_dir(media_id: str) -> str:
-    """Scratch space for one job. Local by definition — ffmpeg needs a real
-    path — and deleted when the job finishes, whatever the backend."""
-    return os.path.join(tempfile.gettempdir(), "veracity-work", media_id)
+    """Scratch space for one attempt. Local by definition — ffmpeg needs a real
+    path — and deleted when the attempt ends, whatever the backend.
+
+    Unique per attempt, not per media item. Two workers can briefly hold the
+    same job — one whose lease lapsed and one that took it over — and on one
+    host a shared directory would have them overwrite each other's audio.
+    """
+    return tempfile.mkdtemp(prefix=f"veracity-{media_id}-")
 
 
 def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
@@ -60,7 +66,6 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
         return
 
     work = _work_dir(media_id)
-    os.makedirs(work, exist_ok=True)
 
     from app.storage import StorageError, storage
 
@@ -147,6 +152,7 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
             # badly across calls, and a two-hour transcript is a few hundred chunks.
             from app.ingest.embed import embed_passages
             vectors = embed_passages([c.text for c in chunks])
+            heartbeat()
 
             for c, vector in zip(chunks, vectors):
                 session.add(TranscriptChunk(
@@ -166,38 +172,23 @@ def ingest(session, payload: dict, heartbeat: Heartbeat) -> None:
                      media_id, len(transcript.segments), len(chunks),
                      transcript.mean_confidence)
 
-                # Scratch is large and nothing downstream reads it again.
-            _discard(work)
-
+    except LeaseLost:
+        # Another worker owns this item now; its state is theirs to write.
+        raise
     except Exception as exc:
-        _discard(_work_dir(media_id))
         # Record where it died before re-raising, so the row is informative even
-        # while the queue is still deciding whether to retry.
+        # while the queue is still deciding whether to retry. Refunds are not
+        # made here: see `GIVE_UP`.
+        session.rollback()
         media = session.get(MediaItem, media_id)
         if media is not None:
             media.state = MediaState.failed
             media.error = str(exc)[:2000]
             session.add(media)
-            # Refunded only when the queue has given up. Refunding on every
-            # attempt would hand back allowance for work that is about to be
-            # retried, and the user would end up paying for none of three tries.
-            if _final_attempt(session, "ingest", media_id):
-                from app.quota import refund
-                refund(session, media.user_id, meter="transcription_minutes",
-                       amount=(media.duration_ms or 0) / 60_000 or 1.0)
             session.commit()
         raise
-
-
-def _final_attempt(session, kind: str, media_id: str) -> bool:
-    """True when the job for this media has no attempts left."""
-    from sqlalchemy import text
-    row = session.execute(text("""
-        SELECT attempts, max_attempts FROM jobs
-        WHERE kind = :k AND payload->>'media_id' = :m
-        ORDER BY created_at DESC LIMIT 1
-    """), {"k": kind, "m": media_id}).first()
-    return bool(row) and row[0] >= row[1]
+    finally:
+        _discard(work)
 
 
 def _reconcile_minutes(session, media: MediaItem, actual_ms: int) -> None:
@@ -273,6 +264,9 @@ def analyze(session, payload: dict, heartbeat: Heartbeat) -> None:
         with ledger() as book:
             out = run_pipeline(segments, analysis.mode,
                                asr_confidence=media.asr_mean_confidence)
+        # The pipeline can run for many minutes. Confirm the job is still ours
+        # before writing, or a worker that lost it overwrites the new owner.
+        heartbeat()
 
         analysis.summary_md = out.get("summary") or None
         analysis.key_points = out.get("key_points") or None
@@ -295,7 +289,10 @@ def analyze(session, payload: dict, heartbeat: Heartbeat) -> None:
                  analysis.mode.value, analysis_id,
                  len(out.get("claims") or []), book.total, book.cost_usd())
 
+    except LeaseLost:
+        raise
     except Exception as exc:
+        session.rollback()
         analysis = session.get(Analysis, analysis_id)
         if analysis is not None:
             analysis.state = AnalysisState.failed
@@ -331,20 +328,20 @@ def fetch(session, payload: dict, heartbeat: Heartbeat) -> None:
         _set_state(session, media, MediaState.fetching)
         work = _work_dir(media_id)
         try:
-            got = resolve_mod.fetch(media.source_url, work)
-        except resolve_mod.ResolveError as exc:
-            media.state = MediaState.failed
-            media.error = str(exc)[:2000]
-            session.add(media)
-            session.commit()
-            raise HandlerError(str(exc)) from exc
+            try:
+                got = resolve_mod.fetch(media.source_url, work)
+            except resolve_mod.ResolveError as exc:
+                media.state = MediaState.failed
+                media.error = str(exc)[:2000]
+                session.add(media)
+                session.commit()
+                raise HandlerError(str(exc)) from exc
 
-        key = source_key(media_id, os.path.basename(got.path))
-        # Size read before the local copy is discarded, not after. The obvious
-        # order — upload, clean up, record — stats a file that no longer exists.
-        size = os.path.getsize(got.path)
-        storage().put(key, got.path)
-        _discard(os.path.dirname(got.path))
+            key = source_key(media_id, os.path.basename(got.path))
+            size = os.path.getsize(got.path)
+            storage().put(key, got.path)
+        finally:
+            _discard(work)
 
         media.source_key = key
         media.title = media.title or got.title
@@ -358,13 +355,56 @@ def fetch(session, payload: dict, heartbeat: Heartbeat) -> None:
                  os.path.basename(got.path))
     heartbeat()
 
-    # Chained in-process rather than enqueued: the file is on this worker's
-    # disk, and another worker picking up the ingest job would not find it.
+    # Chained in-process rather than enqueued, so a URL item has exactly one
+    # job from submission to ready. A failure in ingest therefore fails the
+    # fetch job, which is why the fetch job's give-up refunds the minutes too.
     ingest(session, {"media_id": media_id}, heartbeat)
+
+
+def _refund_media(session, payload: dict) -> None:
+    """Give back the minutes charged for media that will never be ready.
+
+    An upload is charged its measured length when it is received. A URL is
+    charged a nominal minute, and reconciled to its real length in the same
+    transaction that records `duration_ms` — so an item with no length on
+    record owes exactly that minute.
+    """
+    from app.quota import refund
+    media = session.get(MediaItem, payload["media_id"])
+    if media is None:
+        return
+    if media.duration_ms:
+        amount = media.duration_ms / 60_000
+    elif media.source_kind == "url":
+        amount = 1.0
+    else:
+        amount = 0.0
+    refund(session, media.user_id, meter="transcription_minutes",
+           amount=amount)
+
+
+def _refund_analysis(session, payload: dict) -> None:
+    """Give back the credits for an analysis that never completed."""
+    from app.quota import CREDITS, refund
+    analysis = session.get(Analysis, payload["analysis_id"])
+    if analysis is None:
+        return
+    refund(session, analysis.user_id, meter="analysis_credits",
+           amount=CREDITS[analysis.mode])
 
 
 HANDLERS: dict[str, Callable] = {
     "ingest": ingest,
     "fetch": fetch,
     "analyze": analyze,
+}
+
+# Run by the queue once a job of that kind has failed for the last time, in the
+# same transaction that marks it failed. Keyed by job kind rather than looked up
+# by media id, because what matters is which job the user was charged through —
+# a URL item is charged through `fetch` and never has an `ingest` job at all.
+GIVE_UP: dict[str, Callable] = {
+    "ingest": _refund_media,
+    "fetch": _refund_media,
+    "analyze": _refund_analysis,
 }

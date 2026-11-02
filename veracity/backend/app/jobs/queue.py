@@ -21,8 +21,9 @@ from __future__ import annotations
 import logging
 import socket
 import os
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Callable
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -33,6 +34,29 @@ from app.db.models import Job
 log = logging.getLogger("jobs")
 
 WORKER_ID = f"{socket.gethostname()}/{os.getpid()}"
+
+
+class LeaseLost(RuntimeError):
+    """Another worker now owns this job. Stop, and write nothing."""
+
+
+@dataclass(frozen=True)
+class Lease:
+    """Proof of which claim a worker is acting on.
+
+    Taken at claim time and never re-read from the row, because the row is
+    exactly what changes when the lease is lost: a stale worker that reloaded
+    its job would see the new owner's attempt number and pass its own check.
+    The attempt count is the fencing token — it increases on every claim, so
+    two claims of one job can never hold the same lease, even from one process.
+    """
+    job_id: str
+    attempt: int
+    holder: str
+
+    @classmethod
+    def of(cls, job: Job) -> "Lease":
+        return cls(job.id, job.attempts, job.leased_by)
 
 
 def _now() -> datetime:
@@ -100,58 +124,118 @@ def claim(session: Session, *, kinds: tuple[str, ...] | None = None,
     return session.get(Job, row[0])
 
 
-def heartbeat(session: Session, job: Job, *,
-              lease_seconds: int | None = None) -> None:
-    """Push the lease out. Long work must call this or it will be reclaimed.
+def _fenced(session: Session, lease: Lease, values: dict) -> bool:
+    """Update the job only if this lease still holds it. Does not commit.
 
-    Transcribing an hour of audio can exceed any sensible lease, and a lease long
-    enough to cover the worst case is too long to recover from a crash quickly.
-    Extending as you go gives both.
+    Every write a worker makes to its job goes through here. Without the fence,
+    a worker whose lease lapsed — a long pause, a laptop lid, a slow provider —
+    carries on and then marks done or re-queues a job another worker is midway
+    through.
     """
-    lease = lease_seconds or settings().job_lease_seconds
-    job.leased_until = _now() + timedelta(seconds=lease)
-    session.add(job)
+    n = (session.query(Job)
+         .filter(Job.id == lease.job_id,
+                 Job.state == "running",
+                 Job.attempts == lease.attempt,
+                 Job.leased_by == lease.holder)
+         .update(values, synchronize_session="fetch"))
+    return n == 1
+
+
+def extend(session: Session, lease: Lease, *,
+           lease_seconds: int | None = None) -> None:
+    """Push the lease out and commit, or raise LeaseLost."""
+    seconds = lease_seconds or settings().job_lease_seconds
+    if not _fenced(session, lease,
+                   {"leased_until": _now() + timedelta(seconds=seconds)}):
+        session.rollback()
+        raise LeaseLost(f"job {lease.job_id} attempt {lease.attempt} "
+                        f"is no longer held by {lease.holder}")
     session.commit()
 
 
-def complete(session: Session, job: Job) -> None:
-    job.state = "done"
-    job.finished_at = _now()
-    job.leased_until = None
-    session.add(job)
+def heartbeat(session: Session, job: Job, *, lease: Lease | None = None,
+              lease_seconds: int | None = None) -> None:
+    """Push the lease out. Raises LeaseLost if the job has been taken.
+
+    The worker also extends the lease from a background thread, so a handler
+    does not need to call this to stay alive. It calls it at stage boundaries
+    so that a worker which has lost its job stops there, before it writes.
+    """
+    extend(session, lease or Lease.of(job), lease_seconds=lease_seconds)
+
+
+def complete(session: Session, job: Job, *, lease: Lease | None = None) -> bool:
+    """Mark the job done. False, and nothing written, if the lease was lost."""
+    lease = lease or Lease.of(job)
+    if not _fenced(session, lease, {"state": "done", "finished_at": _now(),
+                                    "leased_until": None}):
+        session.rollback()
+        log.warning("[jobs] %s finished after losing its lease; another "
+                    "worker owns it now", lease.job_id)
+        return False
     session.commit()
+    return True
 
 
 def fail(session: Session, job: Job, error: str, *,
-         retry_in: timedelta | None = None) -> None:
+         lease: Lease | None = None,
+         retry_in: timedelta | None = None,
+         on_give_up: Callable[[Session], None] | None = None) -> bool:
     """Record a failure, and retry unless the attempts are used up.
 
     Backoff is exponential on the attempt count, because the common causes —
     a rate limit, a provider hiccup, a transient network fault — all resolve
     with time, and retrying immediately mostly burns the remaining attempts on
     the same condition.
+
+    `on_give_up` runs only on the failure that ends the job, and in the same
+    transaction as it. That is where refunds belong: a refund on every attempt
+    pays back work that is about to be retried, and a refund committed
+    separately is lost if the process dies between the two.
+
+    Returns False, and writes nothing, if the lease was lost.
     """
-    job.last_error = (error or "")[:4000]
-    if job.attempts >= job.max_attempts:
-        job.state = "failed"
-        job.finished_at = _now()
-        job.leased_until = None
-        log.error("[jobs] %s %s failed permanently after %d attempts: %s",
-                  job.kind, job.id, job.attempts, job.last_error)
+    lease = lease or Lease.of(job)
+    last_error = (error or "")[:4000]
+    final = lease.attempt >= job.max_attempts
+
+    if final:
+        values = {"state": "failed", "finished_at": _now(),
+                  "leased_until": None, "last_error": last_error}
     else:
         # `or` would be wrong here: timedelta(seconds=0) is falsy, so a
         # caller asking for an immediate retry would silently get the
         # backoff instead.
         delay = (retry_in if retry_in is not None
-                 else timedelta(seconds=min(300, 10 * 2 ** job.attempts)))
-        job.state = "queued"
-        job.run_after = _now() + delay
-        job.leased_until = None
+                 else timedelta(seconds=min(300, 10 * 2 ** lease.attempt)))
+        values = {"state": "queued", "run_after": _now() + delay,
+                  "leased_until": None, "last_error": last_error}
+
+    if not _fenced(session, lease, values):
+        session.rollback()
+        log.warning("[jobs] %s failed after losing its lease; leaving it to "
+                    "the worker that owns it: %s", lease.job_id, last_error)
+        return False
+
+    if final:
+        log.error("[jobs] %s %s failed permanently after %d attempts: %s",
+                  job.kind, job.id, lease.attempt, last_error)
+        if on_give_up is not None:
+            # In a savepoint: if the hook itself fails, the job must still end.
+            # Otherwise the lease lapses, the job is reclaimed, fails, runs the
+            # same broken hook, and loops every lease period forever.
+            try:
+                with session.begin_nested():
+                    on_give_up(session)
+            except Exception:
+                log.exception("[jobs] give-up hook for %s %s failed",
+                              job.kind, job.id)
+    else:
         log.warning("[jobs] %s %s attempt %d/%d failed, retrying in %s: %s",
-                    job.kind, job.id, job.attempts, job.max_attempts,
-                    delay, job.last_error)
-    session.add(job)
+                    job.kind, job.id, lease.attempt, job.max_attempts,
+                    delay, last_error)
     session.commit()
+    return True
 
 
 def stats(session: Session) -> dict[str, int]:

@@ -98,7 +98,7 @@ def _verify(token: str) -> Principal:
     return Principal(user_id=sub, email=claims.get("email"))
 
 
-async def current_principal(
+def current_principal(
     authorization: str | None = Header(default=None),
 ) -> Principal:
     """The caller, or a 401.
@@ -106,6 +106,9 @@ async def current_principal(
     Never returns an unauthenticated placeholder. A route that forgets to depend
     on this fails closed at the database instead, because an unset tenant
     matches no rows — but that is the second line, not the first.
+
+    Not `async`: verifying against a JWKS fetches the keys over the network on
+    first use and on every key rotation, which must not happen on the event loop.
     """
     if authorization and authorization.lower().startswith("bearer "):
         return _verify(authorization.split(" ", 1)[1].strip())

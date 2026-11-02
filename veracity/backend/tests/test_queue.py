@@ -163,3 +163,124 @@ class TestRecovery:
         with owner_session() as s:
             assert queue.claim(s) is None
             assert queue.stats(s)["failed"] == 1
+
+
+class TestFencing:
+    """A worker that has lost its lease must not write to the job.
+
+    Leases lapse in practice — a long pause, a laptop lid, a slow provider —
+    and the worker holding one does not know. Without a fence it carries on and
+    then marks done, or re-queues, a job another worker is midway through.
+    """
+
+    def _stolen(self, lease_seconds=1):
+        """Claim a job, let the lease lapse, and have a second claim take it."""
+        from app.db.session import owner_session
+        from app.jobs import queue
+        with owner_session() as s:
+            queue.enqueue(s, "ingest", {"x": 1})
+        with owner_session() as s:
+            first = queue.claim(s, lease_seconds=lease_seconds)
+        time.sleep(lease_seconds + 0.2)
+        with owner_session() as s:
+            second = queue.claim(s, lease_seconds=60)
+        assert second.id == first.id and second.attempts == 2
+        return first
+
+    def test_a_lost_lease_cannot_complete_the_job(self, db):
+        from app.db.session import owner_session
+        from app.db.models import Job
+        from app.jobs import queue
+        first = self._stolen()
+        with owner_session() as s:
+            assert queue.complete(s, first) is False
+        with owner_session() as s:
+            job = s.query(Job).one()
+            assert job.state == "running" and job.attempts == 2
+
+    def test_a_lost_lease_cannot_requeue_the_job(self, db):
+        from app.db.session import owner_session
+        from app.db.models import Job
+        from app.jobs import queue
+        first = self._stolen()
+        with owner_session() as s:
+            assert queue.fail(s, first, "late failure") is False
+        with owner_session() as s:
+            job = s.query(Job).one()
+            assert job.state == "running" and job.last_error is None
+
+    def test_a_heartbeat_on_a_lost_lease_raises(self, db):
+        from app.db.session import owner_session
+        from app.jobs import queue
+        first = self._stolen()
+        with owner_session() as s:
+            with pytest.raises(queue.LeaseLost):
+                queue.heartbeat(s, first)
+
+    def test_the_lease_is_the_claim_not_the_row(self, db):
+        """Reloading the row would read the new owner's attempt number and pass
+        the check. The lease is taken once, at claim time."""
+        from app.db.session import owner_session
+        from app.jobs import queue
+        with owner_session() as s:
+            queue.enqueue(s, "ingest", {"x": 1})
+        with owner_session() as s:
+            job = queue.claim(s, lease_seconds=1)
+            lease = queue.Lease.of(job)
+        time.sleep(1.2)
+        with owner_session() as s:
+            queue.claim(s, lease_seconds=60)
+        with owner_session() as s:
+            fresh = s.get(type(job), job.id)          # attempts == 2 now
+            assert queue.complete(s, fresh, lease=lease) is False
+
+
+class TestGivingUp:
+    def test_the_hook_runs_on_the_final_failure_only(self, db):
+        from app.db.session import owner_session
+        from app.jobs import queue
+        calls = []
+        with owner_session() as s:
+            queue.enqueue(s, "ingest", {"x": 1}, max_attempts=2)
+        with owner_session() as s:
+            job = queue.claim(s)
+            queue.fail(s, job, "first", retry_in=timedelta(0),
+                       on_give_up=lambda _s: calls.append(1))
+        assert calls == [], "a failure that will be retried must not give up"
+        with owner_session() as s:
+            job = queue.claim(s)
+            queue.fail(s, job, "second", on_give_up=lambda _s: calls.append(2))
+        assert calls == [2]
+
+    def test_the_hook_commits_with_the_failure(self, db):
+        """A refund committed separately is lost if the process dies between
+        the two writes. It goes in the transaction that ends the job."""
+        from app.db.session import owner_session
+        from app.jobs import queue
+        with owner_session() as s:
+            queue.enqueue(s, "ingest", {"x": 1}, max_attempts=1)
+        with owner_session() as s:
+            job = queue.claim(s)
+            queue.fail(s, job, "boom", on_give_up=lambda gs: gs.execute(text(
+                "UPDATE jobs SET payload = '{\"refunded\": true}'")))
+        with owner_session() as s:
+            row = s.execute(text("SELECT state, payload FROM jobs")).one()
+            assert row[0] == "failed" and row[1] == {"refunded": True}
+
+    def test_a_broken_hook_still_ends_the_job(self, db):
+        """Otherwise the lease lapses, the job is reclaimed, fails, runs the
+        same broken hook, and loops every lease period forever."""
+        from app.db.session import owner_session
+        from app.jobs import queue
+
+        def broken(_s):
+            raise RuntimeError("refund service down")
+
+        with owner_session() as s:
+            queue.enqueue(s, "ingest", {"x": 1}, max_attempts=1)
+        with owner_session() as s:
+            job = queue.claim(s)
+            assert queue.fail(s, job, "boom", on_give_up=broken) is True
+        with owner_session() as s:
+            assert queue.stats(s)["failed"] == 1
+            assert queue.claim(s) is None
