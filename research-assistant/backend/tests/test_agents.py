@@ -428,14 +428,18 @@ class TestDB:
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
 
-        db_module.engine = create_engine(
+        # monkeypatch, not plain assignment: these are module globals, and a
+        # swap that outlives the test points every later test in the run at
+        # this throwaway SQLite file instead of Postgres.
+        monkeypatch.setattr(db_module, "engine", create_engine(
             db_module.DB_URL, connect_args={"check_same_thread": False}
-        )
-        db_module.SessionLocal = sessionmaker(bind=db_module.engine, autoflush=False, autocommit=False)
+        ))
+        monkeypatch.setattr(db_module, "SessionLocal",
+                            sessionmaker(bind=db_module.engine, autoflush=False, autocommit=False))
         # tenant_session() uses AppSessionLocal for every real query — point
         # it at the same isolated test engine (RLS/set_config is Postgres-only
         # and skipped automatically under sqlite; verified separately).
-        db_module.AppSessionLocal = db_module.SessionLocal
+        monkeypatch.setattr(db_module, "AppSessionLocal", db_module.SessionLocal)
         # A fresh SQLite file already has user_id from the model definition,
         # so skip init_db()'s Postgres-only ALTER TABLE migration step here.
         db_module.Base.metadata.create_all(bind=db_module.engine)
