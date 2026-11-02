@@ -7,10 +7,11 @@ time it has to work.
 """
 import os
 import subprocess
+import sys
 import uuid
 
 import pytest
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, inspect, make_url, text
 
 pytestmark = pytest.mark.db
 
@@ -19,16 +20,21 @@ EXPECTED = {"media_items", "transcript_segments", "transcript_chunks",
             "analyses", "claims", "jobs"}
 
 
+def _owner_url(database: str) -> str:
+    """The suite's owner connection, pointed at another database. Built from
+    DATABASE_URL rather than from $USER so it carries the password CI needs."""
+    return make_url(os.environ["DATABASE_URL"]).set(
+        database=database).render_as_string(hide_password=False)
+
+
 @pytest.fixture
 def empty_database():
     """A throwaway database, dropped however the test ends."""
-    admin = create_engine(
-        f"postgresql://{os.environ.get('USER', 'postgres')}@localhost:5432/postgres",
-        isolation_level="AUTOCOMMIT")
+    admin = create_engine(_owner_url("postgres"), isolation_level="AUTOCOMMIT")
     name = f"veracity_mig_{uuid.uuid4().hex[:8]}"
     with admin.connect() as c:
         c.execute(text(f'CREATE DATABASE "{name}"'))
-    url = f"postgresql://{os.environ.get('USER', 'postgres')}@localhost:5432/{name}"
+    url = _owner_url(name)
     try:
         yield url
     finally:
@@ -40,8 +46,10 @@ def empty_database():
 
 def _alembic(url: str, *args: str) -> subprocess.CompletedProcess:
     env = {**os.environ, "DATABASE_URL": url, "DATABASE_URL_APP": url}
+    # The running interpreter, not venv/bin/alembic: CI installs into the
+    # system Python and has no venv directory.
     return subprocess.run(
-        [os.path.join(ROOT, "venv", "bin", "alembic"), *args],
+        [sys.executable, "-m", "alembic", *args],
         cwd=ROOT, env=env, capture_output=True, text=True)
 
 
@@ -82,7 +90,6 @@ class TestMigrations:
         engine = create_engine(empty_database)
         inspector = inspect(engine)
 
-        import sys
         sys.path.insert(0, ROOT)
         from app.db.models import Base
 
